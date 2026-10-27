@@ -11,13 +11,13 @@ class CinemaPlusProvider : MainAPI() {
     override var lang = "ar"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
     override val hasMainPage = true
-    override val mainPage = mainPageOf("latest" to "مختارات الموقع", "movies" to "الأفلام", "series" to "المسلسلات")
+    override val mainPage = mainPageOf("الاضافات الأخيرة" to "الإضافات الأخيرة", "movies" to "الأفلام", "series" to "المسلسلات", "الأفلام الجديدة" to "الأفلام الجديدة", "مسلسلات تركية" to "مسلسلات تركية", "افلام عربية" to "أفلام عربية", "افـلام هندية" to "أفلام هندية")
     private val repository = CinemaPlusRepository(mainUrl)
     private fun result(item: CinemaItem): SearchResponse = if (item.series) {
         newTvSeriesSearchResponse(item.title, item.url, TvType.TvSeries) { posterUrl = item.poster; year = item.year }
     } else newMovieSearchResponse(item.title, item.url, TvType.Movie) { posterUrl = item.poster; year = item.year }
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val all = repository.catalogue().filter { when (request.data) { "movies" -> !it.series; "series" -> it.series; else -> true } }
+        val all = repository.catalogue().filter { when (request.data) { "movies" -> !it.series; "series" -> it.series; else -> request.data in it.sections } }.distinctBy { CinemaPlusParser.catalogueKey(it) }
         val size = 40
         val start = (page - 1).coerceAtLeast(0) * size
         return newHomePageResponse(request.name, all.drop(start).take(size).map(::result), hasNext = start + size < all.size)
@@ -29,7 +29,7 @@ class CinemaPlusProvider : MainAPI() {
         return repository.catalogue().filter { item ->
             val id = if (item.series) Regex("/series/(\\d+)\\.html").find(item.url)?.groupValues?.get(1) else CinemaPlusParser.movieId(item.url)?.first
             item.title.contains(q, ignoreCase = true) || (id != null && (id to item.series) in translated)
-        }.map(::result)
+        }.distinctBy { CinemaPlusParser.catalogueKey(it) }.map(::result)
     }
     override suspend fun load(url: String): LoadResponse? {
         val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return null

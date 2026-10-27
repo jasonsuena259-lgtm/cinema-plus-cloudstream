@@ -15,8 +15,8 @@ class CinemaPlusRepository(private val base: String) {
         }
         return null
     }
-    suspend fun catalogue(): List<CinemaItem> {
-        if (cached.isNotEmpty() && System.currentTimeMillis() - cachedAt < 300_000) return cached
+    suspend fun catalogue(refresh: Boolean = false): List<CinemaItem> {
+        if (!refresh && cached.isNotEmpty() && System.currentTimeMillis() - cachedAt < 300_000) return cached
         val htmlItems = listOf("/index.html", "/discover.html").flatMap { path -> get(base + path)?.let { CinemaPlusParser.cards(it, base + path) }.orEmpty() }
         val jsonItems = get("$base/movies.json")?.let { json -> runCatching {
             jacksonObjectMapper().readTree(json).mapNotNull { node ->
@@ -26,7 +26,7 @@ class CinemaPlusRepository(private val base: String) {
                 CinemaItem(title, "$base/movie.html?tmdb=$id&mux=$mux", node.path("poster").asText().ifBlank { null }, false, node.path("year").asText().toIntOrNull(), emptyList())
             }
         }.getOrNull() }.orEmpty()
-        val items = (htmlItems + jsonItems).distinctBy { it.url }
+        val items = CinemaPlusParser.mergeSections(htmlItems + jsonItems)
         if (items.isNotEmpty()) { cached = items; cachedAt = System.currentTimeMillis() }
         return items.ifEmpty { cached }
     }

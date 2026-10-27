@@ -15,7 +15,7 @@ object CinemaPlusParser {
             if (title.isEmpty()) return@mapNotNull null
             val img = card.selectFirst("img")
             val poster = img?.absUrl("data-src")?.ifBlank { img.absUrl("src") }?.ifBlank { null }
-            CinemaItem(title, url, poster, series, card.attr("data-year").toIntOrNull(), card.attr("data-genre").split('|').filter { it.isNotBlank() })
+            CinemaItem(title, url, poster, series, card.attr("data-year").toIntOrNull() ?: card.selectFirst(".year")?.text()?.toIntOrNull(), card.attr("data-genre").split('|').filter { it.isNotBlank() }, card.closest(".section")?.selectFirst("h3.section-title")?.text()?.takeIf { it.isNotBlank() }?.let { setOf(it) } ?: emptySet())
         }
         val sliders = document.select(".slider-section .movie-card").flatMap { card ->
             val img = card.selectFirst("img.movie-poster")
@@ -26,7 +26,10 @@ object CinemaPlusParser {
                 else CinemaItem(title, url, img?.absUrl("src"), false, null, emptyList())
             }
         }
-        return (cards + sliders).distinctBy { it.url }
+        return mergeSections(cards + sliders)
+    }
+    fun mergeSections(items: List<CinemaItem>): List<CinemaItem> = items.groupBy { it.url }.values.map { group ->
+        group.first().copy(sections = group.flatMap { it.sections }.toSet())
     }
     fun movieId(url: String): Pair<String, String>? {
         val uri = runCatching { URI(url) }.getOrNull() ?: return null
@@ -42,6 +45,22 @@ object CinemaPlusParser {
         if (movie != null) return items.firstOrNull { !it.series && movieId(it.url) == movie }
         val series = Regex("/series/(\\d+)\\.html(?:$|[?#])").find(url)?.groupValues?.get(1) ?: return null
         return items.firstOrNull { it.series && Regex("/series/(\\d+)\\.html(?:$|[?#])").find(it.url)?.groupValues?.get(1) == series }
+    }
+    fun sameMovieSources(items: List<CinemaItem>, url: String): List<String> {
+        val chosen = findItem(items, url) ?: return listOfNotNull(movieId(url)?.second)
+        val id = movieId(chosen.url)?.first ?: return emptyList()
+        val title = chosen.title.trim()
+        return items.asSequence().filter { !it.series && it.title.trim().equals(title, ignoreCase = true) }
+            .mapNotNull { movieId(it.url) }.filter { it.first == id }.map { it.second }.distinct().toList()
+    }
+    fun catalogueKey(item: CinemaItem): String {
+        val uri = runCatching { URI(item.url) }.getOrNull()
+        val seriesId = if (item.series) Regex("/series/(\\d+)\\.html").find(uri?.path.orEmpty())?.groupValues?.get(1) else null
+        return when {
+            seriesId != null -> "tv:$seriesId"
+            !item.series && movieId(item.url) != null -> "movie:${movieId(item.url)?.first}:${item.title.trim().lowercase()}"
+            else -> item.url
+        }
     }
     fun episodes(html: String): List<EpisodeKey> {
         val body = Regex("""const\s+episodeLinks\s*=\s*\{([\s\S]*?)\}""").find(html)?.groupValues?.get(1) ?: return emptyList()

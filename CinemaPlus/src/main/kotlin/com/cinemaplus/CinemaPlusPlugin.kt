@@ -6,5 +6,5 @@ import com.lagradost.cloudstream3.plugins.Plugin
 
 @CloudstreamPlugin
 class CinemaPlusPlugin : Plugin() {
-    override fun load(context: Context) { registerMainAPI(CinemaPlusProvider()) }
+    override fun load(context: Context) { registerMainAPI(CinemaPlusProvider()); registerMainAPI(com.akwam.AkwamProvider()) }
 }

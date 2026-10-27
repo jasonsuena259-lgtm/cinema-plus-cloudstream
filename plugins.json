@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-69e3b9eacd021ee775c0493ff3750760f1a450ec31954517e6e6f442b65f6b26",
+    "fileHash": "sha256-e73be4f29ddcf8fdd044e00592c236a53c56e86b9f00bb73fc8b57934329576e",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 35908,
+    "fileSize": 58018,
     "status": 3,
     "language": "ar",
     "authors": [
@@ -13,10 +13,10 @@
       "Movie",
       "TvSeries"
     ],
-    "version": 4,
+    "version": 5,
     "internalName": "CinemaPlus",
-    "description": "Cinema Plus",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/CinemaPlus-v4.cs3",
+    "description": "Cinema Plus and Akwam",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/CinemaPlus-v5.cs3",
     "name": "CinemaPlus"
   }
 ]

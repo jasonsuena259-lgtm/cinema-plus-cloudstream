@@ -44,7 +44,7 @@ object CinemaPlusParser {
         return items.firstOrNull { it.series && Regex("/series/(\\d+)\\.html(?:$|[?#])").find(it.url)?.groupValues?.get(1) == series }
     }
     fun episodes(html: String): List<EpisodeKey> {
-        val body = Regex("""const\s+episodeLinks\s*=\s*\{([\s\S]*?)}""").find(html)?.groupValues?.get(1) ?: return emptyList()
+        val body = Regex("""const\s+episodeLinks\s*=\s*\{([\s\S]*?)\}""").find(html)?.groupValues?.get(1) ?: return emptyList()
         return Regex("""["'](\d+)-(\d+)["']\s*:\s*["']([^"']+)["']""").findAll(body).mapNotNull {
             val (season, episode, source) = it.destructured
             val s = season.toIntOrNull() ?: return@mapNotNull null

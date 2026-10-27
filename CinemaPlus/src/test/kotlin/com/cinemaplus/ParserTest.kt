@@ -22,6 +22,13 @@ class ParserTest {
         assertNull(CinemaPlusParser.findItem(listOf(a, b), "https://example.org/movie.html?mux=Different&tmdb=42"))
         assertEquals(b, CinemaPlusParser.findItem(listOf(a, b), "https://example.org/series/106379.html?ref=search"))
     }
+    @Test fun moonKnightFixture() {
+        val html = javaClass.getResource("/series-92749.html")!!.readText()
+        val episodes = CinemaPlusParser.episodes(html)
+        assertEquals(6, episodes.size)
+        assertEquals("q00Dv00yIOUgZpr5monnXXIyc1RjyRn02GojaDTG5RrPjA", episodes.first().source)
+        assertEquals(6, episodes.last().episode)
+    }
     @Test fun realSeriesFixture() {
         val html = javaClass.getResource("/series-106379.html")!!.readText()
         val episodes = CinemaPlusParser.episodes(html)

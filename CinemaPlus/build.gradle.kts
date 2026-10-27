@@ -1,4 +1,4 @@
-version = 2
+version = 3
 cloudstream {
     description = "Cinema Plus"
     authors = listOf("Cinema Plus community")

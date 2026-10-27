@@ -16,6 +16,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+      - name: Check Android-compatible regex syntax with ICU
+        run: python3 tests/check_icu_regex.py
       - name: Build and test
         run: ./gradlew CinemaPlus:testDebugUnitTest CinemaPlus:make makePluginsJson
       - name: Prepare repository metadata

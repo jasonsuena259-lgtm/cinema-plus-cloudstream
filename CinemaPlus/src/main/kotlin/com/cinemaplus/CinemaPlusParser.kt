@@ -4,6 +4,18 @@ import org.jsoup.Jsoup
 import java.net.URI
 
 object CinemaPlusParser {
+    const val BASE = "https://ffrrx-2000.github.io/cinema-plas-bot"
+
+    // Old bookmarks may carry relative URLs, HTML entities or an http scheme.
+    // Only this provider's pages may be resolved; opaque go: IDs are not video URLs.
+    fun canonicalUrl(raw: String): String? {
+        val value = raw.trim().replace("&amp;", "&")
+        val uri = runCatching { URI(BASE + "/").resolve(value) }.getOrNull() ?: return null
+        if (uri.scheme !in listOf("https", "http") || uri.host != "ffrrx-2000.github.io" || uri.userInfo != null || uri.port != -1) return null
+        if (!uri.path.orEmpty().startsWith("/cinema-plas-bot/")) return null
+        return "https://" + uri.rawAuthority + uri.rawPath + (uri.rawQuery?.let { "?$it" } ?: "") + (uri.rawFragment?.let { "#$it" } ?: "")
+    }
+
     fun cards(html: String, base: String): List<CinemaItem> {
         val document = Jsoup.parse(html, base)
         val cards = document.select(".card-wrapper").mapNotNull { card ->

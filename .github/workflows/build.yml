@@ -1,4 +1,4 @@
-name: Build and publish Cinema Plus
+name: Build and publish independent providers
 on:
   push:
     branches: [main, master]
@@ -19,14 +19,14 @@ jobs:
       - name: Check Android-compatible regex syntax with ICU
         run: python3 tests/check_icu_regex.py
       - name: Build and test
-        run: ./gradlew CinemaPlus:testDebugUnitTest CinemaPlus:make makePluginsJson
-      - name: Prepare repository metadata
+        run: ./gradlew CinemaPlus:testDebugUnitTest Akwam:testDebugUnitTest CinemaPlus:make Akwam:make makePluginsJson
+      - name: Prepare independent repository metadata
         env:
-          REPOSITORY: ${{ github.repository }}
+          PUBLISH_BRANCH: builds
         run: |
           mkdir -p dist
-          cp CinemaPlus/build/*.cs3 build/plugins.json dist/
-          python3 -c 'import json,os; r=os.environ["REPOSITORY"]; json.dump({"name":"Cinema Plus","description":"Cinema Plus CloudStream provider","manifestVersion":1,"pluginLists":[f"https://raw.githubusercontent.com/{r}/builds/plugins.json"]},open("dist/repo.json","w"),ensure_ascii=False,indent=2)'
+          python3 tests/package_release.py
+          python3 -c 'import json,os; r=os.environ["GITHUB_REPOSITORY"]; json.dump({"name":"Cinema Plus and Akwam","manifestVersion":1,"pluginLists":[f"https://raw.githubusercontent.com/{r}/builds/plugins.json"]},open("dist/repo.json","w"),indent=2)'
       - uses: actions/upload-artifact@v4
         with:
           name: cinema-plus

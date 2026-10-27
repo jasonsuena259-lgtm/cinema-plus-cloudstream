@@ -13,7 +13,7 @@ def compile_pattern(pattern):
  handle=open_regex(chars,len(chars),0,None,ctypes.byref(status))
  if handle: close_regex(handle)
  return status.value
-files=glob.glob('CinemaPlus/src/main/kotlin/**/*.kt',recursive=True)
+files=glob.glob('*/src/main/kotlin/**/*.kt',recursive=True)
 failed=0; count=0
 for filename in files:
  source=open(filename,encoding='utf8').read()

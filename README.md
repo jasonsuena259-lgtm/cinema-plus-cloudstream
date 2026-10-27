@@ -1,11 +1,30 @@
-# Cinema Plus لـ CloudStream
+# Cinema Plus وأكوام — إضافتان مستقلتان لـ CloudStream
 
-محاولة تطوير إضافة Kotlin لموقع Cinema Plus. الحالة: **قيد التطوير**. نجح البناء وأنتج [CinemaPlus.cs3](dist/CinemaPlus.cs3)، لكن لم يُختبر داخل التطبيق ولا تتحقق شروط القبول بعد. راجع [المشاكل المعروفة](KNOWN_ISSUES.md) و[تحليل الموقع](docs/SITE_ANALYSIS.md) و[تقرير المصادر](docs/SERVER_TEST_REPORT.md).
+كل إضافة لها ملف `.cs3` ونقطة دخول وقائمة تثبيت مستقلة. Cinema Plus v6 لا يسجل أكوام، وأكوام v1 لا يحتاج Cinema Plus.
 
-للبناء في بيئة Android SDK 35 وJDK 17، من مجلد المشروع:
+روابط المستودعات التي تُضاف من إعدادات CloudStream ← الإضافات ← إضافة مستودع:
+
+- Cinema Plus: https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-cinemaplus-v6.json
+- أكوام: https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-akwam-v1.json
+
+عند الانتقال من النسخة المجمّعة v5، احذف الإضافة المجمّعة أولًا، ثم ثبّت كل إضافة تريدها من قائمتها. أعد تشغيل CloudStream وافتح العناصر من بحث المزوّد مجددًا عند وجود روابط قديمة في المكتبة. لا يلزم مسح بيانات التطبيق أو المكتبة.
+
+## حالة الاختبار
+
+نجاح البناء أو اختبار مصدر على الشبكة ليس تأكيد تشغيله داخل التطبيق. أبلغ المستخدم عن تعطل v5؛ لم تُعَد المشكلة على جهاز Android في هذه البيئة ولا يتوفر جهاز متصل. v6 يحد مدة طلبات البيانات الوصفية، يصحح بعض الروابط القديمة، ويعرض سبب فشل التفاصيل بدل إرجاع `null`. ما زال تأكيد الحل على جهاز المستخدم مطلوبًا.
+
+راجع [تقرير الإصدار والفصل](docs/V6_REPORT.md)، [تحليل الموقع](docs/SITE_ANALYSIS.md)، [تحليل أكوام](docs/AKWAM_ANALYSIS.md)، و[المشاكل المعروفة](KNOWN_ISSUES.md).
+
+## البناء
+
+يتطلب JDK 17 أو أحدث وAndroid SDK 35:
 
 ```sh
-./gradlew CinemaPlus:testDebugUnitTest CinemaPlus:make makePluginsJson
+./gradlew CinemaPlus:testDebugUnitTest Akwam:testDebugUnitTest CinemaPlus:make Akwam:make
+python3 tests/check_icu_regex.py
+python3 tests/package_release.py
 ```
 
-يمكن تجربة ملف cs3 الناتج من واجهة إضافات CloudStream. بعد رفع المشروع إلى مستودع GitHub وتشغيل workflow، يُفترض إنشاء فرع `builds` يحوي الحزمة و`plugins.json` و`repo.json` بعناوين ذلك المستودع؛ أضف رابط `repo.json` الخام في إعدادات إضافات CloudStream. لم يُختبر النشر ولا يوجد مستودع منشور لهذه النسخة حالياً. لا تستخدم `build/plugins.json` الناتج محلياً دون تعيين `GITHUB_REPOSITORY` لأنه يحتوي عنوان القالب الافتراضي. فحوص الشبكة الاختيارية: `python3 tests/probe_sources.py`؛ تحتاج Python وffprobe واتصالاً بالمصادر، وتنزّل أجزاء قصيرة لا المحتوى كاملاً.
+النواتج: `CinemaPlus/build/CinemaPlus.cs3` و`Akwam/build/Akwam.cs3`. اختبارات عقد Provider تستخدم ملف API الذي يجلبه CloudStream Gradle plugin إلى ذاكرته المؤقتة. تستخدم اختبارات البيانات fixtures محلية، ولا تعتمد على TMDB أو الإنترنت.
+
+GitHub Actions يبني الإضافتين ويختبرهما، ثم ينشر الملفات والقوائم المستقلة إلى فرع `builds`. فحوص المصادر الشبكية اختيارية، وتتطلب Python وffprobe: `python3 tests/probe_representative.py /path/to/cinema-plas-bot`. تُنزّل هذه الفحوص أجزاء قصيرة فقط، وليست اختبارات تنزيل أفلام كاملة.

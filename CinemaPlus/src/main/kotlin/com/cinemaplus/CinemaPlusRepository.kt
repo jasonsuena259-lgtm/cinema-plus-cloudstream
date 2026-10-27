@@ -4,16 +4,27 @@ import com.lagradost.cloudstream3.app
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
-class CinemaPlusRepository(private val base: String) {
+class CinemaPlusRepository(
+    private val base: String,
+    private val fetch: suspend (String, Int) -> String? = { url, seconds ->
+        app.get(url, timeout = seconds.toLong()).takeIf { it.code in 200..299 }?.text
+    }
+) {
     private var cached = emptyList<CinemaItem>()
     private var cachedAt = 0L
-    suspend fun get(url: String): String? {
-        repeat(2) { attempt ->
-            val text = runCatching { app.get(url, timeout = 15).takeIf { it.code in 200..299 }?.text }.getOrNull()
-            if (text != null) return text
-            if (attempt == 1) return null
+    suspend fun get(url: String, timeout: Int = 10, attempts: Int = 2): String? {
+        repeat(attempts) {
+            try { fetch(url, timeout)?.let { text -> return text } }
+            catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (_: Exception) { /* One retry for network errors; metadata is optional. */ }
         }
         return null
+    }
+    suspend fun seriesEpisodes(url: String): List<EpisodeKey> {
+        val html = get(url) ?: throw IllegalStateException("تعذر جلب صفحة المسلسل من Cinema Plus. تحقق من الاتصال بالموقع وأعد المحاولة.")
+        return CinemaPlusParser.episodes(html).ifEmpty {
+            throw IllegalStateException("صفحة المسلسل لا تحتوي حلقات بروابط تشغيل قابلة للاستخراج من الموقع.")
+        }
     }
     suspend fun catalogue(refresh: Boolean = false): List<CinemaItem> {
         if (!refresh && cached.isNotEmpty() && System.currentTimeMillis() - cachedAt < 300_000) return cached
@@ -33,7 +44,7 @@ class CinemaPlusRepository(private val base: String) {
     suspend fun translatedMatches(query: String): Set<Pair<String, Boolean>> {
         val encoded = java.net.URLEncoder.encode(query, "UTF-8")
         val url = "https://api.themoviedb.org/3/search/multi?api_key=06f120992cfacd7c118f6e7086d23544&language=ar&query=$encoded"
-        return get(url)?.let { json -> runCatching {
+        return get(url, timeout = 4, attempts = 1)?.let { json -> runCatching {
             jacksonObjectMapper().readTree(json).path("results").mapNotNull { node ->
                 val kind = node.path("media_type").asText()
                 val id = node.path("id").asText()
@@ -43,11 +54,11 @@ class CinemaPlusRepository(private val base: String) {
     }
     suspend fun season(id: String, number: Int): JsonNode? {
         val url = "https://api.themoviedb.org/3/tv/$id/season/$number?api_key=06f120992cfacd7c118f6e7086d23544&language=ar"
-        return get(url)?.let { runCatching { jacksonObjectMapper().readTree(it) }.getOrNull() }
+        return get(url, timeout = 4, attempts = 1)?.let { runCatching { jacksonObjectMapper().readTree(it) }.getOrNull() }
     }
     suspend fun metadata(id: String, series: Boolean): JsonNode? {
         val kind = if (series) "tv" else "movie"
         val url = "https://api.themoviedb.org/3/$kind/$id?api_key=06f120992cfacd7c118f6e7086d23544&language=ar"
-        return get(url)?.let { runCatching { jacksonObjectMapper().readTree(it) }.getOrNull() }
+        return get(url, timeout = 4, attempts = 1)?.let { runCatching { jacksonObjectMapper().readTree(it) }.getOrNull() }
     }
 }

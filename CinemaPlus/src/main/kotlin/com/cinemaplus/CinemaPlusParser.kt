@@ -36,6 +36,13 @@ object CinemaPlusParser {
         val mux = q["mux"]?.takeIf { it.matches(Regex("[A-Za-z0-9]+")) } ?: return null
         return id to mux
     }
+    fun findItem(items: List<CinemaItem>, url: String): CinemaItem? {
+        items.firstOrNull { it.url == url }?.let { return it }
+        val movie = movieId(url)
+        if (movie != null) return items.firstOrNull { !it.series && movieId(it.url) == movie }
+        val series = Regex("/series/(\\d+)\\.html(?:$|[?#])").find(url)?.groupValues?.get(1) ?: return null
+        return items.firstOrNull { it.series && Regex("/series/(\\d+)\\.html(?:$|[?#])").find(it.url)?.groupValues?.get(1) == series }
+    }
     fun episodes(html: String): List<EpisodeKey> {
         val body = Regex("""const\s+episodeLinks\s*=\s*\{([\s\S]*?)}""").find(html)?.groupValues?.get(1) ?: return emptyList()
         return Regex("""["'](\d+)-(\d+)["']\s*:\s*["']([^"']+)["']""").findAll(body).mapNotNull {

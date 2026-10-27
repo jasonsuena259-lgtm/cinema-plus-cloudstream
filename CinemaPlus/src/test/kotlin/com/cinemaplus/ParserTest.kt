@@ -15,6 +15,13 @@ class ParserTest {
         assertEquals(1, items.size); assertTrue(items[0].series); assertEquals(listOf("Crime", "Drama"), items[0].genres)
         assertTrue(CinemaPlusParser.cards("<div>changed</div>", "https://example.org/").isEmpty())
     }
+    @Test fun matchDetailsUsingStableIdentity() {
+        val a = CinemaItem("Film", "https://example.org/movie.html?tmdb=42&mux=One", null, false, null, emptyList())
+        val b = CinemaItem("Series", "https://example.org/series/106379.html", null, true, null, emptyList())
+        assertEquals(a, CinemaPlusParser.findItem(listOf(a, b), "https://example.org/movie.html?mux=One&tmdb=42"))
+        assertNull(CinemaPlusParser.findItem(listOf(a, b), "https://example.org/movie.html?mux=Different&tmdb=42"))
+        assertEquals(b, CinemaPlusParser.findItem(listOf(a, b), "https://example.org/series/106379.html?ref=search"))
+    }
     @Test fun realSeriesFixture() {
         val html = javaClass.getResource("/series-106379.html")!!.readText()
         val episodes = CinemaPlusParser.episodes(html)

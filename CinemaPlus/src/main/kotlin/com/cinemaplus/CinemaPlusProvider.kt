@@ -32,8 +32,14 @@ class CinemaPlusProvider : MainAPI() {
         }.map(::result)
     }
     override suspend fun load(url: String): LoadResponse? {
-        val item = repository.catalogue().firstOrNull { it.url == url } ?: return null
-        val id = if (item.series) Regex("/series/(\\d+)\\.html").find(url)?.groupValues?.get(1) else CinemaPlusParser.movieId(url)?.first
+        val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return null
+        if (uri.scheme != "https" || uri.host != "ffrrx-2000.github.io" || !uri.path.startsWith("/cinema-plas-bot/")) return null
+        val movie = CinemaPlusParser.movieId(url)
+        val seriesId = Regex("/series/(\\d+)\\.html$").find(uri.path)?.groupValues?.get(1)
+        if (movie == null && seriesId == null) return null
+        val item = CinemaPlusParser.findItem(repository.catalogue(), url)
+            ?: CinemaItem(seriesId ?: movie!!.first, url, null, seriesId != null, null, emptyList())
+        val id = seriesId ?: movie?.first
         val meta = id?.let { repository.metadata(it, item.series) }
         fun field(key: String): String? = meta?.get(key)?.takeUnless { it.isNull }?.asText()?.takeIf { it.isNotBlank() }
         val title = field(if (item.series) "name" else "title") ?: item.title

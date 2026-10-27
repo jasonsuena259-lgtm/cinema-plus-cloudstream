@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-30f328a4090ef3e12d80d4ecfe945b72593904364cde3565c7741278669f0e21",
+    "fileHash": "sha256-9d4699fee42dc08097b3f360bc57ee313fead9f4cb10dd15afb99b2caccabef3",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 30799,
+    "fileSize": 32023,
     "status": 3,
     "language": "ar",
     "authors": [
@@ -13,7 +13,7 @@
       "Movie",
       "TvSeries"
     ],
-    "version": 1,
+    "version": 2,
     "internalName": "CinemaPlus",
     "description": "Cinema Plus",
     "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/CinemaPlus.cs3",

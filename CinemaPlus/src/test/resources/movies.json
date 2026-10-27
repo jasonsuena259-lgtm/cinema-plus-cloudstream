@@ -1,0 +1,66 @@
+[
+  {
+    "id": "avatar",
+    "title": "Avatar",
+    "poster": "https://image.tmdb.org/t/p/original/gKY6q7SjCkAU6FqvqWybDYgUKIF.jpg",
+    "mux": "GskIrti8484",
+    "year": "2009",
+    "section": "latest"
+  },
+  {
+    "id": 19995,
+    "title": "Avatar",
+    "poster": "https://image.tmdb.org/t/p/w500/gKY6q7SjCkAU6FqvqWybDYgUKIF.jpg",
+    "year": "2009",
+    "mux": "Xoxtt5874kgj",
+    "section": "featured"
+  },
+  {
+    "id": 19995,
+    "title": "Avatar",
+    "poster": "https://image.tmdb.org/t/p/w500/gKY6q7SjCkAU6FqvqWybDYgUKIF.jpg",
+    "year": "2009",
+    "mux": "Ususysfu8re7r8fi",
+    "section": "featured"
+  },
+  {
+    "id": 19995,
+    "title": "Avatar",
+    "poster": "https://image.tmdb.org/t/p/w500/gKY6q7SjCkAU6FqvqWybDYgUKIF.jpg",
+    "year": "2009",
+    "mux": "Yseuid62rdjjj45",
+    "section": "4k"
+  },
+  {
+    "id": 24428,
+    "title": "The Avengers",
+    "poster": "https://image.tmdb.org/t/p/w500/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
+    "year": "2012",
+    "mux": "Eiri8r7t8gi",
+    "section": "featured"
+  },
+  {
+    "id": 24428,
+    "title": "المنتقمون",
+    "poster": "https://image.tmdb.org/t/p/w500/k0fEZ1Hr9968y82Mqb5VWKpeKbn.jpg",
+    "year": "2012",
+    "mux": "Ysjwwte6r7e7",
+    "section": "latest"
+  },
+  {
+    "id": 299536,
+    "title": "المنتقمون  حرب اللانهائية",
+    "poster": "https://image.tmdb.org/t/p/w500/oGnmYZ61rkudhF7nWirXxYOmdQW.jpg",
+    "year": "2018",
+    "mux": "Hwsy7j6ee6e7eu",
+    "section": "latest"
+  },
+  {
+    "id": 1003596,
+    "title": "المنتقمون: يوم الحسم",
+    "poster": "https://image.tmdb.org/t/p/w500/8HkIe2i4ScpCkcX9SzZ9IPasqWV.jpg",
+    "year": "2026",
+    "mux": "Eueue7r7bwen",
+    "section": "latest"
+  }
+]

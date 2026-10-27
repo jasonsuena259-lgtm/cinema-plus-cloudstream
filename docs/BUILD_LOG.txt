@@ -1,0 +1,54 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.12/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :CinemaPlus
+w: [33m[1m⚠️ Deprecated Gradle Version[0m[0m
+The used Gradle version (Gradle 8.12) is deprecated and will not be supported in future Kotlin Gradle Plugin releases.
+The minimum supported Gradle version will become Gradle 8.14.4 in Kotlin 2.5.0.
+
+This warning can be suppressed in 'gradle.properties':
+    kotlin.suppressGradlePluginWarnings=DeprecatedGradleVersionWarning
+[32m[1mSolution:[0m[0m
+[32m[3mPlease update the Gradle version to at least Gradle 8.14.4.[0m[0m
+
+
+> Task :CinemaPlus:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :CinemaPlus:preBuild UP-TO-DATE
+> Task :CinemaPlus:preDebugBuild UP-TO-DATE
+> Task :CinemaPlus:generateDebugResValues
+> Task :CinemaPlus:generateDebugResources
+> Task :CinemaPlus:packageDebugResources
+> Task :CinemaPlus:javaPreCompileDebug
+> Task :CinemaPlus:preDebugUnitTestBuild UP-TO-DATE
+> Task :CinemaPlus:javaPreCompileDebugUnitTest
+> Task :CinemaPlus:parseDebugLocalResources
+> Task :CinemaPlus:generateDebugRFile
+> Task :CinemaPlus:generateDebugUnitTestStubRFile
+> Task :CinemaPlus:compileDebugKotlin
+
+> Task :CinemaPlus:compileDex
+Compiled dex to /workspace/cinema-plus/CinemaPlus/build/intermediates/classes.dex
+
+> Task :CinemaPlus:generateManifest
+
+> Task :CinemaPlus:make
+Made CloudStream package at /workspace/cinema-plus/CinemaPlus/build/CinemaPlus.cs3
+
+> Task :CinemaPlus:compileDebugJavaWithJavac NO-SOURCE
+> Task :CinemaPlus:bundleLibRuntimeToJarDebug
+> Task :CinemaPlus:bundleLibCompileToJarDebug
+> Task :CinemaPlus:processDebugJavaRes
+> Task :CinemaPlus:writeCacheEntry
+
+> Task :makePluginsJson
+Created /workspace/cinema-plus/build/plugins.json
+
+> Task :CinemaPlus:compileDebugUnitTestKotlin
+> Task :CinemaPlus:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :CinemaPlus:processDebugUnitTestJavaRes
+> Task :CinemaPlus:testDebugUnitTest
+
+[Incubating] Problems report is available at: file:///workspace/cinema-plus/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 54s
+20 actionable tasks: 20 executed

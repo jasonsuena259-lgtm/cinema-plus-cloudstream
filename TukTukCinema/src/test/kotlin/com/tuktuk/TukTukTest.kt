@@ -77,4 +77,38 @@ class TukTukTest {
         println("LIVE_EPISODE_PASS "+links.map { it.name+" "+it.quality }.distinct().joinToString(", "))
     }
 
+    @Test fun contentLinksNormalizeWithoutAcceptingOtherSites() {
+        val expected="https://tuktukcinemas.com/line-of-fire-s01-e06/"
+        for (url in listOf("/line-of-fire-s01-e06/", "line-of-fire-s01-e06/", "https://www.tuktukcinemas.com/line-of-fire-s01-e06/", "http://TUKTUKCINEMAS.COM/line-of-fire-s01-e06/", " https://tuktukcinemas.com:443/line-of-fire-s01-e06/ ", java.net.URLEncoder.encode(expected,"UTF-8"))) {
+            assertEquals(url,expected,TukTukParser.contentUrl(url))
+        }
+        for(url in listOf("https://tuktukcinemas.com.evil.example/film", "https://other.example/film", "https://user@tuktukcinemas.com/film", "https://tuktukcinemas.com:8080/film")) assertNull(TukTukParser.contentUrl(url))
+    }
+    @Test fun liveReportedLineOfFireOpensThroughWwwAlias() = runBlocking {
+        assumeTrue(System.getenv("TUKTUK_LIVE_TEST")=="1")
+        val result=TukTukProvider().load("https://www.tuktukcinemas.com/line-of-fire-s01-e06/") as TvSeriesLoadResponse
+        assertTrue(result.episodes.size >= 6)
+        assertTrue(result.episodes.any { it.episode==6 })
+        assertTrue(result.episodes.all { it.data.startsWith(TukTukParser.BASE+"/line-of-fire-") })
+        println("LIVE_LINE_OF_FIRE_PASS episodes="+result.episodes.size)
+    }
+
+    @Test fun liveSearchCardsOpenUsingTheirOwnReturnedUrls() = runBlocking {
+        assumeTrue(System.getenv("TUKTUK_LIVE_TEST")=="1")
+        val api=TukTukProvider()
+        val seriesCards=api.search("Line of Fire")
+        val movieCards=api.search("All of a Sudden")
+        for(card in seriesCards+movieCards) {
+            assertEquals(api.name,card.apiName)
+            assertEquals(card.url,TukTukParser.contentUrl(card.url))
+        }
+        val seriesCard=seriesCards.first { it.name.contains("Line of Fire") && it.type==TvType.TvSeries }
+        val movieCard=movieCards.first { it.name.contains("All of a Sudden") && it.type==TvType.Movie }
+        val series=api.load(seriesCard.url) as TvSeriesLoadResponse
+        val movie=api.load(movieCard.url) as MovieLoadResponse
+        assertTrue(series.episodes.size>=6)
+        assertFalse(movie.dataUrl.isBlank())
+        println("LIVE_CARD_TO_DETAILS_PASS series="+series.episodes.size+" movie="+movie.name)
+    }
+
 }

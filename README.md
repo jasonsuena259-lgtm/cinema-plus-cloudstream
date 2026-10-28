@@ -3,7 +3,7 @@
 رابط التثبيت في CloudStream ← الإعدادات ← الإضافات ← إضافة مستودع:
 
 ```text
-https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-tuktukcinema-v1.json
+https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-tuktukcinema-v2.json
 ```
 
 الاسم: `TukTuk Cinema | توك توك سينما`. ثبّتها مستقلة واخترها من مزوّدي المحتوى. لا تحتاج إزالة Cinema Plus أو أكوام.
@@ -46,3 +46,5 @@ python3 tests/package_release.py
 GitHub Actions يبني الإضافتين ويختبرهما، ثم ينشر الملفات والقوائم المستقلة إلى فرع `builds`. فحوص المصادر الشبكية اختيارية، وتتطلب Python وffprobe: `python3 tests/probe_representative.py /path/to/cinema-plas-bot`. تُنزّل هذه الفحوص أجزاء قصيرة فقط، وليست اختبارات تنزيل أفلام كاملة.
 
 تحديث أكوام v2: راجع [تقرير الاختبارات والعائق الشبكي الحالي](docs/AKWAM_V2_REPORT.md). أكد المستخدم عمل Cinema Plus v6؛ هذا لا يثبت عمل أكوام.
+
+تحديث TukTuk v2 يوحّد روابط البطاقات والتفاصيل؛ راجع [تقرير الإصدار](docs/TUKTUK_V2_REPORT.md).

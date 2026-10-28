@@ -13,8 +13,7 @@ class TukTukResolver {
     companion object { val headers = mapOf("user-agent" to "Mozilla/5.0") }
     private val mapper = jacksonObjectMapper()
     suspend fun resolve(data: String, subtitle: (SubtitleFile)->Unit, callback: (ExtractorLink)->Unit): Boolean {
-        val pageUrl=TukTukParser.safeUrl(data) ?: return false
-        if(URI(pageUrl).host!="tuktukcinemas.com") return false
+        val pageUrl=TukTukParser.contentUrl(data) ?: throw ErrorLoadingException("توك توك v2: رابط تشغيل غير صالح")
         val response=app.get(pageUrl,headers=headers,timeout=15)
         if(response.code !in 200..299) throw ErrorLoadingException("توك توك: صفحة التشغيل أعادت HTTP ${response.code}")
         val sources=TukTukParser.sources(Jsoup.parse(response.text,response.url))

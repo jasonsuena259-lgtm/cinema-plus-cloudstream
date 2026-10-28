@@ -1,4 +1,4 @@
-version = 1
+version = 2
 cloudstream {
     description = "توك توك سينما — أفلام ومسلسلات"
     authors = listOf("Cinema Plus community")

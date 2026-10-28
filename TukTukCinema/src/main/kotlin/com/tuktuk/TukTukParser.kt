@@ -13,12 +13,22 @@ data class TukSource(val name: String, val url: String, val quality: Int = 0)
 object TukTukParser {
     const val BASE = "https://tuktukcinemas.com"
     fun safeUrl(raw: String, base: String = BASE): String? = base.toHttpUrlOrNull()?.resolve(raw)?.takeIf { it.scheme in listOf("http", "https") }?.toString()
+    fun contentUrl(raw: String): String? {
+        var value=raw.trim().replace("&amp;", "&")
+        if (value.startsWith("https%3A",true) || value.startsWith("http%3A",true)) {
+            value=runCatching { java.net.URLDecoder.decode(value,"UTF-8") }.getOrNull() ?: return null
+        }
+        val parsed=BASE.toHttpUrlOrNull()?.resolve(value) ?: return null
+        if(parsed.host.trimEnd('.') !in setOf("tuktukcinemas.com","www.tuktukcinemas.com") || parsed.username.isNotEmpty() || parsed.password.isNotEmpty()) return null
+        if(parsed.port != 80 && parsed.port != 443) return null
+        return parsed.newBuilder().scheme("https").host("tuktukcinemas.com").port(443).build().toString()
+    }
     fun poster(element: Element): String? {
         val img = element.selectFirst("img") ?: return null
         return listOf("data-src", "src").map { img.absUrl(it) }.firstOrNull { it.startsWith("https://") || it.startsWith("http://") }
     }
     fun cards(doc: Document): List<TukItem> = doc.select(".Block--Item > a[href]").mapNotNull { a ->
-        val url = safeUrl(a.absUrl("href")) ?: return@mapNotNull null
+        val url = contentUrl(a.absUrl("href")) ?: return@mapNotNull null
         val title = a.attr("title").ifBlank { a.selectFirst(".title, h2, h3")?.text().orEmpty() }.trim()
         if (title.isBlank()) return@mapNotNull null
         TukItem(title, url, poster(a), url.contains("/series/") || Regex("(?i)-s\\d+-e\\d+").containsMatchIn(url) || title.startsWith("مسلسل") || title.startsWith("انمي"))
@@ -30,10 +40,10 @@ object TukTukParser {
     fun seasons(doc: Document): List<Pair<String, Int>> = doc.select(".allseasonss .Block--Item a[href], .SeriesPosterGrid .Block--Item a[href]").mapNotNull { a ->
         val title = a.attr("title").ifBlank { a.text() }
         val n = Regex("الموسم\\s*(\\d+)").find(title)?.groupValues?.get(1)?.toIntOrNull() ?: return@mapNotNull null
-        safeUrl(a.absUrl("href"))?.let { it to n }
+        contentUrl(a.absUrl("href"))?.let { it to n }
     }.distinctBy { it.first }
     fun episodes(doc: Document, season: Int): List<TukEpisode> = doc.select("a.SeriesEpisodeCard[href], .episodes--list--side a[href]").mapNotNull { a ->
-        val url = safeUrl(a.absUrl("href")) ?: return@mapNotNull null
+        val url = contentUrl(a.absUrl("href")) ?: return@mapNotNull null
         val match = Regex("(?i)-s(\\d+)-e(\\d+)").find(url)
         val n = match?.groupValues?.get(2)?.toIntOrNull() ?: Regex("الحلقة\\s*(\\d+)").find(a.attr("title"))?.groupValues?.get(1)?.toIntOrNull() ?: a.selectFirst("em")?.text()?.toIntOrNull() ?: return@mapNotNull null
         TukEpisode(url, match?.groupValues?.get(1)?.toIntOrNull() ?: season, n, a.attr("title").ifBlank { "الحلقة $n" }, poster(a))

@@ -35,8 +35,8 @@ class TukTukProvider : MainAPI() {
         val doc = page(url)
         return newSearchResponseList(TukTukParser.cards(doc).map(::result),doc.select("a.next.page-numbers").isNotEmpty())
     }
-    override suspend fun load(url: String): LoadResponse {
-        if (java.net.URI(url).host != "tuktukcinemas.com") throw ErrorLoadingException("توك توك: الرابط ليس من الموقع")
+    override suspend fun load(rawUrl: String): LoadResponse {
+        val url=TukTukParser.contentUrl(rawUrl) ?: throw ErrorLoadingException("توك توك v2: نطاق الرابط غير مدعوم: " + (runCatching { java.net.URI(rawUrl).host }.getOrNull() ?: "رابط غير مكتمل"))
         val doc = page(url)
         val schema = TukTukParser.schema(doc)
         val title = doc.selectFirst(".post-title, h1")?.text()?.trim()?.takeIf { it.isNotBlank() } ?: schema?.path("name")?.asText() ?: throw ErrorLoadingException("توك توك: لم يُعثر على عنوان العمل")

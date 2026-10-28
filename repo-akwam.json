@@ -3,6 +3,6 @@
   "description": "Akwam — إضافة مستقلة",
   "manifestVersion": 1,
   "pluginLists": [
-    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-akwam-v1.json"
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-akwam-v2.json"
   ]
 }

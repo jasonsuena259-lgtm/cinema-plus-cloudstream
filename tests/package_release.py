@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Publish two independently installable artifacts and validate their entry points."""
-import hashlib, json, os, shutil, zipfile
+import hashlib, json, os, shutil, zipfile, re
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
@@ -14,7 +14,8 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
 
 entries = []
-for module, version, entrypoint in [('CinemaPlus', 6, 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 1, 'com.akwam.AkwamPlugin')]:
+for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin')]:
+    version = int(re.search(r'^version = (\d+)', (root / module / 'build.gradle.kts').read_text(), re.M).group(1))
     source = root / module / 'build' / f'{module}.cs3'
     with zipfile.ZipFile(source) as archive:
         manifest = json.loads(archive.read('manifest.json'))
@@ -37,6 +38,9 @@ for module, version, entrypoint in [('CinemaPlus', 6, 'com.cinemaplus.CinemaPlus
     slug = module.lower()
     plugins = f'plugins-{slug}-v{version}.json'
     write(out / plugins, [entry])
+    if branch == "main":
+        for previous in root.glob(f"plugins-{slug}-v*.json"):
+            write(previous, [entry])
     data = dict(name=entry['name'], description=entry['description'], manifestVersion=1, pluginLists=[f'{base}/{plugins}'])
     write(out / f'repo-{slug}-v{version}.json', data)
     write(out / f'repo-{slug}.json', data)

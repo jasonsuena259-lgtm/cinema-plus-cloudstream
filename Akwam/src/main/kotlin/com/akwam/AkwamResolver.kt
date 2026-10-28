@@ -7,7 +7,8 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.ExtractorLinkType
 import com.lagradost.cloudstream3.utils.loadExtractor
 import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.extractors.helper.JwPlayerHelper
+import com.lagradost.cloudstream3.utils.newExtractorLink
+import com.lagradost.cloudstream3.ErrorLoadingException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -19,42 +20,51 @@ class AkwamResolver(private val base: String) {
     suspend fun resolve(data: String, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
         val uri = runCatching { URI(data) }.getOrNull() ?: return false
         if (uri.host != "akwam.day" || uri.scheme != "https" || !(uri.path.startsWith("/film/") || uri.path.startsWith("/episode/"))) return false
-        val detail = try { app.get(data, timeout = 15) } catch (e: Exception) { return false }
-        val watchUrl = detail.document.selectFirst("a.btn.watch[href]")?.absUrl("href") ?: return false
-        if (!watchUrl.startsWith("$base/watch/")) return false
-        val watch = try { app.get(watchUrl, referer = data, timeout = 15) } catch (e: Exception) { return false }
-        if (watch.code !in 200..299) return false
-        val keys = AkwamParser.videoParameters(watch.text) ?: return false
-        val serverTokens = watch.document.select(".btn-server[data-token]").map { it.attr("data-token") }.filter { it.isNotBlank() }.distinct()
+        // The site's public watch route shares the film/episode slug. Request it
+        // directly: playback does not require reloading the details page first.
+        val watchUrl = AkwamParser.watchUrl(data) ?: return false
+        val watch = try { app.get(watchUrl, referer = uri.toASCIIString(), timeout = 15) }
+            catch (e: CancellationException) { throw e }
+            catch (e: Exception) { throw ErrorLoadingException("أكوام v2: تعذر الاتصال بصفحة المشاهدة (${e.javaClass.simpleName}).") }
+        if (watch.code !in 200..299) throw ErrorLoadingException("أكوام v2: صفحة المشاهدة أعادت HTTP ${watch.code}.")
+        val keys = AkwamParser.videoParameters(watch.text) ?: throw ErrorLoadingException("أكوام v2: تعذر قراءة بيانات صفحة المشاهدة.")
+        val sessionCookies = watch.cookies
+        val failures = java.util.concurrent.ConcurrentLinkedQueue<String>()
+        val serverTokens = watch.document.select(".btn-server[data-token]").map { it.text().trim() to it.attr("data-token") }.filter { it.second.isNotBlank() }.distinctBy { it.second }
         val results = coroutineScope {
-            serverTokens.map { token -> async {
-                withTimeoutOrNull(18000L) {
+            serverTokens.map { (serverName, token) -> async {
+                withTimeoutOrNull(30000L) {
                     val links = mutableListOf<ExtractorLink>()
                     val subtitles = mutableListOf<SubtitleFile>()
                     try {
-                        val response = app.post("$base/watch/resolve", referer = watchUrl, cookies = watch.cookies,
+                        val response = app.post("$base/watch/resolve", referer = watchUrl, cookies = sessionCookies,
                             headers = mapOf("Accept" to "application/json", "X-CSRF-TOKEN" to keys.second, "X-Requested-With" to "XMLHttpRequest"),
                             json = mapOf("key" to keys.first, "token" to token, "human_signal" to null), timeout = 12)
-                        if (response.code !in 200..299) return@withTimeoutOrNull links to subtitles
+                        if (response.code !in 200..299) { failures.add("$serverName: HTTP ${response.code}"); return@withTimeoutOrNull links to subtitles }
                         val node = jacksonObjectMapper().readTree(response.text)
                         if (!node.path("ok").asBoolean()) return@withTimeoutOrNull links to subtitles
                         val wrapper = URI(base).resolve(node.path("url").asText()).toString()
                         if (!wrapper.startsWith("$base/m/")) return@withTimeoutOrNull links to subtitles
-                        val hostPage = app.get(wrapper, referer = watchUrl, cookies = watch.cookies, timeout = 12)
+                        val hostPage = app.get(wrapper, referer = watchUrl, cookies = sessionCookies, timeout = 12)
                         val hostUrl = hostPage.url
                         if (!hostUrl.startsWith("https://") || hostUrl.startsWith(base + "/")) return@withTimeoutOrNull links to subtitles
                         // Do not interact with CAPTCHA or protection challenges.
-                        if (Regex("(?i)recaptcha|hcaptcha|cf-turnstile").containsMatchIn(hostPage.text)) return@withTimeoutOrNull links to subtitles
+                        if (Regex("(?i)recaptcha|hcaptcha|cf-turnstile").containsMatchIn(hostPage.text)) { failures.add("$serverName: يتطلب تحققًا"); return@withTimeoutOrNull links to subtitles }
                         val hostname = runCatching { URI(hostUrl).host.orEmpty().lowercase() }.getOrDefault("")
                         if (hostname == "luluvido.com" || hostname == "fastvid.cam" || hostname == "fastved.cam") {
                             for (script in hostPage.document.select("script")) {
                                 val packed = script.data()
-                                if (!packed.contains("eval(function(p,a,c,k,e")) continue
-                                val unpacked = JsUnpacker(packed).unpack() ?: continue
-                                JwPlayerHelper.extractStreamLinks(unpacked, hostname, "https://$hostname", { links.add(it) }, { subtitles.add(it) })
+                                val unpacked = if (packed.contains("eval(function(p,a,c,k,e")) JsUnpacker(packed).unpack() ?: continue else packed
+                                for (media in AkwamParser.mediaUrls(unpacked, hostUrl)) {
+                                    links.add(newExtractorLink("Akwam", serverName, media, ExtractorLinkType.M3U8) {
+                                        referer = "https://$hostname/"
+                                    })
+                                }
                             }
                         } else loadExtractor(hostUrl, watchUrl, { subtitles.add(it) }, { links.add(it) })
-                    } catch (e: CancellationException) { throw e } catch (e: Exception) { }
+                    } catch (e: CancellationException) { throw e }
+                    catch (e: LinkageError) { failures.add("$serverName: مستخرج غير متوافق مع نسخة التطبيق (${e.javaClass.simpleName}: ${e.message})") }
+                    catch (e: Exception) { failures.add("$serverName: ${e.javaClass.simpleName}") }
                     links to subtitles
                 } ?: (emptyList<ExtractorLink>() to emptyList<SubtitleFile>())
             } }.awaitAll()
@@ -67,6 +77,7 @@ class AkwamResolver(private val base: String) {
             if (valid) { callback(link); emitted = true }
         }
         if (emitted) subtitles.distinctBy { it.url }.forEach(subtitleCallback)
+        if (!emitted) throw ErrorLoadingException("أكوام v2: لم يُتحقق من رابط فيديو صالح من ${serverTokens.size} سيرفر. " + failures.take(5).joinToString("؛ "))
         return emitted
     }
     private suspend fun validate(link: ExtractorLink): Boolean {
@@ -94,6 +105,6 @@ class AkwamResolver(private val base: String) {
             val response = app.get(link.url, referer = link.referer, headers = link.headers + mapOf("Range" to "bytes=0-1023"), timeout = 15)
             response.code in 200..299 && response.headers["content-type"]?.contains("text/html", true) != true
         }
-      } catch (e: Exception) { false }
+      } catch (e: CancellationException) { throw e } catch (e: Exception) { false }
     }
 }

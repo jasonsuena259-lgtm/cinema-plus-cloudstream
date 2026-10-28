@@ -28,6 +28,18 @@ object AkwamParser {
             Regex("""updateQuery\(\s*['\"]page['\"]\s*,\s*(\d+)\s*\)""").find(it.attr("onclick"))?.groupValues?.get(1)?.toIntOrNull() == page + 1
         }
     }
+    fun watchUrl(detailUrl: String): String? {
+        val url = detailUrl.toHttpUrlOrNull() ?: return null
+        if (url.host != "akwam.day" || url.scheme != "https" || url.pathSegments.size != 2 || url.pathSegments[0] !in listOf("film", "episode")) return null
+        return url.newBuilder().setPathSegment(0, "watch").query(null).fragment(null).build().toString()
+    }
+    fun mediaUrls(script: String, pageUrl: String): List<String> {
+        val normalized = script.replace("\\/", "/")
+        return Regex("""["']([^"'\s]+(?:\.m3u8|master\.txt)(?:\?[^"'\s]*)?)["']""")
+            .findAll(normalized).mapNotNull { match ->
+                pageUrl.toHttpUrlOrNull()?.resolve(match.groupValues[1])?.toString()
+            }.distinct().toList()
+    }
     fun videoParameters(html: String): Pair<String, String>? {
         val key = Regex("""const\s+watchResolveKey\s*=\s*"([^"]+)"""").find(html)?.groupValues?.get(1) ?: return null
         val csrf = Regex("""const\s+csrfToken\s*=\s*"([^"]+)"""").find(html)?.groupValues?.get(1) ?: return null

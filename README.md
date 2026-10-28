@@ -1,3 +1,19 @@
+# إضافة TukTuk Cinema المستقلة
+
+رابط التثبيت في CloudStream ← الإعدادات ← الإضافات ← إضافة مستودع:
+
+```text
+https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-tuktukcinema-v1.json
+```
+
+الاسم: `TukTuk Cinema | توك توك سينما`. ثبّتها مستقلة واخترها من مزوّدي المحتوى. لا تحتاج إزالة Cinema Plus أو أكوام.
+
+نجحت اختبارات حية للفهرس والتفاصيل والبحث ومصادر فيلم وحلقة. التشغيل على Android والتنزيل الكامل لم يُختبرا. بعض المستضيفين محجوبون أو غير مدعومين؛ راجع [التحليل](docs/TUKTUK_ANALYSIS.md) و[نتائج الفحص](docs/TUKTUK_TEST_REPORT.md).
+
+للبناء: `./gradlew TukTukCinema:testDebugUnitTest TukTukCinema:make`، والناتج `TukTukCinema/build/TukTukCinema.cs3`.
+
+---
+
 # Cinema Plus وأكوام — إضافتان مستقلتان لـ CloudStream
 
 كل إضافة لها ملف `.cs3` ونقطة دخول وقائمة تثبيت مستقلة. Cinema Plus v6 لا يسجل أكوام، وأكوام v2 لا يحتاج Cinema Plus.

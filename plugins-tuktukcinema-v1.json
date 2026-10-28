@@ -1,0 +1,23 @@
+[
+  {
+    "fileHash": "sha256-8c6c6512206b818d9578367618e4fd634a4b240eff5916b73f57aa3f3c50416a",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 42534,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "version": 1,
+    "internalName": "TukTukCinema",
+    "description": "TukTukCinema — إضافة مستقلة",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/TukTukCinema-v1.cs3",
+    "name": "TukTuk Cinema | توك توك سينما"
+  }
+]

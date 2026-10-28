@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish two independently installable artifacts and validate their entry points."""
+"""Publish independently installable artifacts and validate their entry points."""
 import hashlib, json, os, shutil, zipfile, re
 from pathlib import Path
 
@@ -14,15 +14,15 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
 
 entries = []
-for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin')]:
+for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin'), ('TukTukCinema', 'com.tuktuk.TukTukPlugin')]:
     version = int(re.search(r'^version = (\d+)', (root / module / 'build.gradle.kts').read_text(), re.M).group(1))
     source = root / module / 'build' / f'{module}.cs3'
     with zipfile.ZipFile(source) as archive:
         manifest = json.loads(archive.read('manifest.json'))
         assert manifest['version'] == version and manifest['pluginClassName'] == entrypoint, manifest
         dex = archive.read('classes.dex')
-        other = b'Lcom/akwam/AkwamProvider;' if module == 'CinemaPlus' else b'Lcom/cinemaplus/CinemaPlusProvider;'
-        assert other not in dex, 'Cross-provider classes in standalone plugin'
+        providers = {'CinemaPlus': b'Lcom/cinemaplus/CinemaPlusProvider;', 'Akwam': b'Lcom/akwam/AkwamProvider;', 'TukTukCinema': b'Lcom/tuktuk/TukTukProvider;'}
+        assert all(value not in dex for key, value in providers.items() if key != module), 'Cross-provider classes in standalone plugin'
     filename = f'{module}-v{version}.cs3'
     target = root / 'dist' / filename
     target.parent.mkdir(exist_ok=True)
@@ -30,10 +30,10 @@ for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('
     raw = target.read_bytes()
     entry = dict(fileHash='sha256-' + hashlib.sha256(raw).hexdigest(), apiVersion=1,
         repositoryUrl=f'https://github.com/{repo}', fileSize=len(raw), status=3,
-        language='ar', authors=['Cinema Plus community'], tvTypes=['Movie','TvSeries'],
+        language='ar', authors=['Cinema Plus community'], tvTypes=['Movie','TvSeries'] + (['Anime'] if module == 'TukTukCinema' else []),
         version=version, internalName=module, description=f'{module} — إضافة مستقلة',
         url=f'{base}/' + ('' if branch == 'builds' else 'dist/') + filename,
-        name='Cinema Plus' if module == 'CinemaPlus' else 'Akwam | أكوام')
+        name={'CinemaPlus':'Cinema Plus', 'Akwam':'Akwam | أكوام', 'TukTukCinema':'TukTuk Cinema | توك توك سينما'}[module])
     entries.append(entry)
     slug = module.lower()
     plugins = f'plugins-{slug}-v{version}.json'

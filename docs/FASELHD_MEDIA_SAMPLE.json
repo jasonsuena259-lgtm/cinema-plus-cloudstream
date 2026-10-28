@@ -1,0 +1,68 @@
+{
+  "utc": "2026-10-28T17:50:04.604351+00:00",
+  "source": "Savefiles / user-provided signed HLS",
+  "extraction_from_website": "NOT_TESTED",
+  "manifest_http": 200,
+  "manifest_type": "media",
+  "segment_count": 325,
+  "segment_samples": [
+    {
+      "http": 200,
+      "bytes": 2015736,
+      "content_type": "video/MP2T"
+    },
+    {
+      "http": 200,
+      "bytes": 1408120,
+      "content_type": "video/MP2T"
+    }
+  ],
+  "probe": {
+    "programs": [
+      {
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1280,
+            "height": 532
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio"
+          },
+          {
+            "codec_name": "timed_id3",
+            "codec_type": "data"
+          }
+        ]
+      }
+    ],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1280,
+        "height": 532
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio"
+      },
+      {
+        "codec_name": "timed_id3",
+        "codec_type": "data"
+      }
+    ],
+    "format": {
+      "duration": "20.033333"
+    }
+  },
+  "sample_remux": "PASS",
+  "sample_decode": "PASS",
+  "download_bytes": 3325995,
+  "download_sha256": "ac0f2e7e284d636ce66750ac0491bd0d67a2efe2318258121b32a5bd057b36c9",
+  "android_cloudstream_playback": "NOT_TESTED",
+  "cloudstream_download": "NOT_TESTED"
+}

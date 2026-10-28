@@ -1,0 +1,38 @@
+[
+  {
+    "url": "https://faselhd.info/",
+    "utc": "2026-10-28T17:30:53.394047+00:00",
+    "http": 403,
+    "final_url": "https://faselhd.info/",
+    "title": "Attention Required! | Cloudflare",
+    "protection_page": true,
+    "access": "BLOCKED"
+  },
+  {
+    "url": "https://www.faselhd.info/",
+    "utc": "2026-10-28T17:30:53.394865+00:00",
+    "http": 403,
+    "final_url": "https://www.faselhd.info/",
+    "title": "Attention Required! | Cloudflare",
+    "protection_page": true,
+    "access": "BLOCKED"
+  },
+  {
+    "url": "https://faselhd.info/movies",
+    "utc": "2026-10-28T17:30:53.396559+00:00",
+    "http": 403,
+    "final_url": "https://faselhd.info/movies",
+    "title": "Attention Required! | Cloudflare",
+    "protection_page": true,
+    "access": "BLOCKED"
+  },
+  {
+    "url": "https://faselhd.info/series",
+    "utc": "2026-10-28T17:30:53.618565+00:00",
+    "http": 403,
+    "final_url": "https://faselhd.info/series",
+    "title": "Attention Required! | Cloudflare",
+    "protection_page": true,
+    "access": "BLOCKED"
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "initial_home": {
+    "status": 200,
+    "title": "فاصل اعلاني faselhd | مشاهدة افلام و مسلسلات اون لاين",
+    "dom_sha256": "8dc4eeb1a09b4c9c76b29326a1cac008bdeb7ef9093f4da1eb200a367abc869c",
+    "card_count": 78,
+    "unique_cards": 62
+  },
+  "subsequent_visits": {
+    "home": 403,
+    "film": 403,
+    "episode": 403,
+    "watch": 403
+  },
+  "retry_same_browser_setup": {
+    "home": 403,
+    "film": 403,
+    "episode": 403,
+    "watch": 403
+  },
+  "note": "No stealth settings, CAPTCHA interaction, or TLS verification bypass used. HTTP 200 does not establish playback."
+}

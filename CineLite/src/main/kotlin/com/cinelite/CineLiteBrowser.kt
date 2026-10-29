@@ -257,6 +257,7 @@ class CineLiteBrowser(private val context: Context) {
             val found = linkedMapOf<String, LiteEpisode>()
             var seasonOptions = listOf<Int>()
             var seasonIndex = 0
+            var seasonReadRetries = 0
             fun finish() {
                 handler.post {
                     if (!done) {
@@ -316,6 +317,16 @@ class CineLiteBrowser(private val context: Context) {
                                 found[url] = LiteEpisode(episodeName, url, displayedSeason, number)
                             }
                         }
+                        // A series overlay often renders its episode carousel
+                        // after the season button. Retry the same season while
+                        // content hydrates instead of falsely marking it empty.
+                        if ((parsed?.path("episodes")?.size() ?: 0) == 0
+                            && seasonReadRetries < 3 && cont.isActive) {
+                            seasonReadRetries++
+                            handler.postDelayed({ readSeason() }, 650)
+                            return@evaluateJavascript
+                        }
+                        seasonReadRetries = 0
                         seasonIndex++
                         if (seasonIndex >= seasonOptions.size || !cont.isActive) {
                             finish()

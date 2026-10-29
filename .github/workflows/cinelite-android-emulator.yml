@@ -4,6 +4,7 @@ on:
     branches: [feature/cinelite-provider]
     paths:
       - 'tests/android_cinelite_smoke.py'
+      - 'tests/android_cinelite_catalog_probe.py'
       - '.github/workflows/cinelite-android-emulator.yml'
   workflow_dispatch:
 permissions:
@@ -46,6 +47,7 @@ jobs:
             adb shell wm size 720x1280
             adb shell wm density 320
             python3 tests/android_cinelite_smoke.py
+            python3 tests/android_cinelite_catalog_probe.py
       - name: Upload screenshots and UI semantics (also on failure)
         if: always()
         uses: actions/upload-artifact@v4

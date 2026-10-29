@@ -8,6 +8,7 @@ on:
       - 'tests/assert_cinelite_live.cjs'
       - 'tests/probe_cinelite_components.cjs'
       - 'tests/probe_cinelite_episode.cjs'
+      - 'tests/probe_cinelite_visionquest.cjs'
       - 'tests/probe_cinelite_media.cjs'
       - '.github/workflows/cinelite-probe.yml'
   workflow_dispatch:
@@ -36,5 +37,6 @@ jobs:
           node tests/assert_cinelite_live.cjs
           node tests/probe_cinelite_browser.cjs
           node tests/probe_cinelite_components.cjs
+          node tests/probe_cinelite_visionquest.cjs
           node tests/probe_cinelite_episode.cjs
           node tests/probe_cinelite_media.cjs

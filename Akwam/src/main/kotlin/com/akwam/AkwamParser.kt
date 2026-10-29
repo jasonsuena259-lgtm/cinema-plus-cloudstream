@@ -118,6 +118,29 @@ object AkwamParser {
         return body.startsWith("#EXTM3U") &&
             (body.contains("#EXT-X-STREAM-INF:") || body.contains("#EXTINF:"))
     }
+    /** Real subtitle URLs may carry signed query parameters after their extension. */
+    fun subtitles(html:String,base:String):List<Pair<String,String>> {
+        val baseUrl=base.toHttpUrlOrNull()?:return emptyList()
+        return document(html,base).select("track[src],a[href]").mapNotNull { node->
+            val raw=node.attr("src").ifBlank { node.attr("href") }
+            val url=baseUrl.resolve(raw) ?:return@mapNotNull null
+            if(url.scheme!="https" || url.username.isNotBlank() ||
+                url.password.isNotBlank())return@mapNotNull null
+            val ext=url.encodedPath.lowercase()
+            if(node.normalName()!="track" &&
+                !listOf(".srt",".vtt",".ass",".ssa").any(ext::endsWith))
+                return@mapNotNull null
+            val label=node.attr("srclang").ifBlank {
+                node.attr("label").ifBlank {
+                    node.attr("hreflang").ifBlank {
+                        node.text().trim().ifBlank { "Unknown" }
+                    }
+                }
+            }
+            label to url.toString()
+        }.distinctBy { it.second }
+    }
+
     fun title(doc:Document)=doc.selectFirst("h1")?.text()?.trim()?.takeIf{it.isNotEmpty()}
     fun poster(doc:Document)=doc.selectFirst("meta[property=og:image]")?.attr("content")
         ?.let{doc.baseUri().toHttpUrlOrNull()?.resolve(it)?.toString()}

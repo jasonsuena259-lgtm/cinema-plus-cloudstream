@@ -27,7 +27,7 @@ assert.doesNotThrow(()=>new Function(actualWebViewJS), 'Invalid embedded source-
     try {
       const u = new URL(response.url());
       const ext = (u.searchParams.get('ext') || '').toLowerCase();
-      if (/\\.(m3u8|mp4)$/i.test(u.pathname) || ext === '.m3u8' || ext === 'm3u8') {
+      if (/\.(m3u8|mp4)$/i.test(u.pathname) || ext === '.m3u8' || ext === 'm3u8') {
         mediaResponses.push(response.status());
       }
     } catch (_) {}

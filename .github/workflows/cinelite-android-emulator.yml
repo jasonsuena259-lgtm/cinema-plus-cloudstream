@@ -1,0 +1,56 @@
+name: KodaStream Android emulator CineLite smoke test
+on:
+  push:
+    branches: [feature/cinelite-provider]
+    paths:
+      - 'tests/android_cinelite_smoke.py'
+      - '.github/workflows/cinelite-android-emulator.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download public KodaStream release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          gh release download v0.8.0 -R mo7AmMeD64/cloudSTREAM3 -p "cloud3-105.apk" -D /tmp
+          test -s /tmp/cloud3-105.apk
+      - name: Enable KVM hardware acceleration
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm
+            ls -l /dev/kvm
+          else
+            echo 'No /dev/kvm; emulator may be too slow' >&2
+          fi
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          target: google_apis
+          profile: pixel_3a
+          ram-size: 2048M
+          heap-size: 384M
+          disk-size: 4096M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim -no-snapshot -camera-back none -camera-front none
+          emulator-boot-timeout: 700
+          disable-animations: true
+          script: |
+            adb install -r /tmp/cloud3-105.apk
+            adb shell wm size 720x1280
+            adb shell wm density 320
+            python3 tests/android_cinelite_smoke.py
+      - name: Upload screenshots and UI semantics (also on failure)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kodastream-android-emulator-cinelite
+          path: artifacts/android-cinelite
+          if-no-files-found: warn
+          retention-days: 5

@@ -48,26 +48,26 @@ jobs:
           with zipfile.ZipFile(source) as z:
               m=json.loads(z.read('manifest.json'))
               assert m['pluginClassName']=='com.dexter.DexterPlugin',m
-              assert m['version']==2,m
+              assert m['version']==3,m
           dest=pathlib.Path('dist/dexter-preview')
           dest.mkdir(parents=True,exist_ok=True)
-          artifact=dest/'Dexter-v2.cs3'
+          artifact=dest/'Dexter-v3.cs3'
           shutil.copyfile(source,artifact)
           data=artifact.read_bytes()
           prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/dexter-preview/'
           plugin={'name':'Dexter.pw (experimental)','internalName':'Dexter',
-              'version':2,'fileSize':len(data),
+              'version':3,'fileSize':len(data),
               'fileHash':'sha256-'+hashlib.sha256(data).hexdigest(),
               'apiVersion':1,'repositoryUrl':'https://github.com/'+os.environ['GITHUB_REPOSITORY'],
               'url':prefix+artifact.name,'status':3,'language':'en',
               'authors':['Cinema Plus community'],'tvTypes':['Movie','TvSeries','Anime'],
-              'description':'Dexter v2 API-backed movie/TV sources and actual HLS qualities; Android playback unverified.'}
+              'description':'Dexter v3: API playback, independent metadata posters and real Arabic subtitles; Cloud3 test pending.'}
           repo={'name':'Dexter.pw (experimental)','manifestVersion':1,
               'description':'Independent Dexter experimental CloudStream provider',
               'pluginLists':[prefix+'plugins.json']}
           (dest/'plugins.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
           (dest/'repo.json').write_text(json.dumps(repo,ensure_ascii=False,indent=2)+'\n')
-          print('Dexter v2 package verified',len(data),'bytes')
+          print('Dexter v3 package verified',len(data),'bytes')
           PY
       - name: Publish without modifying Akwam or CineLite
         uses: peaceiris/actions-gh-pages@v4

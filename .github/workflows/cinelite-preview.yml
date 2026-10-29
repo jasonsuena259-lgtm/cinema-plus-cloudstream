@@ -1,0 +1,96 @@
+name: Publish CineLite experimental repository
+on:
+  push:
+    branches: [feature/cinelite-provider]
+    paths:
+      - 'CineLite/**'
+      - '.github/workflows/cinelite-preview.yml'
+  workflow_dispatch:
+concurrency:
+  group: cinelite-preview-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
+      - name: Reuse verified CineLite build artifact or compile as fallback
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          mkdir -p CineLite/build downloaded
+          RUN_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=feature%2Fcinelite-provider&per_page=40" --jq '.workflow_runs[] | select(.name == "Build and publish independent providers" and .conclusion == "success") | .id' | head -n 1)
+          SHA=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq '.head_sha')
+          git fetch --no-tags --depth=1 origin "$SHA"
+          if git diff --quiet "$SHA" HEAD -- CineLite; then
+            echo "Using independently tested CI run $RUN_ID (identical CineLite source)"
+            gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" -n cinema-plus -D downloaded
+            BUILT=$(find downloaded -name 'CineLite-v7.cs3' -type f -print -quit)
+            test -n "$BUILT"
+            cp "$BUILT" CineLite/build/CineLite.cs3
+          else
+            echo "CineLite source differs from CI artifact: compiling this commit"
+            for attempt in 1 2 3; do
+              if ./gradlew CineLite:testDebugUnitTest CineLite:make; then break; fi
+              if [ "$attempt" -eq 3 ]; then exit 1; fi
+              sleep 10
+            done
+          fi
+          test -s CineLite/build/CineLite.cs3
+      - name: Assemble standalone experimental repository
+        env:
+          PUBLISH_BRANCH: cinelite-preview
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, shutil, zipfile
+          base=pathlib.Path('.')
+          package=base/'CineLite/build/CineLite.cs3'
+          assert package.is_file(), "No CineLite.cs3 built"
+          with zipfile.ZipFile(package) as archive:
+              manifest=json.loads(archive.read('manifest.json'))
+              assert manifest['pluginClassName']=='com.cinelite.CineLitePlugin', manifest
+              assert manifest['version']==7, manifest
+          dest=base/'dist/cinelite-preview'
+          dest.mkdir(parents=True,exist_ok=True)
+          artifact=dest/'CineLite-v7.cs3'
+          shutil.copyfile(package,artifact)
+          data=artifact.read_bytes()
+          prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/cinelite-preview/'
+          plugin={
+              'fileHash':'sha256-'+hashlib.sha256(data).hexdigest(),
+              'apiVersion':1,
+              'repositoryUrl':'https://github.com/'+os.environ['GITHUB_REPOSITORY'],
+              'fileSize':len(data),
+              'status':3,'language':'en','authors':['Cinema Plus community'],
+              'tvTypes':['Movie','TvSeries','Anime'],
+              'version':7,'internalName':'CineLite',
+              'description':'EXPERIMENTAL v7: repaired real series episodes and season parsing; retains v4 playback extraction. Server availability varies.',
+              'url':prefix+artifact.name, 'name':'CineLite (experimental)'
+          }
+          (dest/'plugins.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
+          (dest/'repo.json').write_text(json.dumps({
+              'name':'CineLite Experimental',
+              'description':'CineLite test build; playback not verified',
+              'manifestVersion':1,
+              'pluginLists':[prefix+'plugins.json']},indent=2)+'\n')
+          print('Preview repository created with verified .cs3 hash and size')
+          PY
+      - name: Publish isolated CineLite preview branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/cinelite-preview
+          publish_branch: cinelite-preview

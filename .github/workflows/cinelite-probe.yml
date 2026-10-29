@@ -1,0 +1,44 @@
+name: CineLite live DOM diagnostic
+on:
+  pull_request:
+    paths:
+      - 'CineLite/**'
+      - 'tests/probe_cinelite_browser.cjs'
+      - 'tests/probe_cinelite_anime.cjs'
+      - 'tests/assert_cinelite_live.cjs'
+      - 'tests/probe_cinelite_components.cjs'
+      - 'tests/probe_cinelite_episode.cjs'
+      - 'tests/probe_cinelite_visionquest.cjs'
+      - 'tests/audit_cinelite_tv.cjs'
+      - 'tests/probe_cinelite_media.cjs'
+      - '.github/workflows/cinelite-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated headless browser
+        run: |
+          mkdir -p /tmp/cinelite-probe
+          cd /tmp/cinelite-probe
+          npm install --no-audit --no-fund playwright@1.56.1
+          npx playwright install chromium
+      - name: Inspect rendered homepage and API routes
+        env:
+          NODE_PATH: /tmp/cinelite-probe/node_modules
+        run: |
+          node tests/probe_cinelite_anime.cjs
+          node tests/assert_cinelite_live.cjs
+          node tests/probe_cinelite_browser.cjs
+          node tests/probe_cinelite_components.cjs
+          node tests/probe_cinelite_visionquest.cjs
+          node tests/audit_cinelite_tv.cjs
+          node tests/probe_cinelite_episode.cjs
+          node tests/probe_cinelite_media.cjs

@@ -14,14 +14,14 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
 
 entries = []
-for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin'), ('TukTukCinema', 'com.tuktuk.TukTukPlugin'), ('CineWave', 'com.cinewave.CineWavePlugin'), ('MySeed', 'com.myseed.MySeedPlugin')]:
+for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin'), ('TukTukCinema', 'com.tuktuk.TukTukPlugin'), ('CineWave', 'com.cinewave.CineWavePlugin'), ('MySeed', 'com.myseed.MySeedPlugin'), ('CineLite', 'com.cinelite.CineLitePlugin')]:
     version = int(re.search(r'^version = (\d+)', (root / module / 'build.gradle.kts').read_text(), re.M).group(1))
     source = root / module / 'build' / f'{module}.cs3'
     with zipfile.ZipFile(source) as archive:
         manifest = json.loads(archive.read('manifest.json'))
         assert manifest['version'] == version and manifest['pluginClassName'] == entrypoint, manifest
         dex = archive.read('classes.dex')
-        providers = {'CinemaPlus': b'Lcom/cinemaplus/CinemaPlusProvider;', 'Akwam': b'Lcom/akwam/AkwamProvider;', 'TukTukCinema': b'Lcom/tuktuk/TukTukProvider;', 'CineWave': b'Lcom/cinewave/CineWaveProvider;', 'MySeed': b'Lcom/myseed/MySeedProvider;'}
+        providers = {'CinemaPlus': b'Lcom/cinemaplus/CinemaPlusProvider;', 'Akwam': b'Lcom/akwam/AkwamProvider;', 'TukTukCinema': b'Lcom/tuktuk/TukTukProvider;', 'CineWave': b'Lcom/cinewave/CineWaveProvider;', 'MySeed': b'Lcom/myseed/MySeedProvider;', 'CineLite': b'Lcom/cinelite/CineLiteProvider;'}
         assert all(value not in dex for key, value in providers.items() if key != module), 'Cross-provider classes in standalone plugin'
     filename = f'{module}-v{version}.cs3'
     target = root / 'dist' / filename
@@ -30,10 +30,10 @@ for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('
     raw = target.read_bytes()
     entry = dict(fileHash='sha256-' + hashlib.sha256(raw).hexdigest(), apiVersion=1,
         repositoryUrl=f'https://github.com/{repo}', fileSize=len(raw), status=3,
-        language=('en' if module == 'CineWave' else 'ar'), authors=['Cinema Plus community'], tvTypes=['Movie','TvSeries'] + (['Anime'] if module in ('TukTukCinema','MySeed') else []),
-        version=version, internalName=module, description=('CineWave — تجريبي؛ تشغيل Android غير مُثبت' if module == 'CineWave' else f'{module} — إضافة مستقلة'),
+        language=('en' if module in ('CineWave', 'CineLite') else 'ar'), authors=['Cinema Plus community'], tvTypes=['Movie','TvSeries'] + (['Anime'] if module in ('TukTukCinema','MySeed','CineLite') else []),
+        version=version, internalName=module, description=('Experimental — site/player validation still pending' if module == 'CineLite' else ('CineWave — تجريبي؛ تشغيل Android غير مُثبت' if module == 'CineWave' else f'{module} — إضافة مستقلة')),
         url=f'{base}/' + ('' if branch == 'builds' else 'dist/') + filename,
-        name={'CinemaPlus':'Cinema Plus', 'Akwam':'Akwam | أكوام', 'TukTukCinema':'TukTuk Cinema | توك توك سينما', 'CineWave':'CineWave', 'MySeed':'MySeed | ماي سيد'}[module])
+        name={'CinemaPlus':'Cinema Plus', 'Akwam':'Akwam | أكوام', 'TukTukCinema':'TukTuk Cinema | توك توك سينما', 'CineWave':'CineWave', 'MySeed':'MySeed | ماي سيد', 'CineLite':'CineLite'}[module])
     entries.append(entry)
     slug = module.lower()
     plugins = f'plugins-{slug}-v{version}.json'

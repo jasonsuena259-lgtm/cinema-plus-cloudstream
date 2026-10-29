@@ -33,21 +33,37 @@ def show(name):
         subprocess.run(["adb","exec-out","screencap","-p"],stdout=f,check=True,timeout=25)
     return view
 def exact_result_card(title):
-    """Find an actual search-result label, not the EditText containing the query."""
+    """Tap only an actual native result node, never the search EditText.
+
+    KodaStream/Compose can expose card titles through content-desc instead of
+    text, depending on the Android WebView/accessibility implementation.
+    """
     adb("shell","uiautomator","dump","/sdcard/koda.xml")
     xml_text=adb("exec-out","cat","/sdcard/koda.xml")
     root=ET.fromstring(xml_text[xml_text.index("<?xml"):])
+    normalized=" ".join(title.casefold().split())
+    matches=[]
     for node in root.iter("node"):
         a=node.attrib
-        if (a.get("text") or "").strip().casefold()!=title.casefold():
+        role=a.get("class","")
+        if "EditText" in role or a.get("enabled")=="false":
             continue
-        if "EditText" in a.get("class","") or a.get("focused")=="true":
+        labels=[a.get("text") or "",a.get("content-desc") or ""]
+        if not any(" ".join(v.casefold().split())==normalized for v in labels):
             continue
-        match=re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",a.get("bounds",""))
-        if match:
-            x1,y1,x2,y2=map(int,match.groups())
-            return (x1+x2)//2,(y1+y2)//2
-    return None
+        bounds=re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",a.get("bounds",""))
+        if bounds is None: continue
+        x1,y1,x2,y2=map(int,bounds.groups())
+        if x2<=x1 or y2<=y1: continue
+        matches.append((a.get("clickable")=="true",(x1+x2)//2,(y1+y2)//2,role))
+    # Log only safe UI role metadata and a match count, not titles from
+    # arbitrary pages, stream URL query strings, or user data.
+    print("APP_UI_RESULT_NODE_CANDIDATES",repr([
+        {"clickable":m[0],"role":m[3].split(".")[-1]} for m in matches
+    ]),flush=True)
+    if not matches:return None
+    matches.sort(key=lambda item:(item[0],item[2]),reverse=True)
+    return matches[0][1],matches[0][2]
 
 def tap(regexes):
     for regex in regexes:

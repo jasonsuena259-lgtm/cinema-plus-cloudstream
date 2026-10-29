@@ -7,6 +7,7 @@ presence of cards. Read-only navigation and real app searches only.
 import pathlib, subprocess, re, time, xml.etree.ElementTree as ET
 ROOT=pathlib.Path("artifacts/android-cinelite")
 ROOT.mkdir(parents=True,exist_ok=True)
+catalog_errors=[]
 
 def adb(*args):
     p=subprocess.run(["adb",*args],capture_output=True,text=True,timeout=45)
@@ -49,8 +50,16 @@ if tap([r"Choose source",r"CineLite"]) :
     tap([r"^CineLite$",r"CineLite"])
     time.sleep(12)
     home=show("cinelite-home")
-    if any("no real cards" in t.lower() for t,x,y in home):
-        print("APP_UI_CATALOG_FAILURE: CineLite returned no cards on Android",flush=True)
+    failures=[t for t,x,y in home if re.search("page did not render|no real cards|network error|HTTP 403",t,re.I)]
+    if failures:
+        print("APP_UI_CATALOG_FAILURE",repr(failures),flush=True)
+        catalog_errors.extend(failures)
+        # The provider logs only HTTP status, WebView error codes and
+        # annotated-card counts, never authenticated stream URLs.
+        log=adb("logcat","-d","-t","4000")
+        lines=[line for line in log.splitlines() if "CineLiteSnapshot" in line]
+        print("CINELITE_WEBVIEW_DIAGNOSTIC",repr(lines[-35:]),flush=True)
+        (ROOT/"catalog-webview-diagnostics.txt").write_text("\n".join(lines[-100:]))
 else:
     print("APP_UI_SOURCE_MISSING: source picker not accessible",flush=True)
 tap([r"^Search$",r"^بحث$"])
@@ -64,7 +73,9 @@ if candidates:
     adb("shell","input","keyevent","66")
     time.sleep(12)
     search=show("one-piece-search")
-    if any("ONE PIECE" in t.upper() for t,x,y in search):
+    if "No results" not in [t for t,x,y in search] and any(
+        t.strip().upper()=="ONE PIECE" for t,x,y in search
+    ):
         print("APP_UI_SEARCH_FOUND: ONE PIECE in actual KodaStream search results",flush=True)
         if tap([r"^ONE PIECE$"]):
             time.sleep(18)
@@ -80,3 +91,5 @@ if candidates:
 else:
     print("APP_UI_SEARCH_FIELD_MISSING",flush=True)
 print("CATALOG_PROBE_COMPLETE: do not interpret this as successful media playback",flush=True)
+if catalog_errors:
+    raise RuntimeError("CineLite native Android catalog failed to render; see safe WebView diagnostics")

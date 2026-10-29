@@ -1,6 +1,6 @@
-version = 16
+version = 17
 cloudstream {
-    description = "CineLite v16 — real AniList Anime catalogue search and Android 15 tested episode navigation"
+    description = "CineLite v17 — experimental real multi-source menu extraction for KodaStream; server playback varies by title"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

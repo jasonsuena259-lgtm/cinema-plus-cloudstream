@@ -1,6 +1,6 @@
-version = 18
+version = 19
 cloudstream {
-    description = "CineLite v18 — experimental multiple first-party source capture and query-based subtitles; stream availability varies"
+    description = "CineLite v19 — experimental real server names, longer source scan, and failed-manifest filtering"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

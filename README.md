@@ -69,3 +69,13 @@ https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/mai
 لإعادة الاختبارات المحلية: `./gradlew CineWave:testDebugUnitTest CineWave:make`.
 للاختبارات الحية أضف `CINEWAVE_LIVE_TEST=1`؛ اختبار الروابط المؤقتة يتطلب
 `CINEWAVE_LINK_CAPTURE` يشير إلى ملف خاص خارج المستودع. لا ترفع روابط موقعة أو cookies إلى Git.
+
+## MySeed — إضافة مستقلة
+رابط مستودع CloudStream:
+```text
+https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-myseed-v1.json
+```
+
+تتطلب التثبيت كإضافة مستقلة.
+التفاصيل: [تحليل الموقع](docs/MYSEED_ANALYSIS.md)، [نتائج الاختبارات](docs/MYSEED_TEST_REPORT.md).
+التشغيل على تطبيق CloudStream في نظام Android **غير مجرّب**.

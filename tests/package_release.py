@@ -14,7 +14,7 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
 
 entries = []
-for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin'), ('TukTukCinema', 'com.tuktuk.TukTukPlugin'), ('CineWave', 'com.cinewave.CineWavePlugin')]:
+for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin'), ('TukTukCinema', 'com.tuktuk.TukTukPlugin'), ('CineWave', 'com.cinewave.CineWavePlugin'), ('MySeed', 'com.myseed.MySeedPlugin')]:
     version = int(re.search(r'^version = (\d+)', (root / module / 'build.gradle.kts').read_text(), re.M).group(1))
     source = root / module / 'build' / f'{module}.cs3'
     with zipfile.ZipFile(source) as archive:
@@ -33,7 +33,7 @@ for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('
         language=('en' if module == 'CineWave' else 'ar'), authors=['Cinema Plus community'], tvTypes=['Movie','TvSeries'] + (['Anime'] if module == 'TukTukCinema' else []),
         version=version, internalName=module, description=('CineWave — تجريبي؛ تشغيل Android غير مُثبت' if module == 'CineWave' else f'{module} — إضافة مستقلة'),
         url=f'{base}/' + ('' if branch == 'builds' else 'dist/') + filename,
-        name={'CinemaPlus':'Cinema Plus', 'Akwam':'Akwam | أكوام', 'TukTukCinema':'TukTuk Cinema | توك توك سينما', 'CineWave':'CineWave'}[module])
+        name={'CinemaPlus':'Cinema Plus', 'Akwam':'Akwam | أكوام', 'TukTukCinema':'TukTuk Cinema | توك توك سينما', 'CineWave':'CineWave', 'MySeed':'MySeed'}[module])
     entries.append(entry)
     slug = module.lower()
     plugins = f'plugins-{slug}-v{version}.json'

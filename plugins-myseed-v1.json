@@ -1,0 +1,22 @@
+[
+  {
+    "fileHash": "sha256-ab1e026cc020b7a5b89f75f362d07a703734a4eb3e3b4e9ba5b6abfc2c442a2d",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 12893,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "version": 1,
+    "internalName": "MySeed",
+    "description": "MySeed — إضافة مستقلة",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/MySeed-v1.cs3",
+    "name": "MySeed"
+  }
+]

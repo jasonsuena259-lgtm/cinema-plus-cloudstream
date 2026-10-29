@@ -1,6 +1,6 @@
 [
   {
-    "fileHash": "sha256-e6263905cd92800236446261afecc4e998c676180de794b265e45f3b69d2b7fb",
+    "fileHash": "sha256-dd3ab62bd92c89489141f3bb381c61a564c9cf843e3209e678e212b6732ddd6c",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
     "fileSize": 40467,
@@ -20,7 +20,7 @@
     "name": "Cinema Plus"
   },
   {
-    "fileHash": "sha256-9f426d31b986fce989cc8b204c447f3ab6f9a94cb83b7c405cf7d2eb9bf5e89f",
+    "fileHash": "sha256-c9d513f933dea797113ba2fd47bf203c6a1d29250dc0ff1baf087f3145436c81",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
     "fileSize": 32709,
@@ -40,7 +40,7 @@
     "name": "Akwam | أكوام"
   },
   {
-    "fileHash": "sha256-2a639175fbb484aaf6a76ab7706df379619cf8e6bb1a817ef5cf2f626d7ec001",
+    "fileHash": "sha256-a0d5bbd3009719b59fb6bdcedb2e21edf0aa971974820fb73ba5ef3e57301341",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
     "fileSize": 43399,
@@ -61,7 +61,7 @@
     "name": "TukTuk Cinema | توك توك سينما"
   },
   {
-    "fileHash": "sha256-4936a0dcd7aea431f12da15d57de5cc776b1ab132c93b17140885c79240bc03e",
+    "fileHash": "sha256-af03213fac0b12d12347b91f080d545136830953be842c416180732322402ec7",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
     "fileSize": 37145,
@@ -79,5 +79,25 @@
     "description": "CineWave — تجريبي؛ تشغيل Android غير مُثبت",
     "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/CineWave-v1.cs3",
     "name": "CineWave"
+  },
+  {
+    "fileHash": "sha256-ab1e026cc020b7a5b89f75f362d07a703734a4eb3e3b4e9ba5b6abfc2c442a2d",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 12893,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "version": 1,
+    "internalName": "MySeed",
+    "description": "MySeed — إضافة مستقلة",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/MySeed-v1.cs3",
+    "name": "MySeed"
   }
 ]

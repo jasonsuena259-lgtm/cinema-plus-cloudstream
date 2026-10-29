@@ -197,13 +197,51 @@ object CineLiteParser {
         }
     }
 
+    /** A subtitle URL must point to text, never an HTML download/translation page. */
+    fun isSubtitleFile(raw: String): Boolean {
+        val parsed = raw.toHttpUrlOrNull() ?: return false
+        if (parsed.scheme != "https" || parsed.username.isNotEmpty() ||
+            parsed.password.isNotEmpty()) return false
+        val path = parsed.encodedPath.lowercase()
+        val ext = parsed.queryParameter("ext")?.lowercase()?.removePrefix(".")
+        return listOf("srt", "vtt", "ass", "ssa").any {
+            path.endsWith(".$it") || ext == it
+        }
+    }
+
+    /** Label Arabic only when actual subtitle metadata, URL or filename says so. */
+    fun subtitleLanguage(label: String, url: String): String {
+        val parsed = url.toHttpUrlOrNull()
+        val lang = parsed?.queryParameter("lang") ?: parsed?.queryParameter("language").orEmpty()
+        val file = parsed?.pathSegments?.lastOrNull().orEmpty()
+        val value = "$label $lang $file"
+        fun has(word: String): Boolean =
+            Regex("(?i)(?:^|[^\\p{L}])$word(?:[^\\p{L}]|$)").containsMatchIn(value)
+        return when {
+            has("Arabic") || has("العربية") || has("عربي") ||
+                has("ar") || has("ara") -> "Arabic / العربية"
+            has("English") || has("en") || has("eng") -> "English"
+            has("French") || has("fr") -> "French"
+            has("Spanish") || has("es") -> "Spanish"
+            label.isNotBlank() -> label.trim().take(65)
+            else -> "Subtitle"
+        }
+    }
+
+    fun subtitlePriority(label: String): Int =
+        if (label.startsWith("Arabic")) 0 else if (label == "English") 1 else 2
+
     /** Only subtitle tracks actually declared by the loaded page/playlist are emitted. */
     fun subtitleTracks(html: String, base: String = BASE): List<Pair<String, String>> =
-        doc(html, base).select("track[src][kind=subtitles],track[src][kind=captions]").mapNotNull { e ->
-            val url = absolute(e.attr("src"), base) ?: return@mapNotNull null
-            val lang = e.attr("srclang").ifBlank { e.attr("label") }.ifBlank { "Unknown" }
-            lang to url
-        }.distinctBy { it.second }
+        doc(html, base).select(
+            "track[src][kind=subtitles],track[src][kind=captions],a[href$=.srt],a[href$=.vtt],a[href$=.ass]"
+        ).mapNotNull { e ->
+            val url = absolute(e.attr("src").ifBlank { e.attr("href") }, base)
+                ?.takeIf { isSubtitleFile(it) } ?: return@mapNotNull null
+            val lang = e.attr("srclang").ifBlank { e.attr("label") }
+                .ifBlank { e.attr("hreflang") }.ifBlank { e.text() }
+            subtitleLanguage(lang, url) to url
+        }.distinctBy { it.second }.sortedBy { subtitlePriority(it.first) }
 
     fun hlsSubtitleTracks(playlist: String, base: String): List<Pair<String, String>> =
         playlist.lineSequence().filter {
@@ -219,8 +257,8 @@ object CineLiteParser {
             val name = Regex("NAME=\"([^\"]+)\"").find(line)?.groupValues?.get(1)
                 ?: Regex("LANGUAGE=\"([^\"]+)\"").find(line)?.groupValues?.get(1)
                 ?: "Unknown"
-            name to url
-        }.distinctBy { it.second }.toList()
+            subtitleLanguage(name, url) to url
+        }.distinctBy { it.second }.sortedBy { subtitlePriority(it.first) }.toList()
 
     fun sources(html: String, base: String): List<LiteSource> {
         val d = doc(html, base)

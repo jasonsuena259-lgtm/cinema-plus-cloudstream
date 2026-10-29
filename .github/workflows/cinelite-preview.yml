@@ -51,10 +51,10 @@ jobs:
           with zipfile.ZipFile(package) as archive:
               manifest=json.loads(archive.read('manifest.json'))
               assert manifest['pluginClassName']=='com.cinelite.CineLitePlugin', manifest
-              assert manifest['version']==17, manifest
+              assert manifest['version']==18, manifest
           dest=base/'dist/cinelite-preview'
           dest.mkdir(parents=True,exist_ok=True)
-          artifact=dest/'CineLite-v17.cs3'
+          artifact=dest/'CineLite-v18.cs3'
           shutil.copyfile(package,artifact)
           data=artifact.read_bytes()
           prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/cinelite-preview/'
@@ -65,8 +65,8 @@ jobs:
               'fileSize':len(data),
               'status':3,'language':'en','authors':['Cinema Plus community'],
               'tvTypes':['Movie','TvSeries','Anime'],
-              'version':17,'internalName':'CineLite',
-              'description':'EXPERIMENTAL v17: real CineLite source-menu capture, anime search and native episodes; individual servers and subtitles remain under verification.',
+              'version':18,'internalName':'CineLite',
+              'description':'EXPERIMENTAL v18: longer real source capture and subtitle URL support; individual media streams remain unverified.',
               'url':prefix+artifact.name, 'name':'CineLite (experimental)'
           }
           def write_json(path, value):
@@ -77,7 +77,7 @@ jobs:
           # remove/re-add the repo when a new .cs3 version is published.
           #
           # Previous repo-vN.json files pointed to plugins-vN.json, which kept
-          # advertising N forever (even after v17 was released). Publish every
+          # advertising N forever (after newer releases). Publish every
           # historical alias with the CURRENT metadata so Update all can
           # upgrade an existing CineLite installation in place. Old .cs3
           # packages remain on the publish branch for old cached downloads.

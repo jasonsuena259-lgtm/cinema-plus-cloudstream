@@ -19,7 +19,7 @@ class CineLiteBrowser(private val context: Context) {
     private val mapper = jacksonObjectMapper()
 
     @SuppressLint("SetJavaScriptEnabled")
-    suspend fun snapshot(url: String): String? = suspendCancellableCoroutine { cont ->
+    suspend fun snapshot(url: String, searchQuery: String? = null): String? = suspendCancellableCoroutine { cont ->
         val handler = Handler(Looper.getMainLooper())
         var webView: WebView? = null
         var done = false
@@ -54,36 +54,56 @@ class CineLiteBrowser(private val context: Context) {
                                 finish(null); return
                             }
                             handler.postDelayed({
-                                view?.evaluateJavascript(
-                                    """(function(){
-                                        for(const h of document.querySelectorAll('h3')){
-                                            const key=Object.keys(h).find(k=>k.startsWith('__reactFiber'));
-                                            let f=key?h[key]:null;
-                                            for(let i=0;f&&i<10;i++,f=f.return){
-                                                const item=f.memoizedProps&&f.memoizedProps.item;
-                                                if(item&&Number.isInteger(item.id)&&item.id>0&&
-                                                   (item.media_type==='movie'||item.media_type==='tv')){
-                                                    const card=h.closest('div.cursor-pointer');
-                                                    if(card){
-                                                        card.setAttribute('data-cinelite-id',String(item.id));
-                                                        card.setAttribute('data-cinelite-type',item.media_type);
+                                fun readDom() {
+                                    view?.evaluateJavascript(
+                                        """(function(){
+                                            for(const h of document.querySelectorAll('h3')){
+                                                const key=Object.keys(h).find(k=>k.startsWith('__reactFiber'));
+                                                let f=key?h[key]:null;
+                                                for(let i=0;f&&i<10;i++,f=f.return){
+                                                    const item=f.memoizedProps&&f.memoizedProps.item;
+                                                    if(item&&Number.isInteger(item.id)&&item.id>0&&
+                                                        (item.media_type==='movie'||item.media_type==='tv')){
+                                                        const card=h.closest('div.cursor-pointer');
+                                                        if(card){
+                                                            card.setAttribute('data-cinelite-id',String(item.id));
+                                                            card.setAttribute('data-cinelite-type',item.media_type);
+                                                        }
+                                                        break;
                                                     }
-                                                    break;
                                                 }
                                             }
-                                        }
-                                        return document.documentElement.outerHTML;
+                                            return document.documentElement.outerHTML;
+                                        })()"""
+                                    ) { raw ->
+                                        val html = runCatching { mapper.readTree(raw).asText() }.getOrNull()
+                                        finish(html?.takeIf { it.isNotBlank() })
+                                    }
+                                }
+                                if (searchQuery == null) {
+                                    readDom()
+                                } else {
+                                    val safeQuery = mapper.writeValueAsString(searchQuery)
+                                    val action = """(function(){
+                                        const input=document.querySelector('input[type="text"]');
+                                        if(!input)return false;
+                                        const setter=Object.getOwnPropertyDescriptor(
+                                            window.HTMLInputElement.prototype,'value').set;
+                                        setter.call(input,$safeQuery);
+                                        input.dispatchEvent(new Event('input',{bubbles:true}));
+                                        input.dispatchEvent(new Event('change',{bubbles:true}));
+                                        return true;
                                     })()"""
-                                ) { raw ->
-                                    val html = runCatching { mapper.readTree(raw).asText() }.getOrNull()
-                                    finish(html?.takeIf { it.isNotBlank() })
+                                    view?.evaluateJavascript(action) {
+                                        handler.postDelayed({ readDom() }, 2300)
+                                    }
                                 }
                             }, 1800)
                         }
                     }
                     loadUrl(url)
                 }
-                handler.postDelayed({ finish(null) }, 20000)
+                handler.postDelayed({ finish(null) }, 23000)
             } catch (_: Exception) { finish(null) }
         }
     }

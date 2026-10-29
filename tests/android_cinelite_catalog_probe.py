@@ -62,6 +62,7 @@ if tap([r"Choose source",r"CineLite"]) :
         (ROOT/"catalog-webview-diagnostics.txt").write_text("\n".join(lines[-100:]))
 else:
     print("APP_UI_SOURCE_MISSING: source picker not accessible",flush=True)
+    catalog_errors.append("CineLite source picker was unavailable")
 tap([r"^Search$",r"^بحث$"])
 page=show("search")
 # KodaSearch will submit only on IME search, not every keypress.
@@ -73,9 +74,9 @@ if candidates:
     adb("shell","input","keyevent","66")
     time.sleep(12)
     search=show("one-piece-search")
-    if "No results" not in [t for t,x,y in search] and any(
-        t.strip().upper()=="ONE PIECE" for t,x,y in search
-    ):
+    search_labels=[t for t,x,y in search]
+    has_no_results=any(re.search(r"No results|Nothing found|لا توجد نتائج",x,re.I) for x in search_labels)
+    if not has_no_results and any(t.strip().upper()=="ONE PIECE" for t in search_labels):
         print("APP_UI_SEARCH_FOUND: ONE PIECE in actual KodaStream search results",flush=True)
         if tap([r"^ONE PIECE$"]):
             time.sleep(18)
@@ -86,10 +87,13 @@ if candidates:
                 print("PASS: CineLite displays actual ONE PIECE episode options on Android KodaStream",flush=True)
             else:
                 print("APP_UI_EPISODES_UNVERIFIED: no episode labels visible in native details UI",flush=True)
+                catalog_errors.append("ONE PIECE opened but no episode was shown")
     else:
         print("APP_UI_SEARCH_NOT_FOUND: no ONE PIECE search card in this session",flush=True)
+        catalog_errors.append("ONE PIECE search returned no real provider result")
 else:
     print("APP_UI_SEARCH_FIELD_MISSING",flush=True)
+    catalog_errors.append("Native KodaStream search field unavailable")
 print("CATALOG_PROBE_COMPLETE: do not interpret this as successful media playback",flush=True)
 if catalog_errors:
-    raise RuntimeError("CineLite native Android catalog failed to render; see safe WebView diagnostics")
+    raise RuntimeError("CineLite real Android catalog/search/episodes not confirmed: "+"; ".join(catalog_errors))

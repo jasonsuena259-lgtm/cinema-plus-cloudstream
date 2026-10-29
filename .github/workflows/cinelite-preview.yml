@@ -69,20 +69,45 @@ jobs:
               'description':'EXPERIMENTAL v17: real CineLite source-menu capture, anime search and native episodes; individual servers and subtitles remain under verification.',
               'url':prefix+artifact.name, 'name':'CineLite (experimental)'
           }
-          (dest/'plugins.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
-          # An independent versioned manifest avoids stale CloudStream
-          # repository caches that continued to advertise v8 to the user.
-          (dest/'plugins-v17.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
-          (dest/'repo-v17.json').write_text(json.dumps({
-              'name':'CineLite v17 - Real Source Picker',
-              'description':'CineLite 17: collect first-party source selections plus verified anime catalogue.',
-              'manifestVersion':1,
-              'pluginLists':[prefix+'plugins-v17.json']},indent=2)+'\n')
-          (dest/'repo.json').write_text(json.dumps({
+          def write_json(path, value):
+              path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\\n')
+
+          # CloudStream/KodaStream associates an installed extension with the
+          # original repository URL and internalName. Do NOT force users to
+          # remove/re-add the repo when a new .cs3 version is published.
+          #
+          # Previous repo-vN.json files pointed to plugins-vN.json, which kept
+          # advertising N forever (even after v17 was released). Publish every
+          # historical alias with the CURRENT metadata so Update all can
+          # upgrade an existing CineLite installation in place. Old .cs3
+          # packages remain on the publish branch for old cached downloads.
+          write_json(dest/'plugins.json', [plugin])
+          write_json(dest/'repo.json', {
               'name':'CineLite Experimental',
-              'description':'CineLite test build; playback not verified',
+              'description':'CineLite updates from your existing repository',
               'manifestVersion':1,
-              'pluginLists':[prefix+'plugins.json']},indent=2)+'\n')
+              'pluginLists':[prefix+'plugins.json']
+          })
+          for installed_version in range(7,plugin['version']+1):
+              plugin_list=f'plugins-v{installed_version}.json'
+              repository=f'repo-v{installed_version}.json'
+              write_json(dest/plugin_list, [plugin])
+              write_json(dest/repository, {
+                  'name':f'CineLite v{installed_version} - automatic updates',
+                  'description':f'Keep this repository for CineLite v{plugin["version"]} and future updates',
+                  'manifestVersion':1,
+                  'pluginLists':[prefix+plugin_list]
+              })
+              # Simulate KodaStream's parseRepository -> parsePlugins ->
+              # updateAll matching logic for every old installed version.
+              loaded_repo=json.loads((dest/repository).read_text())
+              loaded_plugin=json.loads((dest/plugin_list).read_text())[0]
+              assert loaded_repo['pluginLists']==[prefix+plugin_list]
+              assert loaded_plugin['internalName']=='CineLite'
+              assert loaded_plugin['version']>installed_version or installed_version==plugin['version']
+              assert loaded_plugin['fileSize']==artifact.stat().st_size
+              assert loaded_plugin['url']==prefix+artifact.name
+              assert loaded_plugin['fileHash']==plugin['fileHash']
           print('Preview repository created with verified .cs3 hash and size')
           PY
       - name: Preserve historical packages for stale CloudStream caches

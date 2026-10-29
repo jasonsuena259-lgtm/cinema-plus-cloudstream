@@ -4,6 +4,7 @@ on:
     branches: [feature/akwam-provider]
     paths:
       - 'Akwam/**'
+      - 'build.gradle.kts'
       - '.github/workflows/akwam-ss-preview.yml'
   workflow_dispatch:
 concurrency:

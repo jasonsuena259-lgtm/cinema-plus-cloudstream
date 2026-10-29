@@ -11,3 +11,8 @@ Gradle 8.12، Android compileSdk 35، Java 21، 2026-10-29.
 التشغيل داخل CloudStream على Android غير مثبت: NOT_TESTED. نتائج فك الفيديو على الكمبيوتر موثقة منفصلة.
 
 SHA-256: `3f8da0acbebe6e1fdc0fd4b0704372f2df33b749e2b8b27783e12584068b5ff3`
+
+محاولة Android الأخيرة: اكتمل إقلاع API 30 بعد 327 ثانية، ثم فشل تثبيت CloudStream 4.8.0 بالرسالة `Failure calling service package: Broken pipe (32)`. لم تصل المحاولة إلى تحميل الإضافة أو تشغيل فيديو.
+
+اختبارات fixtures بعد تنسيقها: BUILD SUCCESSFUL (10 محلية ناجحة؛ 4 حية غير مفعلة في هذا التشغيل).
+تم التحقق من رابط repo العام، ثم plugins، ثم cs3 وبصمته وحجمه ونقطة دخوله: PASS.

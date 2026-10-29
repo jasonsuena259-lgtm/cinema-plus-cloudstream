@@ -30,3 +30,5 @@ Vidspeed: الاختبار المستقل متجاوز (SKIPPED) بسبب 403 ا
 البيئة بلا /dev/kvm. أُعيدت محاولة تشغيل Android API 30 دون تسريع؛ لا دليل على تشغيل الإضافة داخله. لذلك ظهور Provider والمشاهدة والتنزيل والبحث في واجهة Android جميعها NOT_TESTED.
 
 أدلة قابلة للمراجعة: native-results.json وmedia-results.json، اختبارات MySeedTest، وأداة tests/probe_myseed_media.py. لا تحتوي التقارير على روابط تشغيل مؤقتة أو كوكيز.
+
+محاولة Android الأخيرة: اكتمل إقلاع API 30 بعد 327 ثانية، ثم فشل تثبيت CloudStream 4.8.0 بالرسالة `Failure calling service package: Broken pipe (32)`. لم تصل المحاولة إلى تحميل الإضافة أو تشغيل فيديو.

@@ -1,0 +1,96 @@
+package com.cinelite
+
+import android.content.Context
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import java.net.URLEncoder
+
+/** Content must be present in CineLite's rendered DOM. No synthetic TMDB cards. */
+class CineLiteProvider(private val context: Context) : MainAPI() {
+    override var mainUrl = CineLiteParser.BASE
+    override var name = "CineLite"
+    override var lang = "en"
+    override val hasMainPage = true
+    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime)
+    // Only the root URL has been observed; category URL patterns need real-site confirmation.
+    override val mainPage = mainPageOf("/" to "CineLite")
+    private val browser = CineLiteBrowser(context)
+
+    private fun card(item: LiteCard): SearchResponse = when (item.type) {
+        "movie" -> newMovieSearchResponse(item.title, item.url) {
+            posterUrl = item.poster
+        }
+        else -> newTvSeriesSearchResponse(
+            item.title, item.url, if (item.type == "anime") TvType.Anime else TvType.TvSeries
+        ) { posterUrl = item.poster }
+    }
+
+    private suspend fun html(url: String): String =
+        browser.snapshot(url) ?: throw ErrorLoadingException("CineLite: page did not render")
+
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        // Do not claim pagination without a confirmed next-page route.
+        if (page > 1) return newHomePageResponse(request.name, emptyList(), hasNext = false)
+        val list = CineLiteParser.cards(html(mainUrl), mainUrl)
+        if (list.isEmpty()) throw ErrorLoadingException("CineLite: no real cards found in the page DOM")
+        return newHomePageResponse(request.name, list.map(::card), hasNext = false)
+    }
+
+    override suspend fun search(query: String): List<SearchResponse> {
+        if (query.isBlank()) return emptyList()
+        // This candidate URL is deliberately not treated as a verified site contract.
+        val url = mainUrl + "/search?q=" + URLEncoder.encode(query, "UTF-8")
+        val list = CineLiteParser.cards(html(url), url)
+        if (list.isEmpty()) throw ErrorLoadingException(
+            "CineLite: search route or rendered results unavailable"
+        )
+        return list.map(::card)
+    }
+
+    override suspend fun load(url: String): LoadResponse {
+        val valid = CineLiteParser.siteUrl(url)
+            ?: throw ErrorLoadingException("CineLite: invalid content URL")
+        val raw = html(valid)
+        val title = CineLiteParser.title(raw, valid)
+            ?: throw ErrorLoadingException("CineLite: no content title in rendered page")
+        val poster = CineLiteParser.poster(raw, valid)
+        val plot = CineLiteParser.description(raw)
+        val type = if (Regex("/(?:tv|shows?|series|anime)/", RegexOption.IGNORE_CASE)
+                .containsMatchIn(valid)) {
+            if (valid.contains("/anime/")) TvType.Anime else TvType.TvSeries
+        } else TvType.Movie
+        if (type == TvType.Movie) {
+            return newMovieLoadResponse(title, valid, TvType.Movie, valid) {
+                posterUrl = poster
+                this.plot = plot
+            }
+        }
+        val episodes = CineLiteParser.episodes(raw, valid)
+        if (episodes.isEmpty()) throw ErrorLoadingException(
+            "CineLite: no confirmed episode links in the rendered series page"
+        )
+        return newTvSeriesLoadResponse(title, valid, type, episodes.map {
+            newEpisode(it.url) {
+                name = it.title
+                season = it.season
+                episode = it.episode
+            }
+        }) {
+            posterUrl = poster
+            this.plot = plot
+        }
+    }
+
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val url = CineLiteParser.siteUrl(data) ?: return false
+        val rendered = html(url)
+        return CineLiteResolver(context).resolve(
+            CineLiteParser.sources(rendered, url), url, subtitleCallback, callback
+        )
+    }
+}

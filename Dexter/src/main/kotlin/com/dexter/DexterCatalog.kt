@@ -59,6 +59,38 @@ object DexterCatalog {
         if(!metas.isArray)return emptyList()
         return metas.mapNotNull { entry(it,isSeries) }.distinctBy { it.url }
     }
+    /**
+     * Search results often contain IMDb IDs only, but still have good poster
+     * images. The caller must confirm the TMDB ID through details before
+     * replacing an actual Dexter show's poster.
+     */
+    fun searchCandidates(body:String,title:String):List<Pair<String,String?>> {
+        val root=runCatching{mapper.readTree(body)}.getOrNull()?:return emptyList()
+        val metas=root.path("metas")
+        if(!metas.isArray)return emptyList()
+        val expected=normalizedTitle(title)
+        return metas.mapNotNull { node ->
+            val name=node.value("name")
+            if(normalizedTitle(name)!=expected)return@mapNotNull null
+            val id=node.value("imdb_id").ifBlank{node.value("id")}
+            if(!Regex("""tt\d{5,12}""").matches(id))return@mapNotNull null
+            val poster=node.value("poster").takeIf {
+                DexterParser.externalUrl(it,BASE)!=null
+            }
+            id to poster
+        }.distinctBy { it.first }.take(5)
+    }
+
+    fun normalizedTitle(value:String):String =
+        value.replace(Regex("""\s*\(\d{4}\)\s*$"""),"").trim().lowercase(
+            java.util.Locale.ROOT).replace(Regex("""[^a-z0-9]+"""),"")
+
+    fun metadataTmdbId(body:String):Int? {
+        val root=runCatching{mapper.readTree(body)}.getOrNull()?:return null
+        return root.path("meta").path("moviedb_id").asText()
+            .toIntOrNull()
+    }
+
     fun searchImdbIds(body:String):List<String> {
         val root=runCatching { mapper.readTree(body) }.getOrNull()
             ?:return emptyList()

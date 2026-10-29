@@ -87,9 +87,20 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
                 }
             }
             val episodes = browser.seriesEpisodes(identity.id, identity.title)
-            if (episodes.isEmpty()) throw ErrorLoadingException(
-                "CineLite: no confirmed episode list for this series"
-            )
+            // CineLite search includes some not-yet-streamable catalogue entries.
+            // Do not crash the details page or fabricate playable episode links
+            // when the website has not rendered episodes for this series.
+            if (episodes.isEmpty()) {
+                return newTvSeriesLoadResponse(
+                    identity.title, url,
+                    if (identity.type == "anime") TvType.Anime else TvType.TvSeries,
+                    emptyList()
+                ) {
+                    posterUrl = identity.poster
+                    plot = "Listed on CineLite. No episode cards were available from " +
+                        "the site at this moment. Try again when CineLite shows episodes."
+                }
+            }
             return newTvSeriesLoadResponse(
                 identity.title, url,
                 if (identity.type == "anime") TvType.Anime else TvType.TvSeries,

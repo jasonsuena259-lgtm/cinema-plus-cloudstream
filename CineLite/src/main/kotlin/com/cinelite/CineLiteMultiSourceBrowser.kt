@@ -54,7 +54,11 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
 
     /** Accepts only the documented public embed or CineLite watch pages. */
     @SuppressLint("SetJavaScriptEnabled")
-    suspend fun capture(url: String, referer: String): LiteSourceCapture =
+    suspend fun capture(
+        url: String,
+        referer: String,
+        onMedia: ((LiteMediaRequest) -> Unit)? = null
+    ): LiteSourceCapture =
         suspendCancellableCoroutine { cont ->
             val handler = Handler(Looper.getMainLooper())
             val active = AtomicReference("CineLite")
@@ -129,9 +133,14 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                     CookieManager.getInstance().getCookie(link)?.takeIf {
                                         it.isNotBlank()
                                     }?.let { headers["Cookie"] = it }
-                                    streams.putIfAbsent(link, LiteMediaRequest(
+                                    val observed = LiteMediaRequest(
                                         link, headers, emptyList(), active.get()
-                                    ))
+                                    )
+                                    if (streams.putIfAbsent(link, observed) == null) {
+                                        // Deliver a fresh signed URL during the active
+                                        // site session, not after the entire menu scan.
+                                        onMedia?.invoke(observed)
+                                    }
                                 }
                                 return null
                             }

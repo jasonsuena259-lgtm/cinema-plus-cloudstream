@@ -10,6 +10,7 @@ on:
       - 'tests/probe_cinelite_episode.cjs'
       - 'tests/probe_cinelite_visionquest.cjs'
       - 'tests/audit_cinelite_tv.cjs'
+      - 'tests/probe_cinelite_actual_player_routes.cjs'
       - 'tests/probe_cinelite_media.cjs'
       - '.github/workflows/cinelite-probe.yml'
   workflow_dispatch:
@@ -38,6 +39,7 @@ jobs:
           node tests/assert_cinelite_live.cjs
           node tests/probe_cinelite_browser.cjs
           node tests/probe_cinelite_components.cjs
+          node tests/probe_cinelite_actual_player_routes.cjs
           node tests/probe_cinelite_visionquest.cjs
           node tests/audit_cinelite_tv.cjs
           node tests/probe_cinelite_episode.cjs

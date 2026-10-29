@@ -275,12 +275,17 @@ class CineLiteBrowser(private val context: Context) {
                 if (!done && cont.isActive && seasonIndex < seasonOptions.size) {
                     val season = seasonOptions[seasonIndex]
                     val parse = """(function(){
-                        const cards=Array.from(document.querySelectorAll('div.ad-trigger-play'));
-                        const episodes=cards.map(el=>{
-                            const span=Array.from(el.querySelectorAll('span')).find(s=>/^EPISODE\s+\d+$/i.test(s.textContent.trim()));
-                            const number=span?Number(span.textContent.match(/\d+/)[0]):0;
-                            return {number:number,title:el.querySelector('h4')?.textContent?.trim()||''};
-                        }).filter(e=>e.number>0&&e.title);
+                        // The live CineLite episode cards use a React "group
+                        // cursor-pointer" div, not the old "ad-trigger-play" CSS class.
+                        // Scan only real EPISODE markers and their actual h4 titles.
+                        const episodes=[...document.querySelectorAll('span')]
+                          .filter(el=>/^EPISODE\s+\d+$/i.test(el.textContent.trim()))
+                          .map(span=>{
+                            const card=span.closest('div.group.cursor-pointer')||
+                              span.closest('div[class*="cursor-pointer"]');
+                            const number=Number(span.textContent.trim().match(/\d+/)?.[0]||0);
+                            return {number,title:card?.querySelector('h4')?.textContent?.trim()||''};
+                          }).filter(e=>e.number>0&&e.title);
                         const btn=Array.from(document.querySelectorAll('button'))
                             .find(x=>/^Season\s+\d+$/.test(x.textContent.trim()) &&
                                 !x.className.includes('w-full'));
@@ -383,7 +388,14 @@ class CineLiteBrowser(private val context: Context) {
                                                         btn.click();return true;
                                                     })()"""
                                                     v?.evaluateJavascript(openSeasons) { opened ->
-                                                        if (opened != "true") { finish(); return@evaluateJavascript }
+                                                        if (opened != "true") {
+                                                            // CineLite sometimes renders only one
+                                                            // season without a selector. Still read
+                                                            // the actual visible episode cards.
+                                                            seasonOptions = listOf(1)
+                                                            handler.postDelayed({ readSeason() }, 220)
+                                                            return@evaluateJavascript
+                                                        }
                                                         handler.postDelayed({
                                                             v?.evaluateJavascript("""(function(){
                                                                 const buttons=Array.from(document.querySelectorAll('button'));
@@ -398,8 +410,9 @@ class CineLiteBrowser(private val context: Context) {
                                                                 seasonOptions = seasons.take(35)
                                                                 // Close dropdown; the page initially displays season 1.
                                                                 v?.evaluateJavascript(openSeasons) {
-                                                                    if (seasonOptions.isEmpty()) finish()
-                                                                    else handler.postDelayed({ readSeason() }, 220)
+                                                                    if (seasonOptions.isEmpty())
+                                                                        seasonOptions = listOf(1)
+                                                                    handler.postDelayed({ readSeason() }, 220)
                                                                 }
                                                             }
                                                         }, 300)

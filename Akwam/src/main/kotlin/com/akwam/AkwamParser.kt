@@ -112,6 +112,12 @@ object AkwamParser {
         document(html,base).select("iframe[src],video[src],video source[src],source[src]")
             .mapNotNull{base.toHttpUrlOrNull()?.resolve(it.attr("src"))?.toString()}
             .filter{it.startsWith("https://")}.distinct()
+    /** Validate an HLS playlist before publishing it as a playable stream. */
+    fun isHlsManifest(text:String):Boolean {
+        val body=text.trimStart('\uFEFF',' ','\n','\r','\t')
+        return body.startsWith("#EXTM3U") &&
+            (body.contains("#EXT-X-STREAM-INF:") || body.contains("#EXTINF:"))
+    }
     fun title(doc:Document)=doc.selectFirst("h1")?.text()?.trim()?.takeIf{it.isNotEmpty()}
     fun poster(doc:Document)=doc.selectFirst("meta[property=og:image]")?.attr("content")
         ?.let{doc.baseUri().toHttpUrlOrNull()?.resolve(it)?.toString()}

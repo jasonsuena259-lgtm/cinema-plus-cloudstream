@@ -57,7 +57,12 @@ jobs:
                 print("AKWAM_WATCH_MARKUP",json.dumps({
                   "elements":[{"tag":el.name,"attrKeys":list(el.attrs.keys()),
                     "childTags":[c.name for c in el.find_all(recursive=False)[:6]]} for el in media[:5]],
-                  "playerScriptCount":len(soup.select("script[src]"))
+                  "playerScriptCount":len(soup.select("script[src]")),
+                  "sources":[{"type":el.get("type"),
+                    "hasSrc":bool(el.get("src")),"srcExtension":
+                      (urllib.parse.urlparse(el.get("src","")).path.rsplit(".",1)[-1][:8]
+                        if "." in urllib.parse.urlparse(el.get("src","")).path else None),
+                    "host":urllib.parse.urlparse(el.get("src","")).hostname} for el in soup.select("video source")[:6]]
                 }))
               has_episodes=bool(soup.select("a[href*='/episode/']"))
               # Avoid recording signed player links or download tokens in logs.

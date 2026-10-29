@@ -77,7 +77,7 @@ for i in range(5):
 capture("02-setup")
 # Open the KodaStream-native repository deep-link, not a bespoke plugin loader.
 uri="cloudstreamrepo://"+REPO
-adb("shell","am","start","-a","android.intent.action.VIEW","-d",uri,PKG,timeout=30)
+adb("shell","am","start","-a","android.intent.action.VIEW","-p",PKG,"-d",uri,timeout=30)
 time.sleep(4)
 capture("03-repository-link")
 brief()

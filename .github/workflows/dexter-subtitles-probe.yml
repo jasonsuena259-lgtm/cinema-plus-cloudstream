@@ -1,0 +1,19 @@
+name: Probe public subtitle availability
+on:
+  push:
+    branches: [feature/dexter-provider]
+    paths: ['tests/probe_dexter_subtitles.py', '.github/workflows/dexter-subtitles-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install requests
+      - run: python tests/probe_dexter_subtitles.py

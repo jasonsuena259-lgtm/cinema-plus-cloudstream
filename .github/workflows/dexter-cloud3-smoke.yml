@@ -1,0 +1,58 @@
+name: Cloud3 Dexter native install and crash smoke
+on:
+  push:
+    branches: [feature/dexter-provider]
+    paths: ['tests/android_dexter_cloud3_smoke.py', '.github/workflows/dexter-cloud3-smoke.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  install-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify published Dexter v3
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request,time
+          base='https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/dexter-preview/'
+          for i in range(30):
+              try:
+                  p=json.load(urllib.request.urlopen(base+'plugins.json',timeout=15))[0]
+                  assert p['version']==3,p
+                  assert p['url'].endswith('Dexter-v3.cs3')
+                  print('Dexter v3 published',p['fileSize']);break
+              except Exception:
+                  if i==29:raise
+                  time.sleep(12)
+          PY
+      - name: Download public cloud3 APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download v0.8.0 -R mo7AmMeD64/cloudSTREAM3 -p 'cloud3-105.apk' -D /tmp
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_5
+          ram-size: 3072M
+          heap-size: 512M
+          disk-size: 4096M
+          emulator-options: -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim -no-snapshot -camera-back none -camera-front none
+          emulator-boot-timeout: 700
+          disable-animations: true
+          script: |
+            adb install -r /tmp/cloud3-105.apk
+            adb shell wm size 720x1280
+            adb shell wm density 320
+            DEXTER_VERSION=3 python3 tests/android_dexter_cloud3_smoke.py
+      - name: Capture screenshots and Android logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dexter-cloud3-native-smoke
+          path: artifacts/android-dexter
+          if-no-files-found: warn
+          retention-days: 7

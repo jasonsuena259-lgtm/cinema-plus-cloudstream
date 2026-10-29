@@ -134,69 +134,106 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                   window.__cineliteScanStarted=true;
                                   const bridge=window.CineLiteSourceName;
                                   const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
-                                  const visible=e=>e.getClientRects().length>0;
-                                  const text=e=>(e.textContent||'').trim().replace(/\s+/g,' ').slice(0,65);
-                                  const eligible=e=>{
-                                    const t=text(e);
-                                    return visible(e)&&t.length>1&&t.length<52&&
-                                      !/^(exit|cast|play|pause|auto|10|settings|audio & subs|subtitles)$/i.test(t);
-                                  };
-                                  function harvestSubs(){
-                                    [...document.querySelectorAll('track[src],a[href],a[data-href]')]
-                                      .forEach(el=>{
-                                        const raw=el.src||el.href||el.getAttribute('data-href');
-                                        if(!raw)return;
-                                        try{
-                                          const u=new URL(raw,location.href);
-                                          if(u.protocol==='https:'&&
-                                           (/\.(srt|vtt|ass|ssa)$/i.test(u.pathname) ||
-                                            (u.hostname.endsWith('subtitlecat.com')&&u.pathname.startsWith('/subs/')))){
-                                            window.CineLiteSubtitles?.collect(text(el),u.href);
-                                          }
-                                        }catch(e){}
-                                      });
-                                  }
-                                  async function walk(){
-                                    harvestSubs();
-                                    const open=[...document.querySelectorAll('button,[role=button]')]
-                                      .filter(eligible).find(e=>/^(clove|reyna|chamber|neon)|sources|servers|agents/i.test(text(e)));
-                                    if(open)open.click();
-                                    await wait(280);
-                                    harvestSubs();
-                                    const candidates=[...document.querySelectorAll('[role=option],button,[role=menuitem],[class*=cursor-pointer]')]
-                                      .filter(eligible).filter(e=>{
-                                        const t=text(e);
-                                        return /^(clove|reyna|chamber|neon|vault|viper|server|source)/i.test(t) ||
-                                          /\b(?:sub|dub|server|source)\b/i.test(t) ||
-                                          e.matches('[role=option],[role=menuitem]');
-                                      });
-                                    const seen=new Set(), options=[];
-                                    for(const e of candidates){
-                                      const t=text(e);
-                                      if(!seen.has(t.toLowerCase())){
-                                        seen.add(t.toLowerCase());options.push(t);
-                                      }
+                                  const label=e=>(e?.textContent||'').replace(/\s+/g,' ').trim();
+                                  const visible=e=>!!e&&e.getClientRects().length>0;
+                                  const click=e=>{if(e&&visible(e)){e.click();return true;}return false;};
+                                  const skip=/^(?:exit|cast|play|pause|auto|10|settings|audio & subs|subtitles|stream sources|anime servers|movie servers|tv servers|6 agents|download|close|sub|dub)$/i;
+                                  function getPanel(){
+                                    const heads=[...document.querySelectorAll('h1,h2,h3,h4,div,span,p')]
+                                      .filter(e=>visible(e)&&e.children.length<3&&
+                                        /^(stream sources|video servers|select server)$/i.test(label(e)));
+                                    for(const h of heads){
+                                      const panel=h.closest('[role=dialog]')||
+                                        h.closest('[class*=fixed]')||h.closest('[class*=absolute]');
+                                      if(panel&&panel.querySelectorAll('button,[role=button],[class*=cursor-pointer]').length>2)
+                                        return panel;
                                     }
-                                    for(const label of options.slice(0,9)){
-                                      const el=[...document.querySelectorAll('button,[role=option],[role=menuitem],[class*=cursor-pointer]')]
-                                        .find(e=>visible(e)&&text(e)===label);
-                                      if(!el)continue;
-                                      bridge?.select(label);
-                                      el.click();
-                                      document.querySelectorAll('video').forEach(v=>{v.muted=true;v.play().catch(()=>{});});
-                                      await wait(530);
-                                      harvestSubs();
-                                      const reopen=[...document.querySelectorAll('button')]
-                                        .find(e=>visible(e)&&text(e)===label);
-                                      if(reopen)reopen.click();
-                                      await wait(110);
-                                    }
-                                    const captions=[...document.querySelectorAll('button')]
-                                      .find(e=>/audio\s*&\s*subs|subtitles|captions/i.test(text(e)));
-                                    if(captions){captions.click();await wait(200);harvestSubs();}
-                                    document.querySelectorAll('video').forEach(v=>{v.muted=true;v.play().catch(()=>{});});
+                                    return null;
                                   }
-                                  walk().catch(()=>{});
+                                  function trigger(){
+                                    const candidates=[...document.querySelectorAll('button,[role=button]')]
+                                      .filter(visible).filter(e=>
+                                        /^(clove|reyna|chamber|neon|viper|vault)|sources|servers|agents/i.test(label(e))||
+                                        /server|source/i.test(e.getAttribute('aria-label')||''));
+                                    // Footer switcher is normally last, not the header label.
+                                    return candidates[candidates.length-1];
+                                  }
+                                  async function openMenu(){
+                                    let panel=getPanel();
+                                    if(panel)return panel;
+                                    if(!click(trigger()))return null;
+                                    await wait(250);
+                                    return getPanel();
+                                  }
+                                  function sourceRows(panel){
+                                    if(!panel)return [];
+                                    const all=[...panel.querySelectorAll('button,[role=option],[role=menuitem],[role=button],[class*=cursor-pointer]')]
+                                      .filter(visible);
+                                    const rows=[];
+                                    const seen=new Set();
+                                    for(const el of all){
+                                      let t=label(el);
+                                      // Source rows can contain a badge following the name.
+                                      t=t.replace(/\s+(SUB|DUB)(?:\s+SUB|\s+DUB)?$/i,'').trim();
+                                      if(t.length<2||t.length>58||skip.test(t)||
+                                        /\b(?:agents available|stream sources|servers|network)\b/i.test(t))continue;
+                                      // Prefer the deepest clickable item, not a parent list.
+                                      if([...el.querySelectorAll('button,[role=option],[role=button],[class*=cursor-pointer]')]
+                                        .some(child=>visible(child)&&label(child)===label(el)))continue;
+                                      const key=t.toLowerCase();
+                                      if(!seen.has(key)){seen.add(key);rows.push({name:t,element:el});}
+                                    }
+                                    return rows;
+                                  }
+                                  function harvestSubtitles(){
+                                    [...document.querySelectorAll('track[src],a[href],[data-href]')].forEach(el=>{
+                                      const raw=el.src||el.href||el.getAttribute('data-href');
+                                      if(!raw)return;
+                                      try{
+                                        const url=new URL(raw,location.href);
+                                        if(url.protocol==='https:'&&
+                                           (/\.(srt|vtt|ass|ssa)$/i.test(url.pathname)||
+                                            (url.hostname.endsWith('subtitlecat.com')&&url.pathname.startsWith('/subs/')))){
+                                          window.CineLiteSubtitles?.collect(label(el).slice(0,60),url.href);
+                                        }
+                                      }catch(e){}
+                                    });
+                                  }
+                                  async function go(){
+                                    // Allow React to hydrate the menu after DOM load.
+                                    await wait(350);
+                                    harvestSubtitles();
+                                    document.querySelectorAll('video').forEach(v=>{
+                                      v.muted=true;v.play().catch(()=>{});
+                                    });
+                                    let panel=null;
+                                    for(let i=0;i<8&&!panel;i++){
+                                      panel=await openMenu();
+                                      if(!panel)await wait(260);
+                                    }
+                                    if(!panel)return;
+                                    const names=sourceRows(panel).map(x=>x.name).slice(0,18);
+                                    // The list is taken from the site's DOM; do not create servers.
+                                    const played=new Set();
+                                    for(const name of names){
+                                      panel=await openMenu();
+                                      if(!panel)break;
+                                      const entry=sourceRows(panel).find(x=>x.name===name);
+                                      if(!entry||played.has(name))continue;
+                                      played.add(name);
+                                      bridge?.select(name);
+                                      click(entry.element);
+                                      await wait(450);
+                                      document.querySelectorAll('video').forEach(v=>{
+                                        v.muted=true;v.play().catch(()=>{});
+                                      });
+                                      harvestSubtitles();
+                                    }
+                                    const captions=[...document.querySelectorAll('button,[role=button]')]
+                                      .find(e=>visible(e)&&/audio\s*&\s*subs|subtitles|captions/i.test(label(e)));
+                                    if(captions){captions.click();await wait(220);harvestSubtitles();}
+                                  }
+                                  go().catch(()=>{});
                                 })()"""
                                 v.evaluateJavascript(js, null)
                             }

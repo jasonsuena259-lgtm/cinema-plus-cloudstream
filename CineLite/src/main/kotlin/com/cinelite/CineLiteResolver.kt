@@ -107,7 +107,25 @@ class CineLiteResolver(private val context: Context) {
                     } catch (_: LinkageError) {
                     }
                     var valid = false
-                    for (link in found) if (add(link)) valid = true
+                    for (link in found) {
+                        // Generic CloudStream extractors can also return an
+                        // audio-only HLS rendition. Recheck video media, not
+                        // just the #EXTM3U signature, before publishing it.
+                        if (link.type == ExtractorLinkType.M3U8) {
+                            val headers = link.headers.toMutableMap()
+                            if (link.referer.isNotBlank() &&
+                                headers.keys.none { it.equals("Referer", true) })
+                                headers["Referer"] = link.referer
+                            val tracks = verifyObserved(LiteMediaRequest(link.url, headers))
+                                ?: continue
+                            if (add(link, capturedInPlayer = true)) {
+                                valid = true
+                                tracks.forEach { (lang, uri) ->
+                                    subtitleQueue += SubtitleFile(lang, uri)
+                                }
+                            }
+                        } else if (add(link)) valid = true
+                    }
                     // Capture all other real first-party server selections even
                     // when the generic extractor already returned one link.
                     // Finding one link must not suppress the rest of the menu.

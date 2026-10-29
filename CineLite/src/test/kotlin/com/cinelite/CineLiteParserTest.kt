@@ -35,6 +35,17 @@ class CineLiteParserTest {
         assertNull(CineLiteParser.embedEpisode(1416, 1, 0))
     }
 
+    @Test fun reactCardsUseRealTmdbPostersInsteadOfBrokenSitePaths() {
+        val html = """
+            <div data-cinelite-id="21" data-cinelite-type="anime">
+                <h3>ONE PIECE</h3><img src="/t/p/w500/real.jpg">
+            </div>
+        """.trimIndent()
+        val card = CineLiteParser.cards(html).single()
+        assertEquals("https://image.tmdb.org/t/p/w500/real.jpg", card.poster)
+        assertEquals("anime", CineLiteParser.identity(card.url)?.type)
+    }
+
     @Test fun onlyRealAnchoredCards() {
         val html = """
           <a href="/movie/550"><img data-src="https://image.tmdb.org/t/p/w500/test.jpg" alt="Fight Club"><h3>Fight Club</h3></a>

@@ -1,0 +1,23 @@
+[
+  {
+    "fileHash": "sha256-db978c3e983d4b3b4f769c06dd1d5e7e54e2da3080348b5e807cabf1b043ba6a",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 84265,
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "version": 20,
+    "internalName": "CineLite",
+    "description": "EXPERIMENTAL v20: prefer real proxy HLS master over audio-only tracks, retain up to 64 observed requests; individual servers unverified.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v20.cs3",
+    "name": "CineLite (experimental)"
+  }
+]

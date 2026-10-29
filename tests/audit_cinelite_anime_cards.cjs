@@ -31,6 +31,36 @@ const {chromium}=require("playwright");
       return {title:document.title,headings:[...document.querySelectorAll("h1,h2,h3,h4")].slice(0,25).map(x=>({tag:x.tagName,title:x.textContent.trim().slice(0,50)})),counts:{h3:document.querySelectorAll("h3").length,h4:document.querySelectorAll("h4").length,slider:document.querySelectorAll(".slider-track h3").length,cursor:document.querySelectorAll(".cursor-pointer").length},unique:unique.slice(0,18),uniqueCount:unique.length,body:document.body.innerText.slice(0,320)};
      });
      console.log("ANIME_RENDER_AUDIT "+JSON.stringify({path,elapsed:pause,data}));
+     if(path==="/anime"&&pause===2200){
+       const internals=await page.evaluate(()=>{
+         const title=[...document.querySelectorAll('h3')].find(h=>/Cyberpunk|ONE PIECE/i.test(h.textContent||''));
+         const card=title?.closest('div.cursor-pointer');
+         const inspected=[];
+         for(const [elementName,e] of [['h3',title],['card',card],['parent',card?.parentElement]]){
+           if(!e)continue;
+           const k=Object.keys(e).find(key=>key.startsWith('__reactFiber'));
+           let f=k?e[k]:null;
+           const traces=[];
+           for(let depth=0;f&&depth<16;depth++,f=f.return){
+             const p=f.memoizedProps;
+             const ks=p&&typeof p==='object'?Object.keys(p).slice(0,16):[];
+             const nested=[];
+             for(const key of ks){
+               const v=p[key];
+               if(v&&typeof v==='object'&&!Array.isArray(v)){
+                 const fields=Object.keys(v).slice(0,18);
+                 const id=Number.isInteger(v.id)?v.id:undefined;
+                 nested.push({key,fields,id,media_type:typeof v.media_type==='string'?v.media_type:undefined});
+               }
+             }
+             traces.push({depth,props:ks,nested:nested.slice(0,5)});
+           }
+           inspected.push({elementName,hasFiber:!!k,html:e.outerHTML.slice(0,900),traces});
+         }
+         return inspected;
+       });
+       console.log('ANIME_FIBER_STRUCTURE '+JSON.stringify(internals));
+     }
     }
    }catch(e){console.log("ANIME_RENDER_ERROR "+JSON.stringify({path,error:e.message.slice(0,130)}))}
    finally{await page.close();}

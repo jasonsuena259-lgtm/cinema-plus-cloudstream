@@ -35,10 +35,18 @@ object AkwamParser {
                 Regex("""^/series/\d+(?:/|$)""").containsMatchIn(path)->true
                 else->continue
             }
-            val heading=a.selectFirst("h3,h4")?:a.parent()?.selectFirst("h3,h4")
-            val title=(heading?.text()?:a.text()).trim()
+            // LIVE Akwam.ss catalogue: <div class=entry-box> contains
+            // a.box image, a.icn.play CTA and h3.entry-title > a.text-white.
+            // Read only the title anchor; join its poster from entry-box.
+            val box=a.closest(".entry-box")
+            val titleLink=a.parent()?.hasClass("entry-title")==true ||
+                a.hasClass("text-white")&&a.parent()?.classNames()?.contains("entry-title")==true
+            val heading=a.selectFirst("h3,h4")?:a.parent()?.takeIf{
+                it.hasClass("entry-title")
+            }
+            val title=(heading?.text()?:if(titleLink)a.text() else "").trim()
             if(title.length !in 2..150||title in setOf("مشاهدة","شاهد الآن","الحلقات"))continue
-            val pic=image(a)?:a.parent()?.let(::image)
+            val pic=box?.let(::image)?:image(a)?:a.parent()?.let(::image)
             out.putIfAbsent(url,AkwamItem(title,url,pic,series))
         }
         return out.values.toList()

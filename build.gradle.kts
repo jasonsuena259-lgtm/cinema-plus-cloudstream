@@ -17,7 +17,7 @@ buildscript {
         // Cloudstream gradle plugin which makes everything work and builds plugins
         // Use official CloudStream template coordinate. CI tries a
         // cached offline build first when JitPack is temporarily unavailable.
-        classpath("com.github.recloudstream:gradle:-SNAPSHOT")
+        classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.0")
     }
 }

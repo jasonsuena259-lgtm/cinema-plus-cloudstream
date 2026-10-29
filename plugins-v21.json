@@ -1,0 +1,23 @@
+[
+  {
+    "fileHash": "sha256-2756026039156a19fe6aecbb7d6ab1a1b478c74b797d2d2b182447de5a5c25e6",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 85141,
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "version": 21,
+    "internalName": "CineLite",
+    "description": "EXPERIMENTAL v21: retry TV search card hydration and read verified real episode buttons, without false unreleased titles; media servers unverified.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v21.cs3",
+    "name": "CineLite (experimental)"
+  }
+]

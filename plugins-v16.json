@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-db978c3e983d4b3b4f769c06dd1d5e7e54e2da3080348b5e807cabf1b043ba6a",
+    "fileHash": "sha256-2756026039156a19fe6aecbb7d6ab1a1b478c74b797d2d2b182447de5a5c25e6",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 84265,
+    "fileSize": 85141,
     "status": 3,
     "language": "en",
     "authors": [
@@ -14,10 +14,10 @@
       "TvSeries",
       "Anime"
     ],
-    "version": 20,
+    "version": 21,
     "internalName": "CineLite",
-    "description": "EXPERIMENTAL v20: prefer real proxy HLS master over audio-only tracks, retain up to 64 observed requests; individual servers unverified.",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v20.cs3",
+    "description": "EXPERIMENTAL v21: retry TV search card hydration and read verified real episode buttons, without false unreleased titles; media servers unverified.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v21.cs3",
     "name": "CineLite (experimental)"
   }
 ]

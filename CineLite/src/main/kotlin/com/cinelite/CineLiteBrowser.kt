@@ -193,7 +193,7 @@ class CineLiteBrowser(private val context: Context) {
                                             try {
                                                 const u=new URL(x,location.href);
                                                 return u.protocol==='https:' &&
-                                                  /\\.(srt|vtt|ass|ssa)$/i.test(u.pathname);
+                                                  /\.(srt|vtt|ass|ssa)$/i.test(u.pathname);
                                             }catch(e){return false;}
                                         }).slice(0,40));
                                 })()""") { raw ->

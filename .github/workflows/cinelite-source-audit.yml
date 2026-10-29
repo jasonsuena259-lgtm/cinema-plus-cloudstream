@@ -14,6 +14,7 @@ on:
       - 'tests/audit_cinelite_subtitles.cjs'
       - 'tests/probe_cinelite_arabic_subtitles.cjs'
       - 'tests/probe_cinelite_playback_health.cjs'
+      - 'tests/probe_cinelite_public_watch_routes.cjs'
       - '.github/workflows/cinelite-source-audit.yml'
   workflow_dispatch:
 permissions:
@@ -47,3 +48,4 @@ jobs:
           node tests/audit_cinelite_subtitles.cjs
           node tests/probe_cinelite_arabic_subtitles.cjs
           node tests/probe_cinelite_playback_health.cjs
+          node tests/probe_cinelite_public_watch_routes.cjs

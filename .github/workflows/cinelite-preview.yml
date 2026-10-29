@@ -88,9 +88,28 @@ jobs:
               'pluginLists':[prefix+'plugins.json']},indent=2)+'\n')
           print('Preview repository created with verified .cs3 hash and size')
           PY
+      - name: Preserve historical packages for stale CloudStream caches
+        run: |
+          set -e
+          # CloudStream can retain an older plugins.json for a while. Keep
+          # matching versioned packages online instead of returning 404.
+          git fetch --no-tags --depth=20 origin cinelite-preview || true
+          for item in \
+            'b97518640f2e598bea928de8c82c6d67e33a9e1a:CineLite-v8.cs3' \
+            '169d108f1a6627d1889df2b13811616cd4f36b66:CineLite-v7.cs3'; do
+            revision="${item%%:*}"
+            filename="${item#*:}"
+            if git cat-file -e "${revision}:${filename}" 2>/dev/null; then
+              git show "${revision}:${filename}" > "dist/cinelite-preview/${filename}"
+              echo "Kept historical artifact: ${filename}"
+            else
+              echo "No historical artifact available for ${filename}"
+            fi
+          done
       - name: Publish isolated CineLite preview branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist/cinelite-preview
           publish_branch: cinelite-preview
+          keep_files: true

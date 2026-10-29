@@ -96,6 +96,7 @@ class DexterResolver(private val base:String) {
         val apiUrl=DexterApi.endpoint(detail)
         val apiJson=apiUrl?.let { page(it,detail) }
         if(apiJson!=null) {
+            var masterProbes=0
             val fromApi=DexterApi.parse(apiJson)
             for(sub in fromApi.subtitles) {
                 if(allowed(sub.url) && subtitles.add(sub.url))
@@ -120,13 +121,20 @@ class DexterResolver(private val base:String) {
                         // candidate. Don't hide it if CDN probe fails on mobile.
                         emitApi(source.url,label,source.quality,
                             ExtractorLinkType.M3U8,base)
-                        val playlist=page(source.url,base)
-                        if(playlist!=null)
-                            DexterApi.variants(playlist,source.url).forEach { variant ->
-                                emitApi(variant.url,"Dexter • "+display+
-                                    " • "+variant.quality+"p",
-                                    variant.quality,ExtractorLinkType.M3U8,base)
-                            }
+                        // Do not block the server picker probing every host.
+                        // Emit source URLs immediately, inspect only a few HLS
+                        // masters with a short, bounded timeout.
+                        if(masterProbes < 3 &&
+                            (source.quality==0 || source.url.contains("master",true))) {
+                            masterProbes++
+                            val playlist=withTimeoutOrNull(2500L) { page(source.url,base) }
+                            if(playlist!=null)
+                                DexterApi.variants(playlist,source.url).forEach { variant ->
+                                    emitApi(variant.url,"Dexter • "+display+
+                                        " • "+variant.quality+"p",
+                                        variant.quality,ExtractorLinkType.M3U8,base)
+                                }
+                        }
                     }
                     "direct" -> {
                         val path=runCatching{URI(source.url).path.lowercase()}.getOrNull()

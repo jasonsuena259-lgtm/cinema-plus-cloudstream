@@ -48,17 +48,21 @@ class VipResolver(private val session:VipSession?=null) {
         return null
     }
     suspend fun native(raw:String,subtitle:(SubtitleFile)->Unit):List<ExtractorLink>{
-        val url=VipParser.unwrap(raw) ?: return emptyList();val u=url.toHttpUrlOrNull() ?: return emptyList()
+        val url=VipParser.unwrap(raw)?.takeUnless{VipParser.trailer(it)} ?: return emptyList();val u=url.toHttpUrlOrNull() ?: return emptyList()
         val direct=VipParser.jetload(url) ?: if(u.host=="forafile.com")forafile(url) else if(u.encodedPath.endsWith(".mp4")||u.encodedPath.endsWith(".m3u8"))url else null
         if(direct!=null)return listOf(newExtractorLink("CimaNow VIP",u.host,direct,if(direct.substringBefore('?').endsWith(".m3u8"))ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO){referer=url;headers=if(VipParser.site(direct)!=null)session?.headers(direct) ?: mapOf("User-Agent" to agent) else mapOf("User-Agent" to agent)})
         val links=mutableListOf<ExtractorLink>();loadExtractor(url,VipParser.BASE+"/",subtitle,links::add);return links
     }
-    suspend fun resolve(urls:List<String>,subtitle:(SubtitleFile)->Unit,callback:(ExtractorLink)->Unit):Boolean {
+    suspend fun resolve(urls:List<String>,subtitle:(SubtitleFile)->Unit,callback:(ExtractorLink)->Unit,captured:List<VipCapturedMedia> = emptyList()):Boolean {
         val lock=Mutex();val sent=mutableSetOf<String>();val subsSent=mutableSetOf<String>()
-        VipDispatcher.run(urls.distinct()){url->
+        val tasks=captured.filterNot{VipParser.trailer(it.url)}.map{it.url to it}+
+            urls.distinct().filterNot{VipParser.trailer(it)}.map{it to null}
+        VipDispatcher.run(tasks){(url,request)->
             val subs=mutableListOf<SubtitleFile>()
-            val links=native(url,subs::add)
-            for(link in links)if(VipLinkValidator.validate(link))lock.withLock{
+            val links=if(request!=null)listOf(newExtractorLink("CimaNow VIP",request.referer.toHttpUrlOrNull()?.host ?: "CimaNow",request.url,
+                if(request.url.toHttpUrlOrNull()?.encodedPath?.endsWith(".m3u8",true)==true)ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO){referer=request.referer;headers=request.headers})
+                else native(url,subs::add)
+            for(link in links)if(!VipParser.trailer(link.url)&&VipLinkValidator.validate(link))lock.withLock{
                 if(sent.add(link.url+link.referer+link.headers.toSortedMap()))callback(link)
                 subs.forEach{if(subsSent.add(it.url))subtitle(it)}
             }

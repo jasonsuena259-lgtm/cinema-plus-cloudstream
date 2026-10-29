@@ -1,9 +1,9 @@
-version = 1
+version = 2
 cloudstream {
     description = "CimaNow VIP — تسجيل دخول محلي، نسخة اختبار"
     authors = listOf("Cinema Plus community")
     status = 3
-    tvTypes = listOf("Movie", "TvSeries", "Anime")
+    tvTypes = listOf("Movie", "TvSeries")
     language = "ar"
 }
 dependencies {

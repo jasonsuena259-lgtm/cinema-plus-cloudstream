@@ -6,6 +6,7 @@ import java.net.URLDecoder
 import okio.ByteString.Companion.decodeBase64
 
 data class VipCard(val title:String,val url:String,val poster:String?,val series:Boolean)
+data class VipSection(val title:String,val url:String)
 data class VipEpisode(val title:String,val url:String,val season:Int,val episode:Int)
 object VipParser {
     const val BASE="https://vip.cimanowinc.com"
@@ -36,12 +37,49 @@ object VipParser {
         val decoded=runCatching{u.queryParameter("link")?.decodeBase64()?.utf8()}.getOrNull()?.toHttpUrlOrNull() ?: return null
         return decoded.takeIf{it.scheme=="https"&&it.host.endsWith(".jetload.top")&&it.encodedPath.endsWith(".mp4")&&it.username.isEmpty()}?.toString()
     }
+    fun trailer(raw:String):Boolean {
+        val host=raw.toHttpUrlOrNull()?.host?.lowercase() ?: return false
+        return listOf("youtube.com","youtube-nocookie.com","youtu.be","googlevideo.com","ytimg.com").any{host==it||host.endsWith("."+it)}
+    }
+    fun normal(s:String)=s.replace("أ","ا").replace("إ","ا").replace("آ","ا").replace(Regex("[\\u064B-\\u065F]"),"").trim()
+    private val knownHosts=listOf("jetload.top","vk.com","vkvideo.ru","ok.ru","forafile.com","frdl.my","filemoon.sx","filemoon.to","filemoon.in","filemoon.nl","filemoon.link","upns.online","upnshare.com","uqload.com","uqload.to","savefiles.com")
+    fun hostSource(raw:String):Boolean {
+        val host=unwrap(raw)?.toHttpUrlOrNull()?.host ?: return false
+        return knownHosts.any{host==it||host.endsWith("."+it)}
+    }
+    fun directMedia(raw:String):Boolean = unwrap(raw)?.toHttpUrlOrNull()?.encodedPath?.let{it.endsWith(".mp4",true)||it.endsWith(".m3u8",true)}==true&&!trailer(raw)
+    fun sections(doc:Document):List<VipSection> {
+        val items=doc.select("a[href]")
+        return items.mapNotNull{a->
+            val raw=a.absUrl("href");val url=site(raw) ?: return@mapNotNull null
+            val path=url.toHttpUrlOrNull()!!.encodedPath
+            if(listOf("signin","signup","logout","signout","account","profile","subscribe","subscription").any{path.contains(it,true)})return@mapNotNull null
+            val title=a.text().trim().ifBlank{a.attr("aria-label")}.ifBlank{a.attr("title")}
+            if(title.isBlank()||title.length>80||a.closest("article,#eps,#episodes,#related")!=null||a.selectFirst("li[aria-label=title]")!=null)return@mapNotNull null
+            VipSection(title,url)
+        }.distinctBy{it.url}
+    }
+    fun section(doc:Document,key:String):String? {
+        val labels=when(key){"movies"->listOf("الافلام","افلام","Movies");"series"->listOf("المسلسلات","مسلسلات","Series");"programs"->listOf("البرامج","برامج","Shows");"latest"->listOf("الاحدث","احدث الاضافات","الجديد","Latest");else->emptyList()}
+        return sections(doc).firstOrNull{s->labels.any{normal(s.title).equals(it,true)}}?.url
+    }
+    fun next(doc:Document,page:Int):String? {
+        val links=doc.select("a[rel=next],ul[aria-label=pagination] a[href],.pagination a[href],nav[aria-label*=pagination] a[href]")
+        val a=links.firstOrNull{it.attr("rel").split(" ").contains("next")} ?: links.firstOrNull{it.text().trim()==(page+1).toString()}
+        return a?.absUrl("href")?.let{site(it)}?.takeIf{it!=doc.location()}
+    }
+    fun watchLink(doc:Document,item:String):String? {
+        val key=stable(item) ?: return null
+        val direct=doc.select("a[href]").mapNotNull{site(it.absUrl("href"))}.firstOrNull{it.contains("/watching/")&&stable(it)==key}
+        if(direct!=null)return direct
+        return doc.select("a.shine[href],a[aria-label=watch][href]").firstNotNullOfOrNull{a->unwrap(a.absUrl("href"))?.takeIf{!trailer(it)}}
+    }
     fun sources(doc:Document):List<String> {
-        val hosts=listOf("jetload.top","vk.com","vkvideo.ru","ok.ru","forafile.com","frdl.my","filemoon","upns.","upnshare","uqload","savefiles")
-        return doc.select("iframe[src],iframe[data-src],a[href],[data-url],[data-link]").mapNotNull{e->
+        return doc.select("iframe[src],iframe[data-src],a[href],[data-url],[data-link],video[src],video source[src]").mapNotNull{e->
+            if(e.parents().any{it.id().equals("trailer",true)||it.attr("aria-label").equals("trailer",true)})return@mapNotNull null
             val raw=listOf("data-src","src","data-url","data-link","href").firstNotNullOfOrNull{e.absUrl(it).takeIf{v->v.isNotBlank()}} ?: return@mapNotNull null
-            val u=unwrap(raw) ?: return@mapNotNull null;val h=u.toHttpUrlOrNull()!!.host
-            u.takeIf{e.tagName()=="iframe"||hosts.any{h.contains(it)}||u.substringBefore('?').endsWith(".mp4")||u.substringBefore('?').endsWith(".m3u8")}
+            val u=unwrap(raw)?.takeUnless{trailer(it)} ?: return@mapNotNull null
+            u.takeIf{hostSource(it)||directMedia(it)}
         }.distinct()
     }
 }

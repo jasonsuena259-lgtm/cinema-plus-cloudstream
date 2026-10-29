@@ -2,7 +2,8 @@ package com.myseed
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.*
-import okhttp3.Request
+import okhttp3.*
+import kotlin.coroutines.resume
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 object MySeedLinkValidator {
         suspend fun validate(link:ExtractorLink):Boolean {
@@ -12,13 +13,21 @@ object MySeedLinkValidator {
         }
         private suspend fun check(link:ExtractorLink):Boolean=withContext(Dispatchers.IO){
             try {
-                fun get(url:String,range:Boolean=false):ByteArray? {
+                suspend fun get(url:String,range:Boolean=false):ByteArray? {
                     val builder=Request.Builder().url(url)
                     link.headers.forEach{(k,v)->builder.header(k,v)}
                     if(link.referer.isNotBlank())builder.header("Referer",link.referer)
                     if(range)builder.header("Range","bytes=0-1023")
-                    return app.baseClient.newBuilder().callTimeout(15,java.util.concurrent.TimeUnit.SECONDS).build().newCall(builder.build()).execute().use{r->
-                        if(!r.isSuccessful)null else if(range){r.body?.byteStream()?.readNBytesCompat(1024)} else r.body?.bytes()
+                    return suspendCancellableCoroutine { continuation ->
+                        val call=app.baseClient.newBuilder().callTimeout(6,java.util.concurrent.TimeUnit.SECONDS).build().newCall(builder.build())
+                        continuation.invokeOnCancellation { call.cancel() }
+                        call.enqueue(object:Callback {
+                            override fun onFailure(call:Call,e:java.io.IOException){if(continuation.isActive)continuation.resume(null)}
+                            override fun onResponse(call:Call,response:Response){
+                                val bytes=try{response.use{r->if(!r.isSuccessful)null else r.body?.byteStream()?.readNBytesCompat(if(range)1024 else 2*1024*1024)}}catch(_:Exception){null}
+                                if(continuation.isActive)continuation.resume(bytes)
+                            }
+                        })
                     }
                 }
                 if(link.type==ExtractorLinkType.VIDEO){

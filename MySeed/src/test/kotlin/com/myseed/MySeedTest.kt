@@ -84,8 +84,9 @@ class MySeedTest {
         val results=mutableListOf<Map<String,Any>>()
         for(url in listOf(firstEpisode,"https://myseed.baby/watch.php?vid=d507467a3")){
             val links=mutableListOf<ExtractorLink>()
-            assertTrue(provider.loadLinks(url,false,{},links::add));assertTrue(links.isNotEmpty())
-            results+=mapOf("content" to url,"verified_sources" to links.map{it.name}.distinct())
+            val start=System.nanoTime();var firstMillis:Long?=null
+            assertTrue(provider.loadLinks(url,false,{},{if(firstMillis==null)firstMillis=(System.nanoTime()-start)/1000000;links.add(it)}));assertTrue(links.isNotEmpty())
+            results+=mapOf("content" to url,"first_callback_ms" to firstMillis!!,"total_ms" to (System.nanoTime()-start)/1000000,"verified_sources" to links.map{it.name}.distinct())
         }
         System.getenv("MYSEED_REPORT_PATH")?.let{java.io.File(it+".additional").writeText(jacksonObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(results))}
         Unit

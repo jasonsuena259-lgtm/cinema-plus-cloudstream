@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-3f8da0acbebe6e1fdc0fd4b0704372f2df33b749e2b8b27783e12584068b5ff3",
+    "fileHash": "sha256-9ea7371e81cce66c66d8c94995fef3e91a0d629a2604378c6b408941a5e5e9ef",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 49893,
+    "fileSize": 54213,
     "status": 3,
     "language": "ar",
     "authors": [
@@ -14,10 +14,10 @@
       "TvSeries",
       "Anime"
     ],
-    "version": 1,
+    "version": 2,
     "internalName": "MySeed",
     "description": "MySeed — إضافة مستقلة",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/MySeed-v1.cs3",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/MySeed-v2.cs3",
     "name": "MySeed | ماي سيد"
   }
 ]

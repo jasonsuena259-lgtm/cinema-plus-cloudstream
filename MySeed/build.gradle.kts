@@ -1,4 +1,4 @@
-version = 1
+version = 2
 cloudstream {
     description = "MySeed — ماي سيد، أفلام ومسلسلات"
     authors = listOf("Cinema Plus community")

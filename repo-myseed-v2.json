@@ -1,0 +1,8 @@
+{
+  "name": "MySeed | ماي سيد",
+  "description": "MySeed — إضافة مستقلة",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-myseed-v2.json"
+  ]
+}

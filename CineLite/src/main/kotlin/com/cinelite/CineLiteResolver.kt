@@ -87,7 +87,7 @@ class CineLiteResolver(private val context: Context) {
         // Try each actual iframe/player independently, including alternate servers.
         for (source in sources.take(8)) {
             val isAnimePlayer = "/anime/" in source.url || "/watch/anime/" in contentUrl
-            withTimeoutOrNull(23500) {
+            withTimeoutOrNull(31000) {
                 if (source.direct) {
                     val type = if (CineLiteParser.mediaKind(source.url) == "hls")
                         ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO

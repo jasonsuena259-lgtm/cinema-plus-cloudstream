@@ -1,6 +1,6 @@
 {
   "name": "CineLite v17 - automatic updates",
-  "description": "Keep this repository for CineLite v17 and future updates",
+  "description": "Keep this repository for CineLite v18 and future updates",
   "manifestVersion": 1,
   "pluginLists": [
     "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/plugins-v17.json"

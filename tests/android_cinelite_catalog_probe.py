@@ -32,6 +32,23 @@ def show(name):
     with (ROOT/("08-"+name+".png")).open("wb") as f:
         subprocess.run(["adb","exec-out","screencap","-p"],stdout=f,check=True,timeout=25)
     return view
+def exact_result_card(title):
+    """Find an actual search-result label, not the EditText containing the query."""
+    adb("shell","uiautomator","dump","/sdcard/koda.xml")
+    xml_text=adb("exec-out","cat","/sdcard/koda.xml")
+    root=ET.fromstring(xml_text[xml_text.index("<?xml"):])
+    for node in root.iter("node"):
+        a=node.attrib
+        if (a.get("text") or "").strip().casefold()!=title.casefold():
+            continue
+        if "EditText" in a.get("class","") or a.get("focused")=="true":
+            continue
+        match=re.search(r"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]",a.get("bounds",""))
+        if match:
+            x1,y1,x2,y2=map(int,match.groups())
+            return (x1+x2)//2,(y1+y2)//2
+    return None
+
 def tap(regexes):
     for regex in regexes:
         items=[(t,x,y) for t,x,y in ui() if re.search(regex,t,re.I)]
@@ -80,18 +97,20 @@ if candidates:
     search=show("one-piece-search")
     search_labels=[t for t,x,y in search]
     has_no_results=any(re.search(r"No results|Nothing found|لا توجد نتائج",x,re.I) for x in search_labels)
-    if not has_no_results and any(t.strip().upper()=="ONE PIECE" for t in search_labels):
-        print("APP_UI_SEARCH_FOUND: ONE PIECE in actual KodaStream search results",flush=True)
-        if tap([r"^ONE PIECE$"]):
-            time.sleep(18)
-            details=show("one-piece-details")
-            eps=[t for t,x,y in details if re.search("Episode 1|S01E01|Ep 1|الحلقة 1",t,re.I)]
-            print("APP_UI_EPISODES",repr(eps[:25]),flush=True)
-            if eps:
-                print("PASS: CineLite displays actual ONE PIECE episode options on Android KodaStream",flush=True)
-            else:
-                print("APP_UI_EPISODES_UNVERIFIED: no episode labels visible in native details UI",flush=True)
-                catalog_errors.append("ONE PIECE opened but no episode was shown")
+    actual_card=exact_result_card("ONE PIECE")
+    if not has_no_results and actual_card:
+        print("APP_UI_SEARCH_FOUND: actual ONE PIECE result card (not query input)",flush=True)
+        x,y=actual_card
+        adb("shell","input","tap",str(x),str(y))
+        time.sleep(18)
+        details=show("one-piece-details")
+        eps=[t for t,x,y in details if re.search("Episode 1|S01E01|Ep 1|الحلقة 1",t,re.I)]
+        print("APP_UI_EPISODES",repr(eps[:25]),flush=True)
+        if eps:
+            print("PASS: CineLite displays actual ONE PIECE episode options on Android KodaStream",flush=True)
+        else:
+            print("APP_UI_EPISODES_UNVERIFIED: no episode labels visible in native details UI",flush=True)
+            catalog_errors.append("ONE PIECE opened but no episode was shown")
     else:
         print("APP_UI_SEARCH_NOT_FOUND: no ONE PIECE search card in this session",flush=True)
         catalog_errors.append("ONE PIECE search returned no real provider result")

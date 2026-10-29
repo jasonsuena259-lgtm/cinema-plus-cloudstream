@@ -80,7 +80,7 @@ class AkwamResolver(private val base:String){
     ):Boolean {
         val url=AkwamParser.site(data) ?:return false
         val path=URI(url).path
-        if(!Regex("""^/(movie|episode)/\d+(?:/|$)""").containsMatchIn(path))
+        if(!Regex("""^/(movie|episode|shows)/\d+(?:/|$)""").containsMatchIn(path))
             return false
         val detailHtml=page(url)?:throw ErrorLoadingException("أكوام: لم تُفتح صفحة المحتوى")
         val rows=AkwamParser.qualities(detailHtml,url)

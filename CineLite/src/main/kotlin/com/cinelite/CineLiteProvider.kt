@@ -107,20 +107,14 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
             } else {
                 browser.seriesEpisodes(identity.id, identity.title)
             }
-            // CineLite search includes some not-yet-streamable catalogue entries.
-            // Do not crash the details page or fabricate playable episode links
-            // when the website has not rendered episodes for this series.
-            if (episodes.isEmpty()) {
-                return newTvSeriesLoadResponse(
-                    identity.title, url,
-                    if (identity.type == "anime") TvType.Anime else TvType.TvSeries,
-                    emptyList()
-                ) {
-                    posterUrl = identity.poster
-                    plot = "CineLite lists this title, but the website did not display " +
-                        "a clickable episode for it. Unreleased entries are not playable."
-                }
-            }
+            // A temporary failure to render the site's React episode modal
+            // does NOT prove that a series is unreleased. Do not show a fake
+            // "Coming soon" detail page for titles such as VisionQuest, whose
+            // real episode route was observed in the first-party website.
+            if (episodes.isEmpty()) throw ErrorLoadingException(
+                "CineLite could not retrieve this show's episode list from the " +
+                    "website right now. Try opening it again; availability is unverified."
+            )
             return newTvSeriesLoadResponse(
                 identity.title, url,
                 if (identity.type == "anime") TvType.Anime else TvType.TvSeries,

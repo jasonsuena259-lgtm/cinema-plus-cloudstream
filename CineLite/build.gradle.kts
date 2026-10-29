@@ -1,6 +1,6 @@
-version = 5
+version = 6
 cloudstream {
-    description = "CineLite v5 — parallel player sources, Arabic subtitle discovery, fast bounded link loading (experimental)"
+    description = "CineLite v6 — restore working v4 player extraction; v5 multiserver regression reverted"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

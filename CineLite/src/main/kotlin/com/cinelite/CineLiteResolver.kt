@@ -5,6 +5,8 @@ import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,6 +48,11 @@ class CineLiteResolver(private val context: Context) {
             return true
         }
         suspend fun emitCaptured(request: LiteMediaRequest, label: String, referer: String) {
+            // A network request alone is insufficient: the first request can
+            // be an audio-only rendition, which produced a black screen.
+            // Inspect the returned HLS playlist and, for media playlists,
+            // a small part of the FIRST actual TS segment.
+            val hlsSubtitles = verifyObserved(request) ?: return
             val headers = request.headers.filterKeys {
                 !it.equals("Referer", true) && !it.equals("Range", true)
             }
@@ -59,6 +66,9 @@ class CineLiteResolver(private val context: Context) {
                 this.headers = headers
             }, capturedInPlayer = true)
             if (valid) {
+                hlsSubtitles.forEach { (language, url) ->
+                    subtitleQueue += SubtitleFile(language, url)
+                }
                 // Actual SRT/VTT/ASS subtitle requests, not guesses from titles.
                 request.subtitleUrls.filter(CineLiteParser::isSubtitleFile)
                     .distinct().sortedBy { subtitleUrl ->
@@ -102,63 +112,59 @@ class CineLiteResolver(private val context: Context) {
                     // when the generic extractor already returned one link.
                     // Finding one link must not suppress the rest of the menu.
                     coroutineScope {
-                        // Keep the Android-proven first-source path intact. In
-                        // parallel, inspect the SAME site's real source switcher
-                        // (not fabricated agent URLs) in one extra WebView.
-                        // Never serialize six independent player launches.
+                        // Scan sources in the original WebView, but forward each
+                        // playlist immediately. Waiting for the full 14-agent
+                        // scan may let short-lived proxy tokens expire.
+                        val pending = Channel<LiteMediaRequest>(Channel.UNLIMITED)
+                        val namesAccepted = mutableSetOf<String>()
+                        val collector = async {
+                            for (request in pending) {
+                                val key = request.sourceName.trim().lowercase()
+                                if (key in namesAccepted) continue
+                                if (CineLiteParser.mediaPlaylistPriority(request.url) >= 10)
+                                    continue
+                                val before = emitted.size
+                                emitCaptured(request,
+                                    request.sourceName.takeUnless {
+                                        it.isBlank() || it == "CineLite"
+                                    } ?: source.name, source.url)
+                                if (emitted.size > before) namesAccepted += key
+                            }
+                        }
+                        val siteSources = async {
+                            try {
+                                withTimeoutOrNull(21500) {
+                                    CineLiteMultiSourceBrowser(context).capture(
+                                        source.url, contentUrl
+                                    ) { request ->
+                                        pending.trySend(request)
+                                    }
+                                }
+                            } finally {
+                                pending.close()
+                            }
+                        }
                         val defaultSource = async {
                             if (valid) null else withTimeoutOrNull(7600) {
                                 browser.media(source.url, contentUrl)
                             }
                         }
-                        val siteSources = async {
-                            withTimeoutOrNull(21500) {
-                                CineLiteMultiSourceBrowser(context).capture(source.url, contentUrl)
-                            }
-                        }
                         defaultSource.await()?.let {
-                            // Do not autoplay a single audio-only HLS child
-                            // manifest just because WebView requested it first.
                             if (CineLiteParser.mediaPlaylistPriority(it.url) < 10)
                                 emitCaptured(it, source.name, source.url)
                         }
-                        siteSources.await()?.let { captured ->
-                            // Associate each observed HLS/MP4 request with the
-                            // actual server that the website had selected.
-                            // The player's HLS master can load distinct
-                            // MPEG-TS video and audio playlists. Group actual
-                            // captured requests by site agent and prefer the
-                            // proxy master, not the first arbitrary audio URL.
-                            captured.streams
-                                .filter { CineLiteParser.mediaPlaylistPriority(it.url) < 10 }
-                                .groupBy { it.sourceName.trim().lowercase() }
-                                .values.mapNotNull { candidates ->
-                                    candidates.minWithOrNull(
-                                        compareBy<LiteMediaRequest> {
-                                            CineLiteParser.mediaPlaylistPriority(it.url)
-                                        }.thenBy { it.url.length }
+                        val captured = siteSources.await()
+                        collector.await()
+                        if (captured != null && emitted.isNotEmpty()) {
+                            captured.subtitles
+                                .filter { CineLiteParser.isSubtitleFile(it.url) }
+                                .take(40).forEach { subtitle ->
+                                    subtitleQueue += SubtitleFile(
+                                        CineLiteParser.subtitleLanguage(
+                                            subtitle.title, subtitle.url
+                                        ), subtitle.url
                                     )
                                 }
-                                .sortedWith(compareBy<LiteMediaRequest> {
-                                    it.sourceName == "CineLite"
-                                }.thenBy { it.sourceName })
-                                .take(18).forEach { stream ->
-                                    val label = stream.sourceName
-                                        .takeUnless { it.isBlank() || it == "CineLite" }
-                                        ?: source.name
-                                    emitCaptured(stream, label, source.url)
-                                }
-                            if (emitted.isNotEmpty()) {
-                                captured.subtitles
-                                    .filter { CineLiteParser.isSubtitleFile(it.url) }
-                                    .take(40).forEach { subtitle ->
-                                        subtitleQueue += SubtitleFile(
-                                            CineLiteParser.subtitleLanguage(
-                                                subtitle.title, subtitle.url
-                                            ), subtitle.url
-                                        )
-                                    }
-                            }
                         }
                     }
                     // Additional servers are shown ONLY for HLS/MP4 requests
@@ -181,6 +187,69 @@ class CineLiteResolver(private val context: Context) {
         )
         subtitleQueue.distinctBy { it.url }.forEach(subtitles)
         return true
+    }
+
+    /**
+     * A manifest URL captured by WebView is not automatically a video.
+     * Check it with the SAME in-memory WebView request headers/cookies. Media
+     * playlists must include a video elementary stream in their first MPEG-TS
+     * segment; an audio-only rendition is rejected rather than displayed as a
+     * black-screen "working" server. URL/token values are never logged.
+     */
+    private suspend fun verifyObserved(
+        request: LiteMediaRequest
+    ): List<Pair<String, String>>? = withContext(Dispatchers.IO) {
+        val kind = CineLiteParser.mediaKind(request.url) ?: return@withContext null
+        val client = app.baseClient.newBuilder().callTimeout(7, TimeUnit.SECONDS).build()
+        fun read(url: String, maxBytes: Int): ByteArray? {
+            try {
+                val builder = Request.Builder().url(url)
+                request.headers.forEach { (key, value) ->
+                    if (!key.equals("Range", true) &&
+                        !key.equals("Host", true)) builder.header(key, value)
+                }
+                builder.header("Range", "bytes=0-${maxBytes - 1}")
+                return client.newCall(builder.build()).execute().use { response ->
+                    if (!response.isSuccessful) return@use null
+                    val input = response.body?.byteStream() ?: return@use null
+                    val output = ByteArrayOutputStream()
+                    val buffer = ByteArray(4096)
+                    while (output.size() < maxBytes) {
+                        val count = input.read(buffer, 0,
+                            minOf(buffer.size, maxBytes - output.size()))
+                        if (count <= 0) break
+                        output.write(buffer, 0, count)
+                    }
+                    output.toByteArray()
+                }
+            } catch (_: Exception) { return null }
+        }
+        if (kind == "mp4") {
+            val body = read(request.url, 2048) ?: return@withContext null
+            return@withContext if (body.size >= 12 &&
+                body.copyOfRange(4, 8).toString(Charsets.US_ASCII) in
+                    setOf("ftyp", "styp", "moof")) emptyList() else null
+        }
+        val data = read(request.url, 65536) ?: return@withContext null
+        val playlist = data.toString(Charsets.UTF_8).trimStart('\uFEFF')
+        val subtitles = CineLiteParser.hlsSubtitleTracks(playlist, request.url)
+        when (CineLiteHlsInspector.kind(playlist)) {
+            CineLiteHlsInspector.Kind.VIDEO_MASTER -> subtitles
+            CineLiteHlsInspector.Kind.MEDIA -> {
+                val relative = CineLiteHlsInspector.firstSegment(playlist)
+                    ?: return@withContext null
+                val base = request.url.toHttpUrlOrNull() ?: return@withContext null
+                val segment = base.resolve(relative) ?: return@withContext null
+                // Do not chase arbitrary new hosts from untrusted playlists.
+                if (segment.scheme != "https" || segment.host != base.host)
+                    return@withContext null
+                val bytes = read(segment.toString(), 65536)
+                    ?: return@withContext null
+                if (CineLiteHlsInspector.tsHasVideo(bytes) == true)
+                    subtitles else null
+            }
+            else -> null
+        }
     }
 
     private suspend fun sidecarSubtitles(link: ExtractorLink): List<SubtitleFile> =

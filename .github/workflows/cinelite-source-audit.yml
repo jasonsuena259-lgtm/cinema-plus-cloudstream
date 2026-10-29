@@ -1,0 +1,30 @@
+name: CineLite server menu audit
+on:
+  push:
+    branches: [feature/cinelite-provider]
+    paths:
+      - 'CineLite/**'
+      - 'tests/probe_cinelite_source_menu.cjs'
+      - '.github/workflows/cinelite-source-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          mkdir -p /tmp/cinelite
+          cd /tmp/cinelite
+          npm install --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Inspect source menu without media URLs or tokens
+        env:
+          NODE_PATH: /tmp/cinelite/node_modules
+        run: node tests/probe_cinelite_source_menu.cjs

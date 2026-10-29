@@ -77,7 +77,7 @@ class CineLiteResolver(private val context: Context) {
         // Try each actual iframe/player independently, including alternate servers.
         for (source in sources.take(8)) {
             val isAnimePlayer = "/anime/" in source.url || "/watch/anime/" in contentUrl
-            withTimeoutOrNull(9000) {
+            withTimeoutOrNull(13500) {
                 if (source.direct) {
                     val type = if (CineLiteParser.mediaKind(source.url) == "hls")
                         ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
@@ -98,16 +98,21 @@ class CineLiteResolver(private val context: Context) {
                     }
                     var valid = false
                     for (link in found) if (add(link)) valid = true
-                    if (!valid) coroutineScope {
+                    // Capture all other real first-party server selections even
+                    // when the generic extractor already returned one link.
+                    // Finding one link must not suppress the rest of the menu.
+                    coroutineScope {
                         // Keep the Android-proven first-source path intact. In
                         // parallel, inspect the SAME site's real source switcher
                         // (not fabricated agent URLs) in one extra WebView.
                         // Never serialize six independent player launches.
                         val defaultSource = async {
-                            withTimeoutOrNull(7600) { browser.media(source.url, contentUrl) }
+                            if (valid) null else withTimeoutOrNull(7600) {
+                                browser.media(source.url, contentUrl)
+                            }
                         }
                         val siteSources = async {
-                            withTimeoutOrNull(7600) {
+                            withTimeoutOrNull(11800) {
                                 CineLiteMultiSourceBrowser(context).capture(source.url, contentUrl)
                             }
                         }

@@ -1,0 +1,12 @@
+{
+  "name": "Cinema Collection — 5 Providers (Preview)",
+  "description": "CineLite v22, CineWave v1, CinemaPlus v6, MySeed v2 and Dexter v3; references existing untouched release manifests.",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/plugins.json",
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-cinewave-v1.json",
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-cinemaplus-v6.json",
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-myseed-v2.json",
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/dexter-preview/plugins.json"
+  ]
+}

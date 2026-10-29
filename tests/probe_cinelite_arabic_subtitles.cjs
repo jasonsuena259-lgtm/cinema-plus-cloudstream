@@ -72,5 +72,16 @@ const {chromium}=require('playwright');
      });
    });
    console.log('ARABIC_SUBTITLE_MENU_STRUCTURE '+JSON.stringify(details));
+   const clickedSource=await page.evaluate(()=>{
+     const candidates=[...document.querySelectorAll('button,[class*=cursor-pointer]')]
+       .filter(e=>e.getClientRects().length>0&&
+         /Arabic\s*Anime Source/i.test((e.textContent||'').replace(/\s+/g,' ')));
+     const target=candidates.sort((a,b)=>a.textContent.length-b.textContent.length)[0];
+     if(target){target.click();return true}return false;
+   });
+   await page.waitForTimeout(1800);
+   console.log('ARABIC_SUBTITLE_SOURCE_SELECTED '+JSON.stringify({
+     clicked:clickedSource,resources:[...req.values()]
+   }));
  }finally{await browser.close();}
 })().catch(e=>{console.error('ARABIC_SUBTITLE_AUDIT_ERROR '+e.message.slice(0,180));process.exitCode=1});

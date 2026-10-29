@@ -181,6 +181,19 @@ object CineLiteParser {
         }
     }
 
+    /** Restrict direct embed shortcuts to CineLite's observed numeric routes. */
+    fun isRecognizedEmbedPath(path: String): Boolean {
+        val parts = path.trim('/').split('/')
+        return when {
+            parts.size == 1 -> parts[0].toIntOrNull()?.let { it > 0 } == true
+            parts.size == 3 && parts[0] == "anime" ->
+                parts.drop(1).all { it.toIntOrNull()?.let { n -> n > 0 } == true }
+            parts.size == 3 ->
+                parts.all { it.toIntOrNull()?.let { n -> n > 0 } == true }
+            else -> false
+        }
+    }
+
     /** Real watch page routes observed in a browser; never synthesize media URLs. */
     fun embeddedPlayerForWatchUrl(raw: String): String? {
         val url = siteUrl(raw)?.toHttpUrlOrNull() ?: return null
@@ -219,7 +232,7 @@ object CineLiteParser {
             Regex("(?i)(?:^|[^\\p{L}])$word(?:[^\\p{L}]|$)").containsMatchIn(value)
         return when {
             has("Arabic") || has("العربية") || has("عربي") ||
-                has("ar") || has("ara") -> "Arabic / العربية"
+                has("ar") || has("ara") -> "Arabic"
             has("English") || has("en") || has("eng") -> "English"
             has("French") || has("fr") -> "French"
             has("Spanish") || has("es") -> "Spanish"

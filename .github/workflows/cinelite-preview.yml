@@ -70,7 +70,7 @@ jobs:
               'url':prefix+artifact.name, 'name':'CineLite (experimental)'
           }
           def write_json(path, value):
-              path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\\n')
+              path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
 
           # CloudStream/KodaStream associates an installed extension with the
           # original repository URL and internalName. Do NOT force users to

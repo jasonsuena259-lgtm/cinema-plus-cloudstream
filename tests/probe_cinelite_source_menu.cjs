@@ -10,10 +10,12 @@ const { chromium }=require('playwright');
         await page.waitForTimeout(2300);
         const before=await page.evaluate(()=>[...document.querySelectorAll('button')].map(e=>({t:e.textContent.trim().slice(0,50),class:e.className.slice(0,90),visible:e.getClientRects().length>0})).filter(x=>x.t).slice(0,35));
         console.log('SOURCE_MENU_BEFORE',JSON.stringify({route,buttons:before}));
-        const controls=page.locator('button').filter({hasText:/^(Clove|Reyna Sub|Chamber Sub|Neon Sub)$/i});
-        if(await controls.count())await controls.last().click({timeout:6000});
-        else await page.locator('button').filter({hasText:/sources|agents|servers/i}).first().click({timeout:4000}).catch(()=>{});
-        await page.waitForTimeout(450);
+        await page.evaluate(()=>{
+          const buttons=[...document.querySelectorAll('button')];
+          const targets=buttons.filter(e=>/^(Clove|Reyna Sub|Chamber Sub|Neon Sub)$/i.test(e.textContent.trim()));
+          if(targets.length)targets[targets.length-1].click();
+        });
+        await page.waitForTimeout(650);
         const modal=await page.evaluate(()=>{
           const data=[...document.querySelectorAll('button,[role=option],[role=menuitem],[class*=cursor-pointer]')]
             .filter(e=>e.getClientRects().length>0)

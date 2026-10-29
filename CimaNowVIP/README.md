@@ -1,12 +1,12 @@
-# CimaNow VIP v2 — نسخة تجريبية
+# CimaNow VIP v3 — نسخة تجريبية
 
-المستودع الحالي يستقبل v2 دون إعادة تثبيت أو تغيير الحساب:
+المستودع الحالي يستقبل v3 دون إعادة تثبيت أو تغيير الحساب:
 
 ```text
 https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-cimanowvip-v1.json
 ```
 
-حدّث الإضافة وتأكد من ظهور v2، ثم أعد اختيار CimaNow VIP لتحديث قائمة الأقسام. يبقى تسجيل الدخول من ترس إعدادات الإضافة؛ لا ترسل كلمة المرور أو الكوكيز.
+حدّث الإضافة وتأكد من ظهور v3، ثم أعد اختيار CimaNow VIP لتحديث قائمة الأقسام. يبقى تسجيل الدخول من ترس إعدادات الإضافة؛ لا ترسل كلمة المرور أو الكوكيز.
 
 ## تغييرات v2
 
@@ -27,3 +27,7 @@ CIMANOW_VIP_LIVE=1 ./gradlew CimaNowVIP:testDebugUnitTest --tests '*liveForafile
 ```
 
 [تفاصيل الإصلاح وحدود الاختبار](../docs/cimanow/V2_FIXES.md) · [تحليل الموقع والمستودع](../docs/cimanow/UPSTREAM_AND_VIP_ANALYSIS.md) · [تقرير المصادر](../docs/cimanow/DOWNLOAD_SOURCE_REPORT.md).
+
+## إصلاح الأقسام v3
+
+أُزيل خطأ «لم يظهر رابط قسم البرامج». تُعرض الأقسام التي اكتُشف رابطها فقط، ويعود اختيار القسم القديم المفقود إلى الرئيسية. يدعم اكتشاف الأسماء الأيقونات وaria-label وصيغ «البرامج التلفزيونية». [التفاصيل والاختبارات](../docs/cimanow/V3_CATALOG_FIX.md).

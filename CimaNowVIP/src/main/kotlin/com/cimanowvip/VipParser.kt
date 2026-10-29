@@ -41,7 +41,10 @@ object VipParser {
         val host=raw.toHttpUrlOrNull()?.host?.lowercase() ?: return false
         return listOf("youtube.com","youtube-nocookie.com","youtu.be","googlevideo.com","ytimg.com").any{host==it||host.endsWith("."+it)}
     }
-    fun normal(s:String)=s.replace("أ","ا").replace("إ","ا").replace("آ","ا").replace(Regex("[\\u064B-\\u065F]"),"").trim()
+    fun normal(s:String)=s.replace("أ","ا").replace("إ","ا").replace("آ","ا")
+        .replace(Regex("[\\u064B-\\u065F\\u0640\\u200B-\\u200F\\u202A-\\u202E\\u2066-\\u2069]"),"")
+        .replace('\u00A0',' ').replace(Regex("\\s+")," ").trim()
+
     private val knownHosts=listOf("jetload.top","vk.com","vkvideo.ru","ok.ru","forafile.com","frdl.my","filemoon.sx","filemoon.to","filemoon.in","filemoon.nl","filemoon.link","upns.online","upnshare.com","uqload.com","uqload.to","savefiles.com")
     fun hostSource(raw:String):Boolean {
         val host=unwrap(raw)?.toHttpUrlOrNull()?.host ?: return false
@@ -54,15 +57,24 @@ object VipParser {
             val raw=a.absUrl("href");val url=site(raw) ?: return@mapNotNull null
             val path=url.toHttpUrlOrNull()!!.encodedPath
             if(listOf("signin","signup","logout","signout","account","profile","subscribe","subscription").any{path.contains(it,true)})return@mapNotNull null
-            val title=a.text().trim().ifBlank{a.attr("aria-label")}.ifBlank{a.attr("title")}
+            val clean=a.clone().apply{select("svg,i,.material-icons,.material-symbols-outlined,script,style").remove()}
+            val title=a.attr("aria-label").trim().ifBlank{a.attr("title").trim()}.ifBlank{clean.text().trim()}
             if(title.isBlank()||title.length>80||a.closest("article,#eps,#episodes,#related")!=null||a.selectFirst("li[aria-label=title]")!=null)return@mapNotNull null
             VipSection(title,url)
         }.distinctBy{it.url}
     }
-    fun section(doc:Document,key:String):String? {
-        val labels=when(key){"movies"->listOf("الافلام","افلام","Movies");"series"->listOf("المسلسلات","مسلسلات","Series");"programs"->listOf("البرامج","برامج","Shows");"latest"->listOf("الاحدث","احدث الاضافات","الجديد","Latest");else->emptyList()}
-        return sections(doc).firstOrNull{s->labels.any{normal(s.title).equals(it,true)}}?.url
+    private fun labels(key:String)=when(key){
+        "movies"->listOf("الافلام","افلام","Movies")
+        "series"->listOf("المسلسلات","مسلسلات","Series","TV Series")
+        "programs"->listOf("البرامج","برامج","البرامج التلفزيونية","برامج تلفزيونية","البرامج التليفزيونية","Shows","TV Shows","TV Programs","Programs")
+        "latest"->listOf("الاحدث","احدث الاضافات","الجديد","Latest")
+        else->emptyList()
     }
+    fun section(doc:Document,key:String):String? = sections(doc).firstOrNull{s->labels(key).any{normal(s.title).equals(it,true)}}?.url
+    fun catalogSections(doc:Document):List<VipSection> = sections(doc).filter{s->
+        s.url.toHttpUrlOrNull()?.encodedPath?.contains("/category/")==true||
+            listOf("movies","series","programs","latest").any{key->labels(key).any{normal(s.title).equals(it,true)}}
+    }.filter{it.url.toHttpUrlOrNull()?.encodedPath!="/home/"}.distinctBy{it.url}
     fun next(doc:Document,page:Int):String? {
         val links=doc.select("a[rel=next],ul[aria-label=pagination] a[href],.pagination a[href],nav[aria-label*=pagination] a[href]")
         val a=links.firstOrNull{it.attr("rel").split(" ").contains("next")} ?: links.firstOrNull{it.text().trim()==(page+1).toString()}

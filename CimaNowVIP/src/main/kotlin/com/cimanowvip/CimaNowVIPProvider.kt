@@ -7,22 +7,26 @@ import org.jsoup.nodes.Document
 import kotlinx.coroutines.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 
-class CimaNowVIPProvider(private val session:VipSession):MainAPI(){
+class CimaNowVIPProvider(private val session:VipAccess):MainAPI(){
     override var mainUrl=VipParser.BASE
     override var name="CimaNow VIP | سيما ناو"
     override var lang="ar"
     override val hasMainPage=true
     override val supportedTypes=setOf(TvType.Movie,TvType.TvSeries)
-    private val discovered=ConcurrentHashMap<String,String>()
+    @Volatile private var discovered:List<VipSection> = emptyList()
     private val pageUrls=ConcurrentHashMap<String,String>()
-    override val mainPage get()=mainPageOf("/home/" to "الرئيسية","menu:latest" to "الأحدث","menu:movies" to "الأفلام","menu:series" to "المسلسلات","menu:programs" to "البرامج",*discovered.entries.sortedBy{it.key}.map{it.value to it.key}.toTypedArray())
+    override val mainPage get()=mainPageOf("/home/" to "الرئيسية",*discovered.map{it.url to it.title}.toTypedArray())
     private fun card(c:VipCard):SearchResponse = if(c.series)newTvSeriesSearchResponse(c.title,c.url,TvType.TvSeries){posterUrl=c.poster} else newMovieSearchResponse(c.title,c.url){posterUrl=c.poster}
     override suspend fun getMainPage(page:Int,request:MainPageRequest):HomePageResponse{
         if(page<1)return newHomePageResponse(request.name,emptyList(),false)
         val home=if(request.data.startsWith("menu:")||request.data=="/home/")session.home() else null
-        home?.let{d->VipParser.sections(d).filter{it.url.contains("/category/")}.forEach{discovered[it.title]=it.url}}
+        home?.let{d->
+            discovered=VipParser.catalogSections(d)
+        }
         val start=if(request.data.startsWith("menu:"))VipParser.section(home!!,request.data.substringAfter(':'))
-            ?: throw ErrorLoadingException("CimaNow VIP: لم يظهر رابط قسم ${request.name} في قائمة الموقع") else VipParser.site(request.data)
+            ?: return if(page==1)getMainPage(1,MainPageRequest("الرئيسية","/home/",false))
+                else newHomePageResponse(emptyList(),false)
+            else VipParser.site(request.data)
             ?: throw ErrorLoadingException("CimaNow VIP: رابط القسم غير صالح")
         var url=pageUrls["${request.data}:$page"] ?: start
         var doc=if(home!=null&&start==home.location()&&url==start)home else session.page(url)

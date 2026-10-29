@@ -102,10 +102,10 @@
     "name": "MySeed | ماي سيد"
   },
   {
-    "fileHash": "sha256-a07b736fc985510d086a4d53d9e65a171fe61d974819cfc0bac823ca3305ebe3",
+    "fileHash": "sha256-39e1e258c0117aa96f6689e286585a11645e0839ce65e06211f6046f44bc5a5b",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 66175,
+    "fileSize": 67049,
     "status": 3,
     "language": "ar",
     "authors": [
@@ -115,10 +115,10 @@
       "Movie",
       "TvSeries"
     ],
-    "version": 2,
+    "version": 3,
     "internalName": "CimaNowVIP",
     "description": "CimaNow VIP — تجريبي؛ أقسام ومشاهدة تفاعلية عند الحاجة",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/CimaNowVIP-v2.cs3",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/CimaNowVIP-v3.cs3",
     "name": "CimaNow VIP | سيما ناو"
   }
 ]

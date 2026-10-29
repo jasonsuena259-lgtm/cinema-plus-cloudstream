@@ -10,7 +10,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.jsoup.Jsoup
 import kotlin.coroutines.resume
 
-class VipResolver(private val session:VipSession?=null) {
+class VipResolver(private val session:VipAccess?=null) {
     private val agent="Mozilla/5.0"
     private val client by lazy {app.baseClient.newBuilder().followRedirects(false).followSslRedirects(false).callTimeout(8,java.util.concurrent.TimeUnit.SECONDS).build()}
     private suspend fun request(req:Request):Response=suspendCancellableCoroutine{cont->

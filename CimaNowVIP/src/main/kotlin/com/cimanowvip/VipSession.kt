@@ -22,20 +22,27 @@ import java.util.concurrent.ConcurrentHashMap
 data class VipCapturedMedia(val url:String,val headers:Map<String,String>,val referer:String)
 data class VipPlaybackCapture(val sources:List<String>,val media:List<VipCapturedMedia>)
 
+interface VipAccess {
+    fun headers(url:String):Map<String,String>
+    suspend fun home():Document
+    suspend fun page(raw:String,render:Boolean=false,playback:Boolean=false):Document
+    suspend fun capturePlayback(item:String):VipPlaybackCapture
+}
+
 /** Account entry is visible and user-operated. No password, cookie or token is exported. */
-class VipSession(private val context:Context){
+class VipSession(private val context:Context):VipAccess{
     private val ui=Handler(Looper.getMainLooper());private val pages=Mutex()
     private val mapper=jacksonObjectMapper()
     private val homeLock=Mutex()
     private var homeCache:Triple<Int,Long,Document>?=null
-    suspend fun home():Document = homeLock.withLock {
+    override suspend fun home():Document = homeLock.withLock {
         val key=headers(VipParser.BASE+"/home/").hashCode()
         homeCache?.takeIf{it.first==key&&android.os.SystemClock.elapsedRealtime()-it.second<20000}?.let{return@withLock it.third.clone()}
         val doc=page(VipParser.BASE+"/home/")
         homeCache=Triple(key,android.os.SystemClock.elapsedRealtime(),doc)
         doc.clone()
     }
-    fun headers(url:String):Map<String,String> {
+    override fun headers(url:String):Map<String,String> {
         if(VipParser.site(url)==null)return emptyMap()
         return buildMap{put("User-Agent",WebSettings.getDefaultUserAgent(context));CookieManager.getInstance().getCookie(url)?.let{put("Cookie",it)}}
     }
@@ -55,7 +62,7 @@ class VipSession(private val context:Context){
         dialog.setContentView(layout);dialog.setOnDismissListener{view.stopLoading();view.destroy()};dialog.show();dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT)
         view.loadUrl(VipParser.BASE+"/home/")
     }}
-    suspend fun page(raw:String, render:Boolean=false, playback:Boolean=false):Document {
+    override suspend fun page(raw:String, render:Boolean, playback:Boolean):Document {
         val url=VipParser.site(raw) ?: throw ErrorLoadingException("CimaNow VIP: رابط خارج الموقع")
         val r=app.get(url,headers=headers(url),timeout=12)
         if(r.url.contains("/signin/"))throw ErrorLoadingException("CimaNow VIP: افتح إعدادات الإضافة ⚙ وسجّل الدخول بحسابك، ثم أعد المحاولة")
@@ -100,7 +107,7 @@ class VipSession(private val context:Context){
     }
     /** Visible, user-operated route for gates/tabs. Never clicks a challenge or spoofs a browser identity. */
     @SuppressLint("SetJavaScriptEnabled")
-    suspend fun capturePlayback(item:String):VipPlaybackCapture = suspendCancellableCoroutine { cont ->
+    override suspend fun capturePlayback(item:String):VipPlaybackCapture = suspendCancellableCoroutine { cont ->
         val embeds=ConcurrentHashMap.newKeySet<String>()
         val media=ConcurrentHashMap<String,VipCapturedMedia>()
         var dialog:Dialog?=null;var view:WebView?=null;var done=false

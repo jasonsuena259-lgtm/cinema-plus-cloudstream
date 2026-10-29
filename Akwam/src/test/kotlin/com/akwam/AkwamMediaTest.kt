@@ -46,6 +46,15 @@ class AkwamMediaTest {
         )
     }
 
+    @Test fun onlyActualHlsPlaylistsAreRecognized() {
+        assertTrue(AkwamParser.isHlsManifest(
+            "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=3500000\n720/index.m3u8"))
+        assertTrue(AkwamParser.isHlsManifest(
+            "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6.0,\nseg001.ts"))
+        assertFalse(AkwamParser.isHlsManifest("<html>Cloudflare challenge</html>"))
+        assertFalse(AkwamParser.isHlsManifest("#EXTM3U\n#EXT-X-TARGETDURATION:6"))
+    }
+
     @Test fun noFakePlayerLinksOrRoutesAreEmitted() {
         val html = "<div>مشاهدة جودة عالية - 720p</div>"
         assertTrue(AkwamParser.embeds(html,"https://akwam.ss").isEmpty())

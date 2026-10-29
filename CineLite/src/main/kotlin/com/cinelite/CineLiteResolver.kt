@@ -4,11 +4,6 @@ import android.content.Context
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -23,120 +18,7 @@ import java.io.ByteArrayOutputStream
 class CineLiteResolver(private val context: Context) {
     private val browser = CineLiteBrowser(context)
 
-    /**
-     * Do not replace the earlier working resolver. Run genuine dynamic server
-     * discovery next to it: a bad or empty source menu must never discard the
-     * original validated media link. Only publish actual HLS/MP4 bytes.
-     */
     suspend fun resolve(
-        sources: List<LiteSource>,
-        contentUrl: String,
-        subtitles: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean = coroutineScope {
-        val published = java.util.Collections.synchronizedSet(mutableSetOf<String>())
-        val deliveredSubs = java.util.Collections.synchronizedSet(mutableSetOf<String>())
-        val onLink: (ExtractorLink) -> Unit = { link ->
-            if (published.add(link.url)) callback(link)
-        }
-        val onSubtitle: (SubtitleFile) -> Unit = { sub ->
-            if (deliveredSubs.add(sub.url)) subtitles(sub)
-        }
-        val player = sources.firstOrNull { !it.direct && it.url.startsWith("https://") }
-        val dynamic = player?.let { p ->
-            async {
-                withTimeoutOrNull(8600L) {
-                    CineLiteMultiSourceBrowser(context).capture(p.url, contentUrl)
-                }
-            }
-        }
-        val fallback = async {
-            try {
-                resolveLegacy(sources, contentUrl, onSubtitle, onLink)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                false
-            }
-        }
-        val observed = dynamic?.await()
-        if (observed != null && observed.streams.isNotEmpty()) {
-            val semaphore = Semaphore(4)
-            val verified = observed.streams.distinctBy { it.url }.take(18).map { request ->
-                async(Dispatchers.IO) {
-                    semaphore.withPermit { verifyLiveCapture(request, player?.url ?: contentUrl) }
-                }
-            }.awaitAll().filterNotNull()
-            for (link in verified) onLink(link)
-            // Subtitles must be links actually present in the player; Arabic
-            // metadata is not fabricated and unavailable languages are omitted.
-            if (verified.isNotEmpty()) observed.subtitles.distinctBy { it.url }
-                .forEach { onSubtitle(SubtitleFile(it.title, it.url)) }
-        }
-        val fallbackSuccess = fallback.await()
-        if (!fallbackSuccess && published.isEmpty()) throw ErrorLoadingException(
-            "CineLite: no reachable server URL was returned by the site's player"
-        )
-        published.isNotEmpty()
-    }
-
-    private suspend fun verifyLiveCapture(
-        request: LiteMediaRequest,
-        pageUrl: String
-    ): ExtractorLink? = withContext(Dispatchers.IO) {
-        val mediaType = when (CineLiteParser.mediaKind(request.url)) {
-            "hls" -> ExtractorLinkType.M3U8
-            "mp4" -> ExtractorLinkType.VIDEO
-            else -> return@withContext null
-        }
-        try {
-            val builder = Request.Builder().url(request.url)
-            request.headers.forEach { (name, value) ->
-                if (!name.equals("Range", true) && !name.equals("Referer", true))
-                    builder.header(name, value)
-            }
-            val ref = request.headers.entries.firstOrNull {
-                it.key.equals("Referer", true)
-            }?.value ?: pageUrl
-            if (ref.isNotBlank()) builder.header("Referer", ref)
-            if (mediaType == ExtractorLinkType.VIDEO)
-                builder.header("Range", "bytes=0-2047")
-            val client = app.baseClient.newBuilder()
-                .callTimeout(2600, TimeUnit.MILLISECONDS).build()
-            client.newCall(builder.build()).execute().use { response ->
-                if (!response.isSuccessful) return@withContext null
-                val stream = response.body?.byteStream() ?: return@withContext null
-                val buffer = ByteArray(2048)
-                var size = 0
-                while (size < buffer.size) {
-                    val count = stream.read(buffer, size, buffer.size - size)
-                    if (count <= 0) break
-                    size += count
-                }
-                val prefix = buffer.copyOf(size)
-                val good = if (mediaType == ExtractorLinkType.M3U8)
-                    prefix.toString(Charsets.UTF_8).trimStart('\uFEFF', '\n', '\r', ' ', '\t')
-                        .startsWith("#EXTM3U")
-                else prefix.size >= 12 && prefix.copyOfRange(4, 8)
-                    .toString(Charsets.US_ASCII) in setOf("ftyp", "styp", "moof")
-                if (!good) return@withContext null
-                newExtractorLink("CineLite", request.sourceName.ifBlank { "CineLite" },
-                    request.url, mediaType) {
-                    referer = ref
-                    headers = request.headers.filterKeys {
-                        !it.equals("Referer", true) && !it.equals("Range", true)
-                    }
-                }
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    // Kept intact as a backwards-compatible fallback after the v5 regression.
-    private suspend fun resolveLegacy(
         sources: List<LiteSource>,
         contentUrl: String,
         subtitles: (SubtitleFile) -> Unit,

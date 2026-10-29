@@ -2,65 +2,101 @@ package com.akwam
 
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.loadExtractor
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import kotlinx.coroutines.CancellationException
 import org.jsoup.nodes.Document
-import java.net.URI
+import java.net.URLEncoder
 
-class AkwamProvider : MainAPI() {
-    override var mainUrl = "https://akwam.day"
-    override var name = "Akwam | أكوام"
-    override var lang = "ar"
-    override val hasMainPage = true
-    override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
-    override val mainPage = mainPageOf("/" to "أحدث الإضافات", "/category/افلام-اجنبي" to "أفلام أجنبية", "/category/افلام-عربي" to "أفلام عربية", "/category/مسلسلات-اجنبي" to "مسلسلات أجنبية", "/category/مسلسلات-عربي" to "مسلسلات عربية", "/category/مسلسلات-تركية" to "مسلسلات تركية")
-    private suspend fun page(url: String): String? = try { app.get(url, timeout = 15).takeIf { it.code in 200..299 }?.text } catch (e: Exception) { null }
-    private fun result(item: AkwamItem): SearchResponse = if (item.series) newTvSeriesSearchResponse(item.title, item.url) { posterUrl = item.poster } else newMovieSearchResponse(item.title, item.url) { posterUrl = item.poster }
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        if (request.data == "/" && page > 1) return newHomePageResponse(request.name, emptyList(), hasNext = false)
-        val url = mainUrl + request.data + if (page > 1) "?page=$page" else ""
-        val html = page(url) ?: return newHomePageResponse(request.name, emptyList(), hasNext = false)
-        val doc = AkwamParser.document(html, url)
-        val list = AkwamParser.cards(html, url).map(::result)
-        val hasNext = AkwamParser.hasNext(doc, page)
-        return newHomePageResponse(request.name, list, hasNext = hasNext)
+class AkwamProvider:MainAPI(){
+    override var mainUrl=AkwamParser.BASE
+    override var name="Akwam | أكوام"
+    override var lang="ar"
+    override val hasMainPage=true
+    override val supportedTypes=setOf(TvType.Movie,TvType.TvSeries,TvType.Anime)
+    override val mainPage=mainPageOf(
+        "/one" to "الرئيسية",
+        "/recent" to "أضيف حديثًا",
+        "/movies" to "الأفلام",
+        "/series" to "المسلسلات",
+        "/shows" to "التلفزيون",
+        "/movies?category=1" to "أفلام عربية",
+        "/series?category=30" to "مسلسلات أنمي"
+    )
+    private suspend fun fetch(url:String):String?=try {
+        app.get(url,timeout=18).takeIf{it.code in 200..299}?.text
+    }catch(e:CancellationException){throw e}
+    catch(_:Exception){null}
+
+    private fun result(item:AkwamItem):SearchResponse=
+        if(item.series)newTvSeriesSearchResponse(item.title,item.url){
+            posterUrl=item.poster
+        } else newMovieSearchResponse(item.title,item.url){posterUrl=item.poster}
+
+    override suspend fun getMainPage(page:Int,request:MainPageRequest):HomePageResponse{
+        val part=request.data
+        if(page>1 && (part=="/one"||part=="/recent"))
+            return newHomePageResponse(request.name,emptyList(),hasNext=false)
+        val url=mainUrl+part+(if(page>1)(if('?' in part)"&" else "?")+"page="+page else "")
+        val html=fetch(url)?:return newHomePageResponse(request.name,emptyList(),hasNext=false)
+        val doc=AkwamParser.document(html,url)
+        return newHomePageResponse(request.name,AkwamParser.cards(html,url).map(::result),
+            hasNext=AkwamParser.hasNext(doc,page))
     }
-    override suspend fun search(query: String): List<SearchResponse> = search(query, 1).items
-    override suspend fun search(query: String, page: Int): SearchResponseList {
-        if (query.isBlank()) return newSearchResponseList(emptyList(), false)
-        val url = "$mainUrl/search?s=" + java.net.URLEncoder.encode(query, "UTF-8") + "&page=$page"
-        val html = page(url) ?: return newSearchResponseList(emptyList(), false)
-        val items = AkwamParser.cards(html, url).map(::result)
-        return newSearchResponseList(items, AkwamParser.hasNext(AkwamParser.document(html, url), page))
+    override suspend fun search(query:String):List<SearchResponse> =
+        search(query,1).items
+    override suspend fun search(query:String,page:Int):SearchResponseList{
+        if(query.isBlank())return newSearchResponseList(emptyList(),false)
+        val encoded=URLEncoder.encode(query.trim(),"UTF-8")
+        // Old Akwam supported ?q; current Akwam forms may use ?s.
+        // Try both real search routes; do not invent catalogue entries.
+        for(endpoint in listOf("/search?q=","/search?s=")){
+            val url=mainUrl+endpoint+encoded+"&page="+page
+            val html=fetch(url)?:continue
+            val items=AkwamParser.cards(html,url).map(::result)
+            if(items.isNotEmpty()){
+                return newSearchResponseList(items,
+                    AkwamParser.hasNext(AkwamParser.document(html,url),page))
+            }
+        }
+        return newSearchResponseList(emptyList(),false)
     }
-    override suspend fun load(url: String): LoadResponse? {
-        val host = runCatching { URI(url).host }.getOrNull() ?: return null
-        if (host != "akwam.day") return null
-        var currentUrl = url
-        var html = page(url) ?: return null
-        var doc = AkwamParser.document(html, url)
-        if (url.contains("/episode/")) {
-            val seriesUrl = doc.selectFirst("nav.bc a[href*=/series/]")?.absUrl("href")
-            if (!seriesUrl.isNullOrBlank()) { val fetched = page(seriesUrl); if (fetched != null) { currentUrl = seriesUrl; html = fetched; doc = AkwamParser.document(fetched, seriesUrl) } }
+    override suspend fun load(url:String):LoadResponse?{
+        val valid=AkwamParser.site(url)?:return null
+        val html=fetch(valid) ?: throw ErrorLoadingException("أكوام: تعذر تحميل صفحة التفاصيل")
+        val doc=AkwamParser.document(html,valid)
+        val title=AkwamParser.title(doc)?:throw ErrorLoadingException("أكوام: لم يظهر عنوان المحتوى")
+        val poster=AkwamParser.poster(doc)
+        val plot=AkwamParser.plot(doc)
+        val entries=AkwamParser.qualities(html,valid)
+        val tags=doc.select("a[href*='category='],a[href*='/genre/']")
+            .map{it.text()}.filter{it.isNotBlank()}.distinct()
+        if(valid.contains("/movie/")){
+            return newMovieLoadResponse(title,valid,TvType.Movie,valid){
+                posterUrl=poster;this.plot=plot;this.tags=tags
+            }
         }
-        val title = doc.selectFirst(".info-side h1.title, .info-side span.title")?.text()?.trim()?.takeIf { it.isNotEmpty() } ?: doc.selectFirst("meta[property=og:title]")?.attr("content") ?: return null
-        val plot = doc.selectFirst(".info-side .description")?.text()?.trim()
-        val style = doc.selectFirst(".poster-side .poster")?.attr("style").orEmpty()
-        val poster = Regex("""url\(([^)]+)\)""").find(style)?.groupValues?.get(1)?.trim('"', '\'')
-        val tags = doc.select("a[href*=/genre/]").map { it.text() }.filter { it.isNotBlank() }.distinct()
-        if (url.contains("/film/")) return newMovieLoadResponse(title, url, TvType.Movie, url) { posterUrl = poster; this.plot = plot; this.tags = tags }
-        val seasons = AkwamParser.seasons(doc)
-        val eps = mutableListOf<AkwamEpisode>()
-        if (seasons.isEmpty()) eps += AkwamParser.episodes(doc, 1)
-        else for ((seasonUrl, number) in seasons) {
-            val seasonHtml = page(seasonUrl) ?: continue
-            eps += AkwamParser.episodes(AkwamParser.document(seasonHtml, seasonUrl), number)
+        val groups=AkwamParser.seasons(doc)
+        val all=mutableListOf<AkwamEpisode>()
+        if(groups.isEmpty())all+=AkwamParser.episodes(doc,1)
+        else for((link,number) in groups){
+            val seasonHtml=fetch(link)?:continue
+            all+=AkwamParser.episodes(AkwamParser.document(seasonHtml,link),number)
         }
-        val episodes = eps.distinctBy { it.url }.sortedWith(compareBy({ it.season }, { it.number })).map { ep ->
-            newEpisode(ep.url) { season = ep.season; episode = ep.number; name = "الحلقة ${ep.number}" }
+        // Some TV entries link directly to the latest episode in the banner.
+        // Never fabricate episode URLs or classify failed loading as "coming soon".
+        if(all.isEmpty())throw ErrorLoadingException(
+            "أكوام: صفحة المسلسل لم تعرض روابط حلقات قابلة للتحقق")
+        val episodes=all.distinctBy{it.url}
+            .sortedWith(compareBy<AkwamEpisode>{it.season}.thenBy{it.number})
+            .map { ep->newEpisode(ep.url){
+                season=ep.season;episode=ep.number;name="الحلقة "+ep.number
+            } }
+        return newTvSeriesLoadResponse(title,valid,TvType.TvSeries,episodes){
+            posterUrl=poster;this.plot=plot;this.tags=tags
         }
-        return newTvSeriesLoadResponse(title, currentUrl, TvType.TvSeries, episodes) { posterUrl = poster; this.plot = plot; this.tags = tags }
     }
-    override suspend fun loadLinks(data: String, isCasting: Boolean, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean = AkwamResolver(mainUrl).resolve(data, subtitleCallback, callback)
+    override suspend fun loadLinks(
+        data:String,isCasting:Boolean,
+        subtitleCallback:(SubtitleFile)->Unit,
+        callback:(ExtractorLink)->Unit
+    ):Boolean=AkwamResolver(mainUrl).resolve(data,subtitleCallback,callback)
 }

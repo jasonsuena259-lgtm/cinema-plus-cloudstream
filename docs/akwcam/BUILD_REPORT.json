@@ -1,0 +1,16 @@
+{
+  "gradle": "BUILD SUCCESSFUL",
+  "offlineTests": 16,
+  "offlineFailures": 0,
+  "liveProbe": "completed; source-specific failures recorded separately",
+  "androidPlayback": "NOT_TESTED",
+  "artifact": "dist/AkwCam-v1.cs3",
+  "sha256": "b1a6c97f1c9613b5b579f8140c02eb5ed623cec90baeef4fb71f88b0bb76751c",
+  "bytes": 55580,
+  "manifest": {
+    "requiresResources": false,
+    "version": 1,
+    "pluginClassName": "com.akwcam.AkwCamPlugin",
+    "name": "AkwCam"
+  }
+}

@@ -83,3 +83,7 @@ https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/mai
 ### CimaNow VIP — نسخة اختبار الدخول والتوافق
 
 [التثبيت والقيود](CimaNowVIP/README.md). ليست نسخة مثبتة للتصفح أو المشاهدة داخل Android؛ الدخول يتم على جهاز المستخدم فقط.
+
+## AkwCam — أكوام akw.cam
+
+إضافة مستقلة جديدة للقوائم والبطاقات والمواسم والحلقات وروابط المشاهدة والتحميل، مع توسيع مرايا Share4max. إصدار تجريبي؛ بعض السيرفرات غير متاحة، وAndroid غير مختبر. [التثبيت والتفاصيل](docs/akwcam/README.md) و[نتائج الفحص](docs/akwcam/SERVER_TEST_REPORT.md).

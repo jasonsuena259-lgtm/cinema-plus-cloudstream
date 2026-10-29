@@ -1,0 +1,50 @@
+[
+  {
+    "route": "/all-content",
+    "cards": 20,
+    "seasons": 0,
+    "episodes": 0
+  },
+  {
+    "route": "/films/page/2",
+    "cards": 20,
+    "seasons": 0,
+    "episodes": 0
+  },
+  {
+    "route": "/seriestv",
+    "cards": 20,
+    "seasons": 0,
+    "episodes": 0
+  },
+  {
+    "route": "/episodestv",
+    "cards": 20,
+    "seasons": 0,
+    "episodes": 0
+  },
+  {
+    "route": "/search?q=Lizzie",
+    "cards": 20,
+    "seasons": 0,
+    "episodes": 0
+  },
+  {
+    "route": "/search?q=%D9%85%D8%B3%D9%84%D8%B3%D9%84",
+    "cards": 20,
+    "seasons": 0,
+    "episodes": 0
+  },
+  {
+    "route": "/series/karakuri-kiden-hiwou-senki",
+    "cards": 0,
+    "seasons": 1,
+    "episodes": 26
+  },
+  {
+    "route": "/series/where-the-mask-ends",
+    "cards": 0,
+    "seasons": 1,
+    "episodes": 1
+  }
+]

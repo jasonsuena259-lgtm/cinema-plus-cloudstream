@@ -1,0 +1,196 @@
+[
+  {
+    "host": "strm1.uqload.vc",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 636,
+        "height": 480
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 177663
+  },
+  {
+    "host": "strm1.uqload.vc",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 636,
+        "height": 480
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 177663
+  },
+  {
+    "host": "strm1.uqload.vc",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 636,
+        "height": 480
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 177663
+  },
+  {
+    "host": "rnzt2t4xvku08.acek-cdn.com",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1800,
+        "height": 1080
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 1484781
+  },
+  {
+    "host": "s6-s251765.97bf1.com",
+    "download_sample": "FAIL"
+  },
+  {
+    "host": "hgc0uswxhnn8.acek-cdn.com",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1200,
+        "height": 720
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 504153
+  },
+  {
+    "host": "h85mclle5sxf9yf.acek-cdn.com",
+    "download_sample": "FAIL"
+  },
+  {
+    "host": "a3.mp4upload.com",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 854,
+        "height": 512
+      },
+      {
+        "codec_name": "aac"
+      },
+      {
+        "codec_name": "bin_data"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 222702
+  },
+  {
+    "host": "strm1.uqload.vc",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 636,
+        "height": 480
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 177663
+  },
+  {
+    "host": "yjrny6vwd3y1oxuh.acek-cdn.com",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1800,
+        "height": 1080
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 1484781
+  },
+  {
+    "host": "s6-s251765.97bf1.com",
+    "download_sample": "FAIL"
+  },
+  {
+    "host": "hgc0uswxhnn8.acek-cdn.com",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1200,
+        "height": 720
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 504153
+  },
+  {
+    "host": "h85mclle5sxf9yf.acek-cdn.com",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 854,
+        "height": 512
+      },
+      {
+        "codec_name": "aac"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 218539
+  },
+  {
+    "host": "a3.mp4upload.com",
+    "download_sample": "PASS",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 854,
+        "height": 512
+      },
+      {
+        "codec_name": "aac"
+      },
+      {
+        "codec_name": "bin_data"
+      }
+    ],
+    "decode": "PASS",
+    "bytes": 222702
+  }
+]

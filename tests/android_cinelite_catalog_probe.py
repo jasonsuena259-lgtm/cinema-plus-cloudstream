@@ -48,7 +48,9 @@ show("home-after-install")
 if tap([r"Choose source",r"CineLite"]) :
     show("source-sheet")
     tap([r"^CineLite$",r"CineLite"])
-    time.sleep(12)
+    # The provider's own WebView can legally wait up to 23s for React
+    # hydration. The old 12s assertion was earlier than that timeout.
+    time.sleep(30)
     home=show("cinelite-home")
     failures=[t for t,x,y in home if re.search("page did not render|no real cards|network error|HTTP 403",t,re.I)]
     if failures:
@@ -72,7 +74,9 @@ if candidates:
     adb("shell","input","tap",str(x),str(y))
     adb("shell","input","text","ONE%sPIECE"%"%s")
     adb("shell","input","keyevent","66")
-    time.sleep(12)
+    # Native KodaStream search dispatches the provider on IME submit;
+    # wait longer than CineLite's 23s WebView cap before asserting absence.
+    time.sleep(33)
     search=show("one-piece-search")
     search_labels=[t for t,x,y in search]
     has_no_results=any(re.search(r"No results|Nothing found|لا توجد نتائج",x,re.I) for x in search_labels)
@@ -94,6 +98,12 @@ if candidates:
 else:
     print("APP_UI_SEARCH_FIELD_MISSING",flush=True)
     catalog_errors.append("Native KodaStream search field unavailable")
+# Always collect *sanitized* native WebView diagnostic codes, even when
+# the KodaStream UI merely stays empty (rather than displaying a provider error).
+log=adb("logcat","-d","-t","5000")
+lines=[line for line in log.splitlines() if "CineLiteSnapshot" in line]
+print("CINELITE_WEBVIEW_DIAGNOSTIC",repr(lines[-65:]),flush=True)
+(ROOT/"catalog-webview-diagnostics.txt").write_text("\\n".join(lines[-120:]))
 print("CATALOG_PROBE_COMPLETE: do not interpret this as successful media playback",flush=True)
 if catalog_errors:
     raise RuntimeError("CineLite real Android catalog/search/episodes not confirmed: "+"; ".join(catalog_errors))

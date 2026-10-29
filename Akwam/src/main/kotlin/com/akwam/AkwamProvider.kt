@@ -68,7 +68,7 @@ class AkwamProvider:MainAPI(){
         val entries=AkwamParser.qualities(html,valid)
         val tags=doc.select("a[href*='section='],a[href*='/genre/']")
             .map{it.text()}.filter{it.isNotBlank()}.distinct()
-        if(valid.contains("/movie/")){
+        if(valid.contains("/movie/")||valid.contains("/shows/")){
             return newMovieLoadResponse(title,valid,TvType.Movie,valid){
                 posterUrl=poster;this.plot=plot;this.tags=tags
             }

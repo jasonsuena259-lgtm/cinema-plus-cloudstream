@@ -20,7 +20,7 @@ data class LiteSourceCapture(
 /**
  * A single first-party WebView session collects server choices and subtitle tracks
  * from the page's actual UI. No expired tokens, hardcoded server URLs or bypasses.
- * Bounded at 7.3 seconds, leaving time for CloudStream to validate captured links.
+ * Bounded to capture the visible site's real source choices without guessing links.
  */
 class CineLiteMultiSourceBrowser(private val context: Context) {
     private val safeSubtitleName = Regex("(?i)(?:arabic|\\bar\\b|عربي|العربية|english|\\ben\\b|french|spanish)")
@@ -92,7 +92,14 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                         addJavascriptInterface(object {
                             @JavascriptInterface
                             fun select(name: String) {
-                                if (name.length in 1..48) active.set(name)
+                                // Never label an intercepted manifest with tab
+                                // counters such as "(0)" or generic player UI text.
+                                val value = name.trim()
+                                if (value.length in 2..48 &&
+                                    value.any { it.isLetter() } &&
+                                    !Regex("(?i)^(?:network|addons|stream sources|\\d+ agents?|sub|dub|auto)$")
+                                        .matches(value)
+                                ) active.set(value)
                             }
                         }, "CineLiteSourceName")
                         webViewClient = object : WebViewClient() {
@@ -170,28 +177,30 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                   }
                                   function sourceRows(panel){
                                     if(!panel)return [];
-                                    // Real CineLite items are clickable rows (not
-                                    // the source switcher's Network/Addons tabs).
+                                    // Only real source cards, never the Network(14),
+                                    // Addons(0), quality/stream count, or toolbar rows.
                                     const all=[...panel.querySelectorAll(
-                                      '[role=option],[role=menuitem],[class*=cursor-pointer],button'
+                                      'div.group.cursor-pointer,[role=option],[role=menuitem]'
                                     )].filter(visible);
+                                    const metadata=/^(?:\(?\d+\)?|\d+\s*agents?|network|addons|sub|dub|hd|4k|2160p|1080p|720p|auto|server|servers|active stream agents|add token)$/i;
                                     const rows=[],seen=new Set();
                                     for(const el of all){
-                                      let pieces=[...el.querySelectorAll('span,div,p')]
+                                      if(el.closest('[role=tab]'))continue;
+                                      // The real CineLite agent row has a leaf with the
+                                      // server name. Ignore nested badges and counts.
+                                      const pieces=[...el.querySelectorAll('span,div,p')]
                                         .filter(node=>node.children.length===0&&visible(node))
                                         .map(label)
-                                        .filter(x=>x&&x.length<55&&!/[•]/.test(x)&&
-                                          /[a-zA-Z0-9\u0600-\u06FF]/.test(x)&&
-                                          !/^(?:SUB|DUB|HD|4K|1080p|720p|Auto|Network|Addons|Server|Servers)$/i.test(x));
-                                      let t=pieces[0]||label(el).replace(/\s+(?:SUB|DUB)\s*$/i,'').trim();
-                                      if(t.length<2||t.length>55||skip.test(t)||
-                                        /\b(?:agents|stream sources|servers|network|addons|add token|febbox cloud)\b/i.test(t))continue;
-                                      if(!el.matches('[role=option],[role=menuitem],[class*=cursor-pointer]')&&
-                                        !/^(clove|reyna|chamber|neon)/i.test(t))continue;
-                                      if([...el.querySelectorAll('[role=option],[role=menuitem],[class*=cursor-pointer]')]
-                                        .some(child=>visible(child)&&label(child)===label(el)))continue;
-                                      const key=t.toLowerCase();
-                                      if(!seen.has(key)){seen.add(key);rows.push({name:t,element:el});}
+                                        .filter(x=>x&&x.length<49&&
+                                          /[a-zA-Z\u0600-\u06FF]/.test(x)&&
+                                          !metadata.test(x)&&!skip.test(x)&&
+                                          !/\b(?:agents|network|addons|subtitle|stream sources|febbox cloud)\b/i.test(x));
+                                      const name=pieces.find(x=>/^[\p{L}][\p{L}\s-]{1,44}$/u.test(x))||
+                                        pieces[0];
+                                      if(!name||name.length<2||name.length>48||
+                                         metadata.test(name)||skip.test(name))continue;
+                                      const key=name.toLowerCase();
+                                      if(!seen.has(key)){seen.add(key);rows.push({name,element:el});}
                                     }
                                     return rows;
                                   }
@@ -270,7 +279,9 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                     }
                     // Six real server choices can take over six seconds to
                     // hydrate and initiate their separate playback requests.
-                    handler.postDelayed({ complete() }, 11000)
+                    // Fourteen choices × 850 ms plus initial hydration need
+                    // more than the former 11-second timeout.
+                    handler.postDelayed({ complete() }, 20500)
                 } catch (_: Exception) { complete() }
             }
         }

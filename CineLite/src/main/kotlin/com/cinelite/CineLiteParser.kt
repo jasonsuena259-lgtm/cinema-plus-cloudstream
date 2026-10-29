@@ -59,7 +59,15 @@ object CineLiteParser {
         return LiteIdentity(id, type, title, u.queryParameter("cinelitePoster"))
     }
 
-    /** These routes are specified by CineLite's public embed documentation. */
+    /** First-party watch routes observed on real CineLite film/anime pages. */
+    fun watchMovie(id: Int): String? =
+        id.takeIf { it > 0 }?.let { "$BASE/watch/$it" }
+
+    fun watchAnimeEpisode(id: Int, episode: Int): String? =
+        if (id > 0 && episode > 0) "$BASE/watch/anime/$id/$episode" else null
+
+    /** The TV embed format is documented by the site's own public player. */
+
     fun embedMovie(id: Int): String? = id.takeIf { it > 0 }?.let { "https://embed.cinelite.xyz/" + it }
     fun embedEpisode(id: Int, season: Int, episode: Int): String? =
         if (id > 0 && season >= 0 && episode > 0)
@@ -101,6 +109,24 @@ object CineLiteParser {
         }
         return (annotated + anchors).distinctBy { it.url }
     }
+
+    /**
+     * Keep the site's actual section headings and only their rendered, annotated cards.
+     * This avoids mixing movies, TV and anime in one unlabelled flattened carousel.
+     */
+    fun sections(html: String, base: String = BASE): List<Pair<String, List<LiteCard>>> =
+        doc(html, base).select("section").mapNotNull { section ->
+            val heading = section.selectFirst("h2")?.text()?.trim()?.takeIf { it.isNotBlank() }
+                ?: return@mapNotNull null
+            val actual = cards(section.outerHtml(), base)
+            if (actual.isEmpty()) null else heading to actual
+        }.distinctBy { it.first.lowercase() }
+
+    /** Explicitly preserve a series' season/episode numeric ordering. */
+    fun orderedEpisodes(items: List<LiteEpisode>): List<LiteEpisode> =
+        items.filter { (it.episode ?: 0) > 0 }
+            .distinctBy { (it.season ?: 1) to it.episode }
+            .sortedWith(compareBy<LiteEpisode> { it.season ?: 1 }.thenBy { it.episode ?: 0 })
 
     fun title(html: String, base: String): String? {
         val document = doc(html, base)

@@ -15,9 +15,9 @@ buildscript {
         classpath("com.android.tools.build:gradle:8.7.3")
         classpath("com.android.tools:r8:9.5.28")
         // Cloudstream gradle plugin which makes everything work and builds plugins
-        // Pin a specific upstream revision. JitPack's floating -SNAPSHOT has
-        // intermittently resolved to a missing Gradle POM in CI.
-        classpath("com.github.recloudstream:gradle:69fdb8fc4be2815cbdf5ecec7f407727001cc7c7")
+        // Use official CloudStream template coordinate. CI tries a
+        // cached offline build first when JitPack is temporarily unavailable.
+        classpath("com.github.recloudstream:gradle:-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.0")
     }
 }

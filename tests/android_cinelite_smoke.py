@@ -10,6 +10,7 @@ ROOT=pathlib.Path("artifacts/android-cinelite")
 ROOT.mkdir(parents=True, exist_ok=True)
 REPO=os.environ.get("CINELITE_REPO", "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/repo.json")
 PKG="com.kodastream.app"
+EXPECTED_VERSION=os.environ.get("CINELITE_VERSION","14")
 def adb(*args, timeout=45, check=True):
     proc=subprocess.run(["adb",*args],stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=timeout,text=True)
     if check and proc.returncode:
@@ -97,9 +98,11 @@ log=adb("logcat","-d","-t","2500",timeout=30)
 tap_label([r"^installed\s*\(\d+\)$",r"^installed.*",r"^المثبتة"],wait=3)
 capture("07-installed-tab")
 labels=brief()
-if not any("CineLite" in x for x in labels):
+if not any("CineLite" in x for x in labels) or not any(
+    re.search(r"^v"+re.escape(EXPECTED_VERSION)+r"$",x.strip()) for x in labels
+):
     failures=[line for line in log.splitlines() if "cinelite" in line.lower() or "plugin" in line.lower() or "FATAL EXCEPTION" in line]
     print("CINELITE_RELATED_LOGS", "\n".join(failures[-35:])[:4500],flush=True)
-    raise RuntimeError("The actual KodaStream installed-plugins UI did not confirm CineLite.")
-print("PASS: Native KodaStream app installed CineLite .cs3 from its repository on Android emulator.",flush=True)
+    raise RuntimeError("Native KodaStream did not confirm expected CineLite v"+EXPECTED_VERSION+".")
+print("PASS: KodaStream installed the exact CineLite v"+EXPECTED_VERSION+" .cs3 on Android emulator.",flush=True)
 print("LIMITATION: Real streaming server/Arabic subtitles must be verified separately using playable content.",flush=True)

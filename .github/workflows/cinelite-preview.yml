@@ -44,10 +44,10 @@ jobs:
           with zipfile.ZipFile(package) as archive:
               manifest=json.loads(archive.read('manifest.json'))
               assert manifest['pluginClassName']=='com.cinelite.CineLitePlugin', manifest
-              assert manifest['version']==3, manifest
+              assert manifest['version']==4, manifest
           dest=base/'dist/cinelite-preview'
           dest.mkdir(parents=True,exist_ok=True)
-          artifact=dest/'CineLite-v3.cs3'
+          artifact=dest/'CineLite-v4.cs3'
           shutil.copyfile(package,artifact)
           data=artifact.read_bytes()
           prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/cinelite-preview/'
@@ -58,8 +58,8 @@ jobs:
               'fileSize':len(data),
               'status':3,'language':'en','authors':['Cinema Plus community'],
               'tvTypes':['Movie','TvSeries','Anime'],
-              'version':3,'internalName':'CineLite',
-              'description':'EXPERIMENTAL v3: signed HLS capture/validation improvements; real playback availability varies by device and server.',
+              'version':4,'internalName':'CineLite',
+              'description':'EXPERIMENTAL v4: signed proxy HLS ext support and subtitle capture; real playback remains device/server dependent.',
               'url':prefix+artifact.name, 'name':'CineLite (experimental)'
           }
           (dest/'plugins.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')

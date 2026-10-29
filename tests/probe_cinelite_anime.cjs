@@ -5,7 +5,7 @@ const allow=['cinelite.xyz','embed.cinelite.xyz','api.mycinebackendfuckoff.site'
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox','--autoplay-policy=no-user-gesture-required']});
   try {
-    for(const path of ['/anime','/watch/anime/195539/1']){
+    for(const path of ['/anime','/watch/anime/195539/1','/watch/1560520']){
       const page=await browser.newPage();
       const requests=new Map();
       page.on('response',res=>{
@@ -45,7 +45,7 @@ const allow=['cinelite.xyz','embed.cinelite.xyz','api.mycinebackendfuckoff.site'
             media:[...document.querySelectorAll('video')].map(v=>({readyState:v.readyState,hasSrc:!!v.currentSrc,trackCount:v.textTracks?.length||0})),
             tracks:[...document.querySelectorAll('track')].map(t=>({label:t.label,kind:t.kind,lang:t.srclang}))
           }));
-          console.log('ANIME_SERVER_AFTER_CLICK '+JSON.stringify({after,requests:[...requests.values()]},null,2));
+          console.log('PLAYER_SERVER_AFTER_CLICK '+JSON.stringify({after,requests:[...requests.values()]},null,2));
         }
       }catch(e){console.log('CINELITE_ROUTE_ERROR '+path+' '+e.message.slice(0,220));}
       await page.close();

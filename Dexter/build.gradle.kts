@@ -1,6 +1,6 @@
-version = 3
+version = 4
 cloudstream {
-    description = "Dexter.pw v3: API-backed streams, real Arabic VTT subtitle lookup and fallback movie/series posters; Cloud3 compatibility testing."
+    description = "Dexter.pw v4: site-advertised season episode indexes, robust show posters; verified API streams and Arabic subtitles preserved."
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

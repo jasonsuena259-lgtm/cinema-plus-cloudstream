@@ -1,0 +1,8 @@
+{
+  "name": "CimaNow VIP | سيما ناو",
+  "description": "CimaNow VIP — نسخة اختبار؛ الدخول والتصفح على Android غير مثبتين",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/plugins-cimanowvip-v1.json"
+  ]
+}

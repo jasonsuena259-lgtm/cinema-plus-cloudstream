@@ -347,13 +347,15 @@ class CineLiteBrowser(private val context: Context) {
                                         const seen=new Set();
                                         for(const e of document.querySelectorAll(
                                           'track[src],a[href],[data-subtitle-url],[data-subtitle-src]')){
-                                          const raw=e.src||e.href||e.getAttribute('data-subtitle-url')||
-                                            e.getAttribute('data-subtitle-src');
+                                          const raw=e.getAttribute('data-subtitle-url')||
+                                            e.getAttribute('data-subtitle-src')||e.src||e.href;
                                           if(!raw)continue;
                                           try {
                                             const u=new URL(raw,location.href);
+                                            const ext=u.searchParams.get('ext')||'';
                                             if(u.protocol!=='https:'||
-                                               !/\.(srt|vtt|ass|ssa)$/i.test(u.pathname))continue;
+                                              !(/\.(srt|vtt|ass|ssa)$/i.test(u.pathname)||
+                                                /^(?:\.)?(srt|vtt|ass|ssa)$/i.test(ext)))continue;
                                             if(seen.has(u.href))continue;
                                             seen.add(u.href);
                                             tracks.push({url:u.href,name:label(e)});

@@ -131,7 +131,7 @@ class CineLiteParserTest {
             <track kind="metadata" src="/skip.vtt">
         """.trimIndent()
         val tracks = CineLiteParser.subtitleTracks(document)
-        assertEquals(listOf("Arabic / العربية", "English"), tracks.map { it.first })
+        assertEquals(listOf("Arabic", "English"), tracks.map { it.first })
         assertEquals(2, tracks.size)
         val master = """
             #EXTM3U
@@ -141,7 +141,7 @@ class CineLiteParserTest {
             #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",URI="/audio.m3u8"
         """.trimIndent()
         val manifest = CineLiteParser.hlsSubtitleTracks(master, "https://example.com/master.m3u8")
-        assertEquals(listOf("Arabic / العربية"), manifest.map { it.first })
+        assertEquals(listOf("Arabic"), manifest.map { it.first })
         assertEquals("https://example.com/subs/ar.vtt", manifest.single().second)
     }
 
@@ -178,11 +178,11 @@ class CineLiteParserTest {
         assertTrue(CineLiteParser.isSubtitleFile(en))
         assertFalse(CineLiteParser.isSubtitleFile(fake))
         assertFalse(CineLiteParser.isSubtitleFile("http://localhost/subtitles/ar.srt"))
-        assertEquals("Arabic / العربية", CineLiteParser.subtitleLanguage("", ar))
-        assertEquals("Arabic / العربية", CineLiteParser.subtitleLanguage("AR subtitle", en))
+        assertEquals("Arabic", CineLiteParser.subtitleLanguage("", ar))
+        assertEquals("Arabic", CineLiteParser.subtitleLanguage("AR subtitle", en))
         assertEquals("English", CineLiteParser.subtitleLanguage("", en))
         assertEquals("Subtitle", CineLiteParser.subtitleLanguage("", "https://cdn.example.org/track.srt"))
-        assertTrue(CineLiteParser.subtitlePriority("Arabic / العربية") <
+        assertTrue(CineLiteParser.subtitlePriority("Arabic") <
             CineLiteParser.subtitlePriority("English"))
         val html = """
             <track kind="subtitles" srclang="ar-SA" src="/subtitle/ar.vtt">
@@ -191,6 +191,20 @@ class CineLiteParserTest {
         """.trimIndent()
         val tracks = CineLiteParser.subtitleTracks(html)
         assertEquals(2, tracks.size)
-        assertTrue(tracks.all { it.first == "Arabic / العربية" })
+        assertTrue(tracks.all { it.first == "Arabic" })
     }
+    @Test fun kodaStreamUsesCanonicalSubtitleNamesAndDirectEmbedRoutes() {
+        assertEquals("Arabic", CineLiteParser.subtitleLanguage(
+            "العربية", "https://cdn.example.org/track.vtt"))
+        assertEquals("Arabic", CineLiteParser.subtitleLanguage(
+            "ar", "https://cdn.example.org/track.vtt"))
+        assertEquals(0, CineLiteParser.subtitlePriority("Arabic"))
+        assertTrue(CineLiteParser.isRecognizedEmbedPath("/anime/21/1"))
+        assertTrue(CineLiteParser.isRecognizedEmbedPath("/1560520"))
+        assertTrue(CineLiteParser.isRecognizedEmbedPath("/1399/1/1"))
+        assertFalse(CineLiteParser.isRecognizedEmbedPath("/anime/21"))
+        assertFalse(CineLiteParser.isRecognizedEmbedPath("/e/a1"))
+        assertFalse(CineLiteParser.isRecognizedEmbedPath("/anime/0/1"))
+    }
+
 }

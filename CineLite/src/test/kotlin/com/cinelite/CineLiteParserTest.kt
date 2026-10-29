@@ -123,4 +123,25 @@ class CineLiteParserTest {
         assertEquals("https://cinelite.xyz/watch/1560520", CineLiteParser.watchMovie(1560520))
         assertNull(CineLiteParser.watchAnimeEpisode(195539, 0))
     }
+
+    @Test fun subtitlesAreOnlyExtractedFromDeclaredTextTracks() {
+        val document = """
+            <track kind="subtitles" srclang="ar" src="/subs/ar.vtt">
+            <track kind="captions" label="English CC" src="https://cdn.example.com/en.srt">
+            <track kind="metadata" src="/skip.vtt">
+        """.trimIndent()
+        val tracks = CineLiteParser.subtitleTracks(document)
+        assertEquals(listOf("ar", "English CC"), tracks.map { it.first })
+        assertEquals(2, tracks.size)
+        val master = """
+            #EXTM3U
+            #EXT-X-VERSION:6
+            #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",LANGUAGE="ar",NAME="Arabic",URI="/subs/ar.vtt"
+            #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",LANGUAGE="en",NAME="English",URI="/subs/en.m3u8"
+            #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",URI="/audio.m3u8"
+        """.trimIndent()
+        val manifest = CineLiteParser.hlsSubtitleTracks(master, "https://example.com/master.m3u8")
+        assertEquals(listOf("Arabic"), manifest.map { it.first })
+        assertEquals("https://example.com/subs/ar.vtt", manifest.single().second)
+    }
 }

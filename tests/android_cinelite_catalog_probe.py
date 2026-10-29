@@ -104,6 +104,17 @@ log=adb("logcat","-d","-t","5000")
 lines=[line for line in log.splitlines() if "CineLiteSnapshot" in line]
 print("CINELITE_WEBVIEW_DIAGNOSTIC",repr(lines[-65:]),flush=True)
 (ROOT/"catalog-webview-diagnostics.txt").write_text("\\n".join(lines[-120:]))
+# Include bounded, non-sensitive WebView diagnostics when the source fails.
+# Never print URL query strings, cookies, video tokens or request headers.
+if catalog_errors:
+    try:
+        raw=adb("logcat","-d","-t","5000")
+        lines=[line for line in raw.splitlines() if "CineLiteSnapshot:" in line]
+        print("CINELITE_ANDROID_DIAG",repr(lines[-45:]),flush=True)
+        (ROOT/"snapshot-diagnostics.txt").write_text("\\n".join(lines[-90:]))
+        print("ANDROID_WEBVIEW_PACKAGE",adb("shell","dumpsys","webviewupdate").splitlines()[:14],flush=True)
+    except Exception as e:
+        print("ANDROID_DIAG_ERROR",str(e)[:180],flush=True)
 print("CATALOG_PROBE_COMPLETE: do not interpret this as successful media playback",flush=True)
 if catalog_errors:
     raise RuntimeError("CineLite real Android catalog/search/episodes not confirmed: "+"; ".join(catalog_errors))

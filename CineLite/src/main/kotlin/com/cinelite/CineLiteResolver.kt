@@ -4,6 +4,8 @@ import android.content.Context
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -28,7 +30,9 @@ class CineLiteResolver(private val context: Context) {
         val subtitleQueue = mutableListOf<SubtitleFile>()
         suspend fun add(link: ExtractorLink, capturedInPlayer: Boolean = false): Boolean {
             if (link.url.isBlank()) return false
-            val key = link.url + "\n" + link.headers.toSortedMap().toString()
+            // Different WebViews can observe the same signed URL with slightly
+            // different headers. Show one CloudStream option per actual URL.
+            val key = link.url
             if (key in emitted) return false
             // Browser-intercepted signed URLs have already been requested by
             // CineLite's native player. Re-fetching them before ExoPlayer tries
@@ -94,17 +98,49 @@ class CineLiteResolver(private val context: Context) {
                     }
                     var valid = false
                     for (link in found) if (add(link)) valid = true
-                    if (!valid) {
-                        withTimeoutOrNull(7600) {
-                            browser.media(source.url, contentUrl)?.let {
-                                emitCaptured(it, source.name, source.url)
+                    if (!valid) coroutineScope {
+                        // Keep the Android-proven first-source path intact. In
+                        // parallel, inspect the SAME site's real source switcher
+                        // (not fabricated agent URLs) in one extra WebView.
+                        // Never serialize six independent player launches.
+                        val defaultSource = async {
+                            withTimeoutOrNull(7600) { browser.media(source.url, contentUrl) }
+                        }
+                        val siteSources = async {
+                            withTimeoutOrNull(7600) {
+                                CineLiteMultiSourceBrowser(context).capture(source.url, contentUrl)
+                            }
+                        }
+                        defaultSource.await()?.let {
+                            emitCaptured(it, source.name, source.url)
+                        }
+                        siteSources.await()?.let { captured ->
+                            // Associate each observed HLS/MP4 request with the
+                            // actual server that the website had selected.
+                            captured.streams
+                                .sortedBy { it.sourceName == "CineLite" }
+                                .take(16).forEach { stream ->
+                                    val label = stream.sourceName
+                                        .takeUnless { it.isBlank() || it == "CineLite" }
+                                        ?: source.name
+                                    emitCaptured(stream, label, source.url)
+                                }
+                            if (emitted.isNotEmpty()) {
+                                captured.subtitles
+                                    .filter { CineLiteParser.isSubtitleFile(it.url) }
+                                    .take(40).forEach { subtitle ->
+                                        subtitleQueue += SubtitleFile(
+                                            CineLiteParser.subtitleLanguage(
+                                                subtitle.title, subtitle.url
+                                            ), subtitle.url
+                                        )
+                                    }
                             }
                         }
                     }
-                    // Do not re-open up to six WebViews sequentially. That
-                    // old approach blocked the player's server list for a minute.
-                    // Alternate sources require successful selection in the real
-                    // player; the default server is the fast priority.
+                    // Additional servers are shown ONLY for HLS/MP4 requests
+                    // genuinely observed after selecting their site menu rows.
+                    // A site menu with 0 agents cannot yield invented links.
                     if (emitted.isNotEmpty()) subtitleQueue += discoveredSubs
                 }
             }

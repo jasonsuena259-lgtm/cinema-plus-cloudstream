@@ -30,6 +30,7 @@ class CineLiteBrowser(private val context: Context) {
         val handler = Handler(Looper.getMainLooper())
         var webView: WebView? = null
         var done = false
+        var readScheduled = false
         fun finish(result: String?) {
             handler.post {
                 if (!done) {
@@ -77,6 +78,11 @@ class CineLiteBrowser(private val context: Context) {
                             if (page?.let { CineLiteParser.siteUrl(it) } == null) {
                                 finish(null); return
                             }
+                            // A React SPA can navigate its main document several
+                            // times. Keep one bounded collection loop, otherwise
+                            // competing callbacks prematurely report 0 cards.
+                            if (readScheduled) return
+                            readScheduled = true
                             handler.postDelayed({
                                 fun readDom(attempt: Int = 0) {
                                     view?.evaluateJavascript(
@@ -173,9 +179,32 @@ class CineLiteBrowser(private val context: Context) {
                                         val html = payload?.path("html")?.asText()
                                         val count = payload?.path("count")?.asInt(0) ?: 0
                                         android.util.Log.i("CineLiteSnapshot",
-                                            "Cards=" + count + " payloadBytes=" + (html?.length ?: 0))
-                                        if (count == 0 && attempt < 3) {
-                                            handler.postDelayed({ readDom(attempt + 1) }, 750)
+                                            "Cards=" + count + " payloadBytes=" + (html?.length ?: 0) +
+                                            " jsReturnBytes=" + raw.length)
+                                        if (count == 0) {
+                                            // Log only numeric DOM readiness, never URLs,
+                                            // auth tokens, page text or WebView cookies.
+                                            view?.evaluateJavascript(
+                                                """(function(){return JSON.stringify({
+                                                    ready:document.readyState,
+                                                    bodyBytes:document.body?.innerText?.length||0,
+                                                    h3:document.querySelectorAll('h3').length,
+                                                    sliders:document.querySelectorAll('.slider-track').length,
+                                                    react:!!document.querySelector('[id=root],[id=__next]')
+                                                })})()"""
+                                            ) { state ->
+                                                val summary = runCatching {
+                                                    mapper.readTree(mapper.readTree(state).asText())
+                                                }.getOrNull()
+                                                android.util.Log.i("CineLiteSnapshot",
+                                                    "DOM ready=" + summary?.path("ready")?.asText() +
+                                                    " bodyBytes=" + summary?.path("bodyBytes")?.asInt(-1) +
+                                                    " headings=" + summary?.path("h3")?.asInt(-1) +
+                                                    " sliders=" + summary?.path("sliders")?.asInt(-1))
+                                            }
+                                        }
+                                        if (count == 0 && attempt < 9) {
+                                            handler.postDelayed({ readDom(attempt + 1) }, 850)
                                         } else finish(html?.takeIf { it.isNotBlank() })
                                     }
                                 }
@@ -197,7 +226,7 @@ class CineLiteBrowser(private val context: Context) {
                                         handler.postDelayed({ readDom() }, 2300)
                                     }
                                 }
-                            }, 1800)
+                            }, 1900)
                         }
                     }
                     loadUrl(url)

@@ -131,7 +131,7 @@ class CineLiteParserTest {
             <track kind="metadata" src="/skip.vtt">
         """.trimIndent()
         val tracks = CineLiteParser.subtitleTracks(document)
-        assertEquals(listOf("ar", "English CC"), tracks.map { it.first })
+        assertEquals(listOf("Arabic / العربية", "English"), tracks.map { it.first })
         assertEquals(2, tracks.size)
         val master = """
             #EXTM3U
@@ -168,5 +168,29 @@ class CineLiteParserTest {
             CineLiteParser.embeddedPlayerForWatchUrl("https://cinelite.xyz/watch/anime/195539/1"))
         assertNull(CineLiteParser.embeddedPlayerForWatchUrl("https://cinelite.xyz/search"))
         assertNull(CineLiteParser.embeddedPlayerForWatchUrl("https://attacker.example/watch/1560520"))
+    }
+
+    @Test fun onlyRealSubtitleFilesCanBeExposedAndArabicComesFirst() {
+        val ar = "https://www.subtitlecat.com/subs/1654/Movie.Knightfall-ar.srt"
+        val en = "https://cdn.example.org/subtitles/Movie.English.vtt"
+        val fake = "https://www.subtitlecat.com/subs/1654/Movie.html"
+        assertTrue(CineLiteParser.isSubtitleFile(ar))
+        assertTrue(CineLiteParser.isSubtitleFile(en))
+        assertFalse(CineLiteParser.isSubtitleFile(fake))
+        assertFalse(CineLiteParser.isSubtitleFile("http://localhost/subtitles/ar.srt"))
+        assertEquals("Arabic / العربية", CineLiteParser.subtitleLanguage("", ar))
+        assertEquals("Arabic / العربية", CineLiteParser.subtitleLanguage("AR subtitle", en))
+        assertEquals("English", CineLiteParser.subtitleLanguage("", en))
+        assertEquals("Subtitle", CineLiteParser.subtitleLanguage("", "https://cdn.example.org/track.srt"))
+        assertTrue(CineLiteParser.subtitlePriority("Arabic / العربية") <
+            CineLiteParser.subtitlePriority("English"))
+        val html = """
+            <track kind="subtitles" srclang="ar-SA" src="/subtitle/ar.vtt">
+            <a href="https://www.subtitlecat.com/subs/1654/Movie.Knightfall-ar.srt">Arabic</a>
+            <a href="https://www.subtitlecat.com/subs/1654/Movie.Knightfall.html">Not SRT</a>
+        """.trimIndent()
+        val tracks = CineLiteParser.subtitleTracks(html)
+        assertEquals(2, tracks.size)
+        assertTrue(tracks.all { it.first == "Arabic / العربية" })
     }
 }

@@ -10,6 +10,7 @@ const routes = [
   // The user's screenshot shows VisionQuest S1E6 with 14 network agents.
   // Test the specific title, not only a different unrelated TV series.
   { kind: 'visionquest-s1e6', path: '/213375/1/6' },
+  { kind: 'visionquest-watch-s1e6', siteUrl: 'https://cinelite.xyz/watch/213375/1/6' },
 ];
 (async () => {
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
@@ -34,7 +35,7 @@ const routes = [
         } catch (_) {}
       });
       try {
-        await page.goto('https://embed.cinelite.xyz' + route.path,
+        await page.goto(route.siteUrl || ('https://embed.cinelite.xyz' + route.path),
           { waitUntil: 'domcontentloaded', timeout: 25000 });
         await page.waitForTimeout(1700);
         const serverState = await page.evaluate(() => {

@@ -1,6 +1,6 @@
-version = 4
+version = 5
 cloudstream {
-    description = "CineLite v4 — proxy HLS ext query recognition, embedded player fallback and subtitle capture; playback still needs live verification"
+    description = "CineLite v5 — parallel player sources, Arabic subtitle discovery, fast bounded link loading (experimental)"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

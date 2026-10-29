@@ -67,7 +67,7 @@ object AkwamParser {
         }
         return out.values.sortedBy{it.number}
     }
-    fun seasons(doc:Document):List<Pair<String,Int>>=
+    fun seasons(doc:Document):List<Pair<String,Int>> =
         doc.select("a[href*=/season/]").mapNotNull{a->
             val url=site(a.attr("href"),doc.baseUri())?:return@mapNotNull null
             val n=Regex("""\d{1,2}""").find(a.text())?.value?.toIntOrNull()
@@ -108,7 +108,7 @@ object AkwamParser {
                 url.host=="downet.net"||p.endsWith(".mp4")||p.endsWith(".mkv")||
                 p.endsWith(".m3u8")))url.toString() else null
         }.distinct()
-    fun embeds(html:String,base:String):List<String>=
+    fun embeds(html:String,base:String):List<String> =
         document(html,base).select("iframe[src],video[src],video source[src],source[src]")
             .mapNotNull{base.toHttpUrlOrNull()?.resolve(it.attr("src"))?.toString()}
             .filter{it.startsWith("https://")}.distinct()

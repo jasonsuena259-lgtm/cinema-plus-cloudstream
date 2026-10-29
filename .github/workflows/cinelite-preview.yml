@@ -4,6 +4,7 @@ on:
     branches: [feature/cinelite-provider]
     paths:
       - 'CineLite/**'
+      - 'build.gradle.kts'
       - '.github/workflows/cinelite-preview.yml'
   workflow_dispatch:
 concurrency:

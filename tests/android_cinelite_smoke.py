@@ -55,6 +55,19 @@ def tap_label(patterns, wait=0.7):
             print("TAPPED",repr(n[0]),flush=True)
             return True
     return False
+def recover_system_launcher():
+    """Recover emulator-only Pixel Launcher ANR overlays without masking plugin errors."""
+    for attempt in range(3):
+        current=brief()
+        if not any(re.search(r"(Pixel Launcher|System UI).*isn.t responding",v,re.I) for v in current):
+            return
+        print("ANDROID_SYSTEM_LAUNCHER_ANR: dismissing blocked system UI",flush=True)
+        if not tap_label([r"^Close app$",r"^Wait$"],wait=2.0):
+            adb("shell","input","keyevent","4",check=False)
+        time.sleep(2)
+    if any(re.search(r"isn.t responding",v,re.I) for v in brief()):
+        raise RuntimeError("Emulator system Launcher remains unresponsive; not a CineLite failure")
+
 def wait_for(pattern,limit=20):
     end=time.time()+limit
     while time.time()<end:
@@ -66,6 +79,9 @@ print("DEVICE:",adb("shell","getprop","ro.build.version.release").strip(),flush=
 print("INSTALL CHECK:",adb("shell","pm","list","packages",PKG).strip(),flush=True)
 adb("shell","am","start","-n",PKG+"/.MainActivity",timeout=30)
 time.sleep(5)
+recover_system_launcher()
+adb("shell","am","start","-n",PKG+"/.MainActivity",timeout=30)
+time.sleep(3)
 capture("01-start")
 for i in range(5):
     labels=brief()
@@ -78,8 +94,12 @@ for i in range(5):
 capture("02-setup")
 # Open the KodaStream-native repository deep-link, not a bespoke plugin loader.
 uri="cloudstreamrepo://"+REPO
-adb("shell","am","start","-a","android.intent.action.VIEW","-p",PKG,"-d",uri,timeout=30)
-time.sleep(4)
+for attempt in range(3):
+    adb("shell","am","start","-a","android.intent.action.VIEW","-p",PKG,"-d",uri,timeout=30)
+    time.sleep(4)
+    recover_system_launcher()
+    if any(re.search(r"Add repository|Paste the address",v,re.I) for v in brief()):
+        break
 capture("03-repository-link")
 brief()
 if not tap_label([r"^add$",r"^إضافة$",r"^اضافة$"],wait=4):

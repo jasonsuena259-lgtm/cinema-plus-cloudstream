@@ -8,6 +8,7 @@ cloudstream {
 }
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    implementation("org.jspecify:jspecify:1.0.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation(files(gradle.gradleUserHomeDir.resolve("caches/cloudstream/cloudstream/cloudstream.jar")))
 }

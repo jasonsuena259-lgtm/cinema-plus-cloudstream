@@ -28,7 +28,9 @@ jobs:
              ("episode-detail","/episode/104382/the-diplomat/episode-1"),
              ("watch","/watch/183443/11572/love-language"),
              ("download","/download/183443/11572/love-language"),
-             ("search","/search?q=Love%20Language")
+             ("search","/search?q=Love%20Language"),
+             ("search-s","/search?s=Love%20Language"),
+             ("search-query","/search?query=Love%20Language")
           ]
           s=requests.Session()
           s.headers["User-Agent"]="Mozilla/5.0 (Android 13; Mobile) AppleWebKit/537.36 Chrome/122 Safari/537.36"
@@ -39,6 +41,15 @@ jobs:
               counters={}
               for fragment in ["/movie/","/series/","/episode/","/watch/","/download/"]:
                 counters[fragment]=len(soup.select('a[href*="'+fragment+'"]'))
+              if name.startswith("search"):
+                titles=[a.get_text(" ",strip=True) for a in soup.select(
+                  ".entry-title a,a.text-white")]
+                print("AKWAM_SEARCH_RESULT",json.dumps({
+                  "route":name,
+                  "headings":len(titles),
+                  "exactMatch":sum("love language"==x.lower().strip() for x in titles),
+                  "inputNames":[x.get("name","") for x in soup.select("form input[name]")[:6]]
+                }))
               poster_classes=[x.get("class") for x in soup.select("a[href]") if
                 any(f in x.get("href","") for f in ["/movie/","/series/"])][:5]
               if name in ("movies","series","series-detail","watch","download"):

@@ -308,10 +308,10 @@ class CineLiteBrowser(private val context: Context) {
                                                         if(!btn)return false;
                                                         btn.click();return true;
                                                     })()"""
-                                                    v.evaluateJavascript(openSeasons) { opened ->
+                                                    v?.evaluateJavascript(openSeasons) { opened ->
                                                         if (opened != "true") { finish(); return@evaluateJavascript }
                                                         handler.postDelayed({
-                                                            v.evaluateJavascript("""(function(){
+                                                            v?.evaluateJavascript("""(function(){
                                                                 const buttons=Array.from(document.querySelectorAll('button'));
                                                                 const options=buttons.filter(x=>/^Season\s+\d+$/.test(x.textContent.trim()))
                                                                     .map(x=>Number(x.textContent.trim().match(/\d+/)[0]));
@@ -323,7 +323,7 @@ class CineLiteBrowser(private val context: Context) {
                                                                 }.getOrDefault(emptyList())
                                                                 seasonOptions = seasons.take(35)
                                                                 // Close dropdown; the page initially displays season 1.
-                                                                v.evaluateJavascript(openSeasons) {
+                                                                v?.evaluateJavascript(openSeasons) {
                                                                     if (seasonOptions.isEmpty()) finish()
                                                                     else handler.postDelayed({ readSeason() }, 220)
                                                                 }

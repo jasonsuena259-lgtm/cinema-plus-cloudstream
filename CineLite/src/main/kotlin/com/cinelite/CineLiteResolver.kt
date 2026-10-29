@@ -6,7 +6,7 @@ import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.awaitAll
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -222,6 +222,8 @@ class CineLiteResolver(private val context: Context) {
                     }
                     output.toByteArray()
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) { return null }
         }
         if (kind == "mp4") {

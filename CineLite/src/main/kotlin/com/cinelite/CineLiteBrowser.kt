@@ -10,7 +10,11 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import java.util.concurrent.atomic.AtomicBoolean
 
-data class LiteMediaRequest(val url: String, val headers: Map<String, String>)
+data class LiteMediaRequest(
+    val url: String,
+    val headers: Map<String, String>,
+    val subtitleUrls: List<String> = emptyList()
+)
 
 /**
  * Executes only the website's own JavaScript in an isolated Android WebView.
@@ -117,6 +121,7 @@ class CineLiteBrowser(private val context: Context) {
             var done = false
             var agent = ""
             val captured = AtomicBoolean(false)
+            val subtitleUrls = java.util.Collections.synchronizedSet(mutableSetOf<String>())
             fun finish(result: LiteMediaRequest?) {
                 handler.post {
                     if (!done) {
@@ -149,7 +154,13 @@ class CineLiteBrowser(private val context: Context) {
                                 view: WebView?, request: WebResourceRequest
                             ): WebResourceResponse? {
                                 val target = request.url.toString()
-                                if (Regex("""(?i)\.(?:m3u8|mp4)(?:\?|$)""").containsMatchIn(target)
+                                val subPath = request.url.encodedPath.lowercase()
+                                if (request.url.scheme == "https" &&
+                                    listOf(".srt", ".vtt", ".ass", ".ssa").any { subPath.endsWith(it) }
+                                ) {
+                                    subtitleUrls.add(target)
+                                }
+                                if (CineLiteParser.mediaKind(target) != null
                                     && captured.compareAndSet(false, true)) {
                                     val headers = request.requestHeaders.toMutableMap()
                                     if (headers.keys.none { it.equals("User-Agent", true) })
@@ -164,13 +175,33 @@ class CineLiteBrowser(private val context: Context) {
                                     // registered by that first request, and stopping it
                                     // immediately can invalidate an otherwise usable URL.
                                     handler.postDelayed({
-                                        finish(LiteMediaRequest(target, headers))
+                                        val subtitles = synchronized(subtitleUrls) {
+                                            subtitleUrls.take(40).toList()
+                                        }
+                                        finish(LiteMediaRequest(target, headers, subtitles))
                                     }, 1600)
                                 }
                                 return null
                             }
 
                             override fun onPageFinished(view: WebView?, page: String?) {
+                                // Track only real subtitle anchors/HTML tracks from the
+                                // loaded player. Signed subtitle links remain in memory.
+                                view?.evaluateJavascript("""(function(){
+                                    return JSON.stringify([...document.querySelectorAll('track[src],a[href]')]
+                                        .map(x=>x.src||x.href).filter(Boolean).filter(x=>{
+                                            try {
+                                                const u=new URL(x,location.href);
+                                                return u.protocol==='https:' &&
+                                                  /\\.(srt|vtt|ass|ssa)$/i.test(u.pathname);
+                                            }catch(e){return false;}
+                                        }).slice(0,40));
+                                })()""") { raw ->
+                                    runCatching {
+                                        mapper.readTree(mapper.readTree(raw).asText())
+                                            .forEach { subtitleUrls.add(it.asText()) }
+                                    }
+                                }
                                 view?.evaluateJavascript(
                                     "(function(){document.querySelectorAll('video').forEach(v=>{v.muted=true;v.play().catch(()=>{})})})()",
                                     null

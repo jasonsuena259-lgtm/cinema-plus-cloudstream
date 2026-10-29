@@ -88,7 +88,7 @@ jobs:
               'name':'CineLite v11 - Stable player',
               'description':'CineLite 11: restored v4 player capture',
               'manifestVersion':1,
-              'pluginLists':[prefix+'plugins-v11.json']},indent=2)+'\\n')
+              'pluginLists':[prefix+'plugins-v11.json']},indent=2)+'\n')
           (dest/'repo.json').write_text(json.dumps({
               'name':'CineLite Experimental',
               'description':'CineLite test build; playback not verified',

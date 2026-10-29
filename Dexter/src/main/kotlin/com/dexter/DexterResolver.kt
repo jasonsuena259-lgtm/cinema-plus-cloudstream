@@ -93,15 +93,19 @@ class DexterResolver(private val base:String) {
         // The watch page may contain only the browser player shell.
         // The content's actual sources are listed by Dexter's public JSON API,
         // keyed by the TMDB ID already present in the page URL.
+        // HLS subtitles may be listed in a master playlist or per-server
+        // metadata. Keep callback deduplicated and never label unknown as Arabic.
+        fun emitSub(url:String,language:String) {
+            if(allowed(url) && subtitles.add(url))
+                subtitleCallback(SubtitleFile(language,url))
+        }
+
         val apiUrl=DexterApi.endpoint(detail)
         val apiJson=apiUrl?.let { page(it,detail) }
         if(apiJson!=null) {
             var masterProbes=0
             val fromApi=DexterApi.parse(apiJson)
-            for(sub in fromApi.subtitles) {
-                if(allowed(sub.url) && subtitles.add(sub.url))
-                    subtitleCallback(SubtitleFile(sub.language,sub.url))
-            }
+            for(sub in fromApi.subtitles)emitSub(sub.url,sub.language)
             suspend fun emitApi(url:String,display:String,quality:Int,
                                 type:ExtractorLinkType,referer:String) {
                 if(!allowed(url) || !emitted.add(url))return
@@ -124,16 +128,19 @@ class DexterResolver(private val base:String) {
                         // Do not block the server picker probing every host.
                         // Emit source URLs immediately, inspect only a few HLS
                         // masters with a short, bounded timeout.
-                        if(masterProbes < 3 &&
-                            (source.quality==0 || source.url.contains("master",true))) {
+                        if(masterProbes < 5) {
                             masterProbes++
                             val playlist=withTimeoutOrNull(2500L) { page(source.url,base) }
-                            if(playlist!=null)
+                            if(playlist!=null) {
+                                DexterApi.playlistSubtitles(playlist,source.url)
+                                    .forEach { emitSub(it.url,it.language) }
+                                // Only real master playlists contain these variants.
                                 DexterApi.variants(playlist,source.url).forEach { variant ->
                                     emitApi(variant.url,"Dexter • "+display+
                                         " • "+variant.quality+"p",
                                         variant.quality,ExtractorLinkType.M3U8,base)
                                 }
+                            }
                         }
                     }
                     "direct" -> {

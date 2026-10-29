@@ -173,17 +173,17 @@ object CineLiteParser {
 
     fun hlsSubtitleTracks(playlist: String, base: String): List<Pair<String, String>> =
         playlist.lineSequence().filter {
-            it.startsWith("#EXT-X-MEDIA:") && Regex("""TYPE=SUBTITLES(?:,|$)""").containsMatchIn(it)
+            it.startsWith("#EXT-X-MEDIA:") && it.contains("TYPE=SUBTITLES")
         }.mapNotNull { line ->
-            val uri = Regex("""(?:^|,)URI="([^"]+)"""").find(line)?.groupValues?.get(1)
+            val uri = Regex("URI=\"([^\"]+)\"").find(line)?.groupValues?.get(1)
                 ?: return@mapNotNull null
             val url = absolute(uri, base) ?: return@mapNotNull null
-            // A nested .m3u8 track is natively understood by HLS players. Only expose
-            // directly usable text tracks via CloudStream's separate subtitle callback.
-            if (!Regex("""\.(?:vtt|srt|ass|ssa)(?:\?|$)""", RegexOption.IGNORE_CASE)
-                    .containsMatchIn(url)) return@mapNotNull null
-            val name = Regex("""(?:^|,)NAME="([^"]+)"""").find(line)?.groupValues?.get(1)
-                ?: Regex("""(?:^|,)LANGUAGE="([^"]+)"""").find(line)?.groupValues?.get(1)
+            // HLS subtitle playlists remain native ExoPlayer tracks; emit only
+            // directly playable WebVTT/SRT/ASS subtitle files as separate choices.
+            val ext = url.substringBefore('?').substringAfterLast('.', "").lowercase()
+            if (ext !in setOf("vtt", "srt", "ass", "ssa")) return@mapNotNull null
+            val name = Regex("NAME=\"([^\"]+)\"").find(line)?.groupValues?.get(1)
+                ?: Regex("LANGUAGE=\"([^\"]+)\"").find(line)?.groupValues?.get(1)
                 ?: "Unknown"
             name to url
         }.distinctBy { it.second }.toList()

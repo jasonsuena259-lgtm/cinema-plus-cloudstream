@@ -52,5 +52,25 @@ const {chromium}=require('playwright');
      tracks:[...document.querySelectorAll('video')].map(v=>({tracks:v.textTracks?.length||0,mode:[...v.textTracks||[]].map(t=>t.mode)}))
    }));
    console.log('ARABIC_SUBTITLE_AFTER_SELECT '+JSON.stringify({selected,after,resources:[...req.values()]}));
+   const details=await page.evaluate(()=>{
+     const rows=[...document.querySelectorAll('button')]
+       .filter(e=>e.getClientRects().length>0&&
+         /arabic|anime source|select subtitles/i.test(e.textContent||''));
+     return rows.slice(0,12).map(e=>{
+       const parts=[];
+       for(let f=e[Object.keys(e).find(k=>k.startsWith('__reactFiber'))],i=0;
+             f&&i<8;f=f.return,i++){
+         const p=f.memoizedProps;
+         if(!p||typeof p!=='object')continue;
+         const subobjects=Object.entries(p).filter(([k,v])=>v&&typeof v==='object'&&!Array.isArray(v))
+           .slice(0,5).map(([key,v])=>({key,fields:Object.keys(v).slice(0,18),
+             hasUrl:typeof v.url==='string',hasSrc:typeof v.src==='string'}));
+         parts.push({keys:Object.keys(p).slice(0,18),subobjects});
+       }
+       return {label:e.textContent.trim().replace(/\\s+/g,' ').slice(0,115),
+         class:String(e.className).slice(0,90),fiber:parts.slice(0,4)};
+     });
+   });
+   console.log('ARABIC_SUBTITLE_MENU_STRUCTURE '+JSON.stringify(details));
  }finally{await browser.close();}
 })().catch(e=>{console.error('ARABIC_SUBTITLE_AUDIT_ERROR '+e.message.slice(0,180));process.exitCode=1});

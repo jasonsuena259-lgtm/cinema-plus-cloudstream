@@ -1,0 +1,52 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.12/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :Akwam
+w: [33m[1m⚠️ Deprecated Gradle Version[0m[0m
+The used Gradle version (Gradle 8.12) is deprecated and will not be supported in future Kotlin Gradle Plugin releases.
+The minimum supported Gradle version will become Gradle 8.14.4 in Kotlin 2.5.0.
+
+This warning can be suppressed in 'gradle.properties':
+    kotlin.suppressGradlePluginWarnings=DeprecatedGradleVersionWarning
+[32m[1mSolution:[0m[0m
+[32m[3mPlease update the Gradle version to at least Gradle 8.14.4.[0m[0m
+
+
+> Task :CineWave:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :CineWave:preBuild UP-TO-DATE
+> Task :CineWave:preDebugBuild UP-TO-DATE
+> Task :CineWave:generateDebugResValues UP-TO-DATE
+> Task :CineWave:generateDebugResources UP-TO-DATE
+> Task :CineWave:packageDebugResources UP-TO-DATE
+> Task :CineWave:parseDebugLocalResources UP-TO-DATE
+> Task :CineWave:generateDebugRFile UP-TO-DATE
+> Task :CineWave:javaPreCompileDebug UP-TO-DATE
+> Task :CineWave:preDebugUnitTestBuild UP-TO-DATE
+> Task :CineWave:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :CineWave:javaPreCompileDebugUnitTest UP-TO-DATE
+
+> Task :CineWave:compileDebugKotlin
+w: file:///workspace/cinema-plus/CineWave/src/main/kotlin/com/cinewave/CineWaveResolver.kt:60:70 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+w: file:///workspace/cinema-plus/CineWave/src/main/kotlin/com/cinewave/CineWaveResolver.kt:60:121 Unnecessary safe call on a non-null receiver of type 'ResponseBody'.
+
+> Task :CineWave:compileDebugJavaWithJavac NO-SOURCE
+> Task :CineWave:bundleLibRuntimeToJarDebug
+> Task :CineWave:bundleLibCompileToJarDebug
+> Task :CineWave:processDebugJavaRes UP-TO-DATE
+> Task :CineWave:compileDebugUnitTestKotlin
+
+> Task :CineWave:compileDex
+Compiled dex to /workspace/cinema-plus/CineWave/build/intermediates/classes.dex
+
+> Task :CineWave:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :CineWave:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :CineWave:testDebugUnitTest
+> Task :CineWave:generateManifest UP-TO-DATE
+
+> Task :CineWave:make
+Made CloudStream package at /workspace/cinema-plus/CineWave/build/CineWave.cs3
+
+[Incubating] Problems report is available at: file:///workspace/cinema-plus/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 34s
+18 actionable tasks: 7 executed, 11 up-to-date

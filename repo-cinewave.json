@@ -1,0 +1,8 @@
+{
+  "name": "CineWave",
+  "description": "CineWave — تجريبي؛ تشغيل Android غير مُثبت",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-cinewave-v1.json"
+  ]
+}

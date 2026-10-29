@@ -1,0 +1,196 @@
+[
+  {
+    "source": "VidSrc",
+    "page_http": 200,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "MoviesAPI",
+    "page_http": 200,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 4638720,
+    "encryption": "Standard HLS AES-128, key accessible with normal request",
+    "probe": {
+      "programs": [
+        {
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 1920,
+              "height": 800
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            },
+            {
+              "codec_name": "timed_id3",
+              "codec_type": "data"
+            }
+          ]
+        }
+      ],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 800
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        },
+        {
+          "codec_name": "timed_id3",
+          "codec_type": "data"
+        }
+      ],
+      "format": {
+        "duration": "10.510489"
+      }
+    },
+    "sha256": "0981e82b4a836ede7b5bebb01806af51ec2186d9b127fa0831d9cc190b0ed2f2"
+  },
+  {
+    "source": "VidLink",
+    "page_http": 200,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "VidEasy",
+    "page_http": null,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "XPass",
+    "page_http": 200,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 659947,
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 640,
+          "height": 266
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        }
+      ],
+      "format": {
+        "duration": "15.021333"
+      }
+    },
+    "sha256": "8558595905156396fe79a5ef8c48a40c8f629612f2b97e84b4ff065b81ed2f2f"
+  },
+  {
+    "source": "111Movies",
+    "page_http": 200,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "2Embed",
+    "page_http": 200,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "Mapple",
+    "page_http": 200,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "PrimeSrc",
+    "page_http": 200,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "VidUp",
+    "page_http": 403,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "VidFast",
+    "page_http": 403,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "VidRock",
+    "page_http": 503,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "HNEmbed",
+    "page_http": 200,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "TV-PrimeSrc",
+    "page_http": 200,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  }
+]

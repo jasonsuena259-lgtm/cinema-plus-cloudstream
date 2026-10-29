@@ -48,3 +48,24 @@ GitHub Actions يبني الإضافتين ويختبرهما، ثم ينشر ا
 تحديث أكوام v2: راجع [تقرير الاختبارات والعائق الشبكي الحالي](docs/AKWAM_V2_REPORT.md). أكد المستخدم عمل Cinema Plus v6؛ هذا لا يثبت عمل أكوام.
 
 تحديث TukTuk v2 يوحّد روابط البطاقات والتفاصيل؛ راجع [تقرير الإصدار](docs/TUKTUK_V2_REPORT.md).
+
+## CineWave — إصدار تجريبي مستقل
+
+رابط إضافة مستودعه داخل CloudStream:
+
+```text
+https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-cinewave-v1.json
+```
+
+من إعدادات CloudStream افتح «الإضافات/المستودعات» ثم «إضافة مستودع»، الصق الرابط،
+وثبّت **CineWave**. فعّل اللغة **الإنجليزية** في مرشح المزودين لأن بيانات الموقع إنجليزية.
+ملف التثبيت المباشر: [CineWave-v1.cs3](dist/CineWave-v1.cs3).
+
+تم البناء واختبار القوائم والبحث والتفاصيل وعينات HLS على بيئة العمل.
+**لم يُثبت التشغيل داخل CloudStream على أندرويد؛ ليست نسخة مضمونة أو مكتملة لكل السيرفرات.**
+الموقع يعرض كتالوج TMDB بروابط مشغلات؛ بعض العناوين قد لا يتوفر لها فيديو.
+التفاصيل: [تحليل الموقع](docs/CINEWAVE_ANALYSIS.md)، [نتائج الاختبارات](docs/CINEWAVE_TEST_REPORT.md).
+
+لإعادة الاختبارات المحلية: `./gradlew CineWave:testDebugUnitTest CineWave:make`.
+للاختبارات الحية أضف `CINEWAVE_LIVE_TEST=1`؛ اختبار الروابط المؤقتة يتطلب
+`CINEWAVE_LINK_CAPTURE` يشير إلى ملف خاص خارج المستودع. لا ترفع روابط موقعة أو cookies إلى Git.

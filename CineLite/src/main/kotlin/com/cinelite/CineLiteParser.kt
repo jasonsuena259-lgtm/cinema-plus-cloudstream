@@ -186,6 +186,8 @@ object CineLiteParser {
         val parts = path.trim('/').split('/')
         return when {
             parts.size == 1 -> parts[0].toIntOrNull()?.let { it > 0 } == true
+            parts.size == 2 && parts[0] == "e" ->
+                parts[1].matches(Regex("[A-Za-z0-9_-]{1,100}"))
             parts.size == 3 && parts[0] == "anime" ->
                 parts.drop(1).all { it.toIntOrNull()?.let { n -> n > 0 } == true }
             parts.size == 3 ->

@@ -687,7 +687,7 @@ class CineLiteBrowser(private val context: Context) {
                         // after the season button. Retry the same season while
                         // content hydrates instead of falsely marking it empty.
                         if ((parsed?.path("episodes")?.size() ?: 0) == 0
-                            && seasonReadRetries < 3 && cont.isActive) {
+                            && seasonReadRetries < 8 && cont.isActive) {
                             seasonReadRetries++
                             handler.postDelayed({ readSeason() }, 650)
                             return@evaluateJavascript
@@ -758,7 +758,7 @@ class CineLiteBrowser(private val context: Context) {
                                                 const requested=$safeQuery;
                                                 const requestedId=$id;
                                                 const norm=x=>String(x||'').trim().toLowerCase()
-                                                    .replace(/\\s+/g,' ');
+                                                    .replace(/\s+/g,' ');
                                                 const headings=[...document.querySelectorAll('h3,h4')]
                                                     .filter(h=>norm(h.textContent)===norm(requested) &&
                                                       h.getClientRects().length>0);

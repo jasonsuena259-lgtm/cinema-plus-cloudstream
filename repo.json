@@ -1,0 +1,8 @@
+{
+  "name": "Dexter.pw (experimental)",
+  "manifestVersion": 1,
+  "description": "Independent Dexter experimental CloudStream provider",
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/dexter-preview/plugins.json"
+  ]
+}

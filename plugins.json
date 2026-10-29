@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Dexter.pw (experimental)",
+    "internalName": "Dexter",
+    "version": 1,
+    "fileSize": 33894,
+    "fileHash": "sha256-b1b1d2d9510fc4a3098884cd5d3c84ef6f30d4c05a4fde51a669b29cd90c487a",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/dexter-preview/Dexter-v1.cs3",
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "description": "Dexter movie/TV metadata and HLS candidates. Playback remains unverified."
+  }
+]

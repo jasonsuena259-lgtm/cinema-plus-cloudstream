@@ -12,8 +12,19 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
     override var lang = "en"
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime)
-    // Only the root URL has been observed; category URL patterns need real-site confirmation.
-    override val mainPage = mainPageOf("/" to "CineLite")
+    // Main sections are from actual public navigation and observed homepage headings.
+    override val mainPage = mainPageOf(
+        "/" to "Home",
+        "/anime" to "Anime",
+        "/discover" to "Discover",
+        "section:Top 10 on CineLite" to "Top 10",
+        "section:Current & upcoming TV shows" to "Upcoming TV",
+        "section:Trending This Week" to "Trending This Week",
+        "section:Top Rated Masterpieces" to "Top Rated",
+        "section:Sci-Fi & Future Universes" to "Sci-Fi",
+        "section:High-Octane Action" to "Action",
+        "section:Animated Worlds" to "Animation"
+    )
     private val browser = CineLiteBrowser(context)
 
     private fun card(item: LiteCard): SearchResponse = when (item.type) {
@@ -31,8 +42,25 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         // Do not claim pagination without a confirmed next-page route.
         if (page > 1) return newHomePageResponse(request.name, emptyList(), hasNext = false)
-        val list = CineLiteParser.cards(html(mainUrl), mainUrl)
-        if (list.isEmpty()) throw ErrorLoadingException("CineLite: no real cards found in the page DOM")
+        val section = request.data.takeIf { it.startsWith("section:") }
+            ?.removePrefix("section:")
+        val route = when {
+            section != null -> "/"
+            request.data in setOf("/", "/anime", "/discover") -> request.data
+            else -> throw ErrorLoadingException("CineLite: unknown section")
+        }
+        val raw = html(mainUrl + route.removeSuffix("/"))
+        val list = if (section != null) {
+            CineLiteParser.sections(raw, mainUrl).firstOrNull {
+                it.first.equals(section, ignoreCase = true)
+            }?.second.orEmpty()
+        } else {
+            CineLiteParser.cards(raw, mainUrl)
+        }.map { item ->
+            // TV series surfaced in the real Anime category use the Anime TV type.
+            if (route == "/anime" && item.type == "tv") item.copy(type = "anime") else item
+        }
+        if (list.isEmpty()) throw ErrorLoadingException("CineLite: no real cards found in ${request.name}")
         return newHomePageResponse(request.name, list.map(::card), hasNext = false)
     }
 
@@ -54,7 +82,7 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
             if (identity.type == "movie") {
                 val embed = CineLiteParser.embedMovie(identity.id)
                     ?: throw ErrorLoadingException("CineLite: invalid movie ID")
-                return newMovieLoadResponse(identity.title, url, TvType.Movie, embed) {
+                return newMovieLoadResponse(identity.title, url, TvType.Movie, CineLiteParser.watchMovie(identity.id) ?: embed) {
                     posterUrl = identity.poster
                 }
             }
@@ -65,8 +93,11 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
             return newTvSeriesLoadResponse(
                 identity.title, url,
                 if (identity.type == "anime") TvType.Anime else TvType.TvSeries,
-                episodes.map { episode ->
-                    newEpisode(episode.url) {
+                CineLiteParser.orderedEpisodes(episodes).map { episode ->
+                    val mediaUrl = if (identity.type == "anime") {
+                        CineLiteParser.watchAnimeEpisode(identity.id, episode.episode ?: 0)
+                    } else episode.url
+                    newEpisode(mediaUrl ?: episode.url) {
                         name = episode.title
                         season = episode.season
                         this.episode = episode.episode

@@ -74,17 +74,10 @@ class AkwamResolver(private val base:String){
         return page(url,referer)?.let(AkwamParser::isHlsManifest)==true
     }
 
-    private fun subtitleTracks(html:String,url:String):List<SubtitleFile> {
-        val doc=Jsoup.parse(html,url)
-        return doc.select("track[src],a[href$=.srt],a[href$=.vtt],a[href$=.ass]")
-            .mapNotNull{t->
-                val raw=t.attr("src").ifBlank{t.attr("href")}
-                val link=runCatching{URI(url).resolve(raw).toString()}.getOrNull()
-                    ?:return@mapNotNull null
-                if(!allowedMedia(link))return@mapNotNull null
-                SubtitleFile(t.attr("srclang").ifBlank{t.attr("label").ifBlank{"Arabic"}},link)
-            }.distinctBy{it.url}
-    }
+    private fun subtitleTracks(html:String,url:String):List<SubtitleFile> =
+        AkwamParser.subtitles(html,url)
+            .filter { allowedMedia(it.second) }
+            .map { (language,link) -> SubtitleFile(language,link) }
 
     suspend fun resolve(
         data:String,

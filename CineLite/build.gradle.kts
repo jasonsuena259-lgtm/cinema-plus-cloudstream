@@ -1,6 +1,6 @@
-version = 8
+version = 9
 cloudstream {
-    description = "CineLite v8 — dynamic real source menu scanning with original verified playback fallback"
+    description = "CineLite v9 — real movie/TV/anime server-menu discovery with stable fallback and clean source names"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

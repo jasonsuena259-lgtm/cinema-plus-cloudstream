@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-1b4f59fdd35d5a6c4e90a7d25dc2c916e9856ea83e1b3ec913ea32bad8decf84",
+    "fileHash": "sha256-399c15170ea7e05a834da51280fcbdefabbc9f633f553039e8de1d5ee9010349",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 57713,
+    "fileSize": 61481,
     "status": 3,
     "language": "en",
     "authors": [
@@ -14,10 +14,10 @@
       "TvSeries",
       "Anime"
     ],
-    "version": 4,
+    "version": 5,
     "internalName": "CineLite",
-    "description": "EXPERIMENTAL v4: signed proxy HLS ext support and subtitle capture; real playback remains device/server dependent.",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v4.cs3",
+    "description": "EXPERIMENTAL v5: single WebView source discovery, native subtitle track capture and 9.4s cap; source availability depends on player.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v5.cs3",
     "name": "CineLite (experimental)"
   }
 ]

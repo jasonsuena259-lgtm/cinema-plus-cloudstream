@@ -26,16 +26,19 @@ class CineLiteResolver(private val context: Context) {
     ): Boolean {
         val emitted = mutableSetOf<String>()
         val subtitleQueue = mutableListOf<SubtitleFile>()
-        suspend fun add(link: ExtractorLink): Boolean {
+        suspend fun add(link: ExtractorLink, capturedInPlayer: Boolean = false): Boolean {
             if (link.url.isBlank()) return false
             val key = link.url + "\n" + link.headers.toSortedMap().toString()
-            if (key in emitted || !validate(link)) return false
+            if (key in emitted) return false
+            // Browser-intercepted signed URLs have already been requested by
+            // CineLite's native player. Re-fetching them before ExoPlayer tries
+            // playback may consume a short-lived token and cause video failure.
+            if (!capturedInPlayer && !validate(link)) return false
             emitted += key
             callback(link)
-            // If a valid HLS master playlist exposes *direct text* subtitle tracks,
-            // publish those as extra choices; nested HLS subtitle streams stay in the
-            // HLS manifest for the player itself.
-            subtitleQueue += sidecarSubtitles(link)
+            // No extra HLS probe for signed WebView URLs. The HLS player reads
+            // its own embedded subtitle tracks; exposed SRTs are collected below.
+            if (!capturedInPlayer) subtitleQueue += sidecarSubtitles(link)
             return true
         }
         suspend fun emitCaptured(request: LiteMediaRequest, label: String, referer: String) {
@@ -50,21 +53,27 @@ class CineLiteResolver(private val context: Context) {
             val valid = add(newExtractorLink("CineLite", label, request.url, type) {
                 this.referer = ref
                 this.headers = headers
-            })
+            }, capturedInPlayer = true)
             if (valid) {
                 // Actual SRT/VTT/ASS subtitle requests, not guesses from titles.
-                request.subtitleUrls.distinct().take(40).forEach { url ->
-                    val path = url.substringBefore('?').substringAfterLast('/')
-                    val title = path.substringBeforeLast('.').replace('.', ' ')
-                        .replace('_', ' ').take(90).ifBlank { "Subtitle" }
-                    subtitleQueue += SubtitleFile(title, url)
-                }
+                request.subtitleUrls.filter(CineLiteParser::isSubtitleFile)
+                    .distinct().sortedBy { subtitleUrl ->
+                        val language = CineLiteParser.subtitleLanguage(
+                            request.subtitleLabels[subtitleUrl].orEmpty(), subtitleUrl
+                        )
+                        CineLiteParser.subtitlePriority(language)
+                    }.take(40).forEach { subtitleUrl ->
+                        val language = CineLiteParser.subtitleLanguage(
+                            request.subtitleLabels[subtitleUrl].orEmpty(), subtitleUrl
+                        )
+                        subtitleQueue += SubtitleFile(language, subtitleUrl)
+                    }
             }
         }
         // Try each actual iframe/player independently, including alternate servers.
-        for (source in sources.take(24)) {
+        for (source in sources.take(8)) {
             val isAnimePlayer = "/anime/" in source.url || "/watch/anime/" in contentUrl
-            withTimeoutOrNull(if (isAnimePlayer) 60000 else 26000) {
+            withTimeoutOrNull(9000) {
                 if (source.direct) {
                     val type = if (CineLiteParser.mediaKind(source.url) == "hls")
                         ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
@@ -75,7 +84,9 @@ class CineLiteResolver(private val context: Context) {
                     val found = mutableListOf<ExtractorLink>()
                     val discoveredSubs = mutableListOf<SubtitleFile>()
                     try {
-                        loadExtractor(source.url, contentUrl, { discoveredSubs += it }, { found += it })
+                        withTimeoutOrNull(1100) {
+                            loadExtractor(source.url, contentUrl, { discoveredSubs += it }, { found += it })
+                        }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Exception) {
@@ -84,34 +95,23 @@ class CineLiteResolver(private val context: Context) {
                     var valid = false
                     for (link in found) if (add(link)) valid = true
                     if (!valid) {
-                        withTimeoutOrNull(12000) {
+                        withTimeoutOrNull(7600) {
                             browser.media(source.url, contentUrl)?.let {
                                 emitCaptured(it, source.name, source.url)
                             }
                         }
                     }
-                    if (isAnimePlayer) {
-                        // Six labels were observed in CineLite's real anime player UI.
-                        // Visit actual buttons individually; return only HLS/MP4 bytes
-                        // that pass validate(). Never reuse a user's temporary token.
-                        for (agent in listOf(
-                            "Reyna Sub", "Reyna Dub", "Chamber Sub",
-                            "Chamber Dub", "Neon Sub", "Neon Dub"
-                        )) {
-                            withTimeoutOrNull(7000) {
-                                browser.media(source.url, contentUrl, agent)?.let {
-                                    emitCaptured(it, agent, source.url)
-                                }
-                            }
-                        }
-                    }
+                    // Do not re-open up to six WebViews sequentially. That
+                    // old approach blocked the player's server list for a minute.
+                    // Alternate sources require successful selection in the real
+                    // player; the default server is the fast priority.
                     if (emitted.isNotEmpty()) subtitleQueue += discoveredSubs
                 }
             }
         }
         // A SPA may load its own first-party media without an iframe.
         if (emitted.isEmpty()) {
-            withTimeoutOrNull(20000) {
+            withTimeoutOrNull(6000) {
                 browser.media(contentUrl, CineLiteParser.BASE + "/")?.let {
                     emitCaptured(it, "CineLite player", contentUrl)
                 }

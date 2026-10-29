@@ -86,7 +86,11 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
                     posterUrl = identity.poster
                 }
             }
-            val episodes = browser.seriesEpisodes(identity.id, identity.title)
+            val episodes = if (identity.type == "anime") {
+                browser.animeEpisodes(identity.id, identity.title)
+            } else {
+                browser.seriesEpisodes(identity.id, identity.title)
+            }
             // CineLite search includes some not-yet-streamable catalogue entries.
             // Do not crash the details page or fabricate playable episode links
             // when the website has not rendered episodes for this series.
@@ -97,8 +101,8 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
                     emptyList()
                 ) {
                     posterUrl = identity.poster
-                    plot = "Listed on CineLite. No episode cards were available from " +
-                        "the site at this moment. Try again when CineLite shows episodes."
+                    plot = "CineLite lists this title, but the website did not display " +
+                        "a clickable episode for it. Unreleased entries are not playable."
                 }
             }
             return newTvSeriesLoadResponse(

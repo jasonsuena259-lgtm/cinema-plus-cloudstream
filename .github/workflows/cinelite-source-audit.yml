@@ -5,6 +5,7 @@ on:
     paths:
       - 'CineLite/**'
       - 'tests/probe_cinelite_source_menu.cjs'
+      - 'tests/audit_cinelite_anime_cards.cjs'
       - '.github/workflows/cinelite-source-audit.yml'
   workflow_dispatch:
 permissions:
@@ -27,4 +28,6 @@ jobs:
       - name: Inspect source menu without media URLs or tokens
         env:
           NODE_PATH: /tmp/cinelite/node_modules
-        run: node tests/probe_cinelite_source_menu.cjs
+        run: |
+          node tests/audit_cinelite_anime_cards.cjs
+          node tests/probe_cinelite_source_menu.cjs

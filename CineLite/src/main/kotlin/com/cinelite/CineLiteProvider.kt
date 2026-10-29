@@ -134,8 +134,16 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
         }
         val url = CineLiteParser.siteUrl(data) ?: return false
         val rendered = html(url)
+        val discovered = CineLiteParser.sources(rendered, url)
+        // The verified CineLite watch pages embed first-party players; if the
+        // WebView snapshot finishes before the iframe is inserted, use that
+        // exact observed embed route, never a guessed media stream.
+        val sourceList = if (discovered.isNotEmpty()) discovered else
+            CineLiteParser.embeddedPlayerForWatchUrl(url)?.let {
+                listOf(LiteSource("CineLite player", it, false))
+            }.orEmpty()
         val resolved = CineLiteResolver(context).resolve(
-            CineLiteParser.sources(rendered, url), url, subtitleCallback, callback
+            sourceList, url, subtitleCallback, callback
         )
         if (resolved) CineLiteParser.subtitleTracks(rendered, url).forEach { (language, track) ->
             subtitleCallback(SubtitleFile(language, track))

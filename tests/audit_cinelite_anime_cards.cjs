@@ -1,0 +1,39 @@
+/* Live /anime React render probe: no tokens, cookies, media URLs or personal data. */
+const {chromium}=require("playwright");
+(async()=>{
+ const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+ try{
+  for(const path of ["/anime","/discover","/"]){
+   const page=await browser.newPage();
+   try{
+    await page.goto("https://cinelite.xyz"+path,{waitUntil:"domcontentloaded",timeout:40000});
+    for(const pause of [2200,4000]){
+     await page.waitForTimeout(pause);
+     const data=await page.evaluate(()=>{
+      const walk=(el)=>{
+       const key=Object.keys(el).find(k=>k.startsWith("__reactFiber"));
+       let f=key?el[key]:null;
+       for(let i=0;f&&i<14;i++,f=f.return){
+        const v=f.memoizedProps?.item;
+        if(Number.isInteger(v?.id)&&v.id>0&&["movie","tv"].includes(v.media_type))
+         return {id:v.id,type:v.media_type};
+       }
+       return null;
+      };
+      const tally={};
+      const cards=[...document.querySelectorAll("h2,h3,h4,a[href],div.cursor-pointer,div[class*=group]")].map(e=>{
+       const v=walk(e);if(!v)return null;
+       const label=e.textContent?.trim().replace(/\s+/g," ").slice(0,60);
+       if(!label||label.length>110)return null;
+       return {tag:e.tagName,label,id:v.id,type:v.type,class:String(e.className).slice(0,45)};
+      }).filter(Boolean);
+      const unique=[...new Map(cards.map(x=>[x.type+":"+x.id,x])).values()];
+      return {title:document.title,headings:[...document.querySelectorAll("h1,h2,h3,h4")].slice(0,25).map(x=>({tag:x.tagName,title:x.textContent.trim().slice(0,50)})),counts:{h3:document.querySelectorAll("h3").length,h4:document.querySelectorAll("h4").length,slider:document.querySelectorAll(".slider-track h3").length,cursor:document.querySelectorAll(".cursor-pointer").length},unique:unique.slice(0,18),uniqueCount:unique.length,body:document.body.innerText.slice(0,320)};
+     });
+     console.log("ANIME_RENDER_AUDIT "+JSON.stringify({path,elapsed:pause,data}));
+    }
+   }catch(e){console.log("ANIME_RENDER_ERROR "+JSON.stringify({path,error:e.message.slice(0,130)}))}
+   finally{await page.close();}
+  }
+ }finally{await browser.close()}
+})().catch(e=>{console.error("AUDIT_FAILED",e.message);process.exitCode=1});

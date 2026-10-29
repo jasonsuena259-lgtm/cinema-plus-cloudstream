@@ -1,0 +1,78 @@
+name: Build and publish Dexter provider
+on:
+  push:
+    branches: [feature/dexter-provider]
+    paths: ['Dexter/**', '.github/workflows/dexter-preview.yml', 'build.gradle.kts']
+  workflow_dispatch:
+concurrency:
+  group: dexter-preview
+  cancel-in-progress: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
+      - name: Compile and run unit tests
+        run: |
+          set -e
+          if ./gradlew --offline Dexter:testDebugUnitTest Dexter:make --stacktrace; then
+            test -s Dexter/build/Dexter.cs3
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            if ./gradlew Dexter:testDebugUnitTest Dexter:make --stacktrace; then
+              test -s Dexter/build/Dexter.cs3
+              break
+            fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            sleep 12
+          done
+      - name: Check package and prepare independent repository
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,shutil,zipfile
+          source=pathlib.Path('Dexter/build/Dexter.cs3')
+          assert source.is_file() and source.stat().st_size>1500
+          with zipfile.ZipFile(source) as z:
+              m=json.loads(z.read('manifest.json'))
+              assert m['pluginClassName']=='com.dexter.DexterPlugin',m
+              assert m['version']==1,m
+          dest=pathlib.Path('dist/dexter-preview')
+          dest.mkdir(parents=True,exist_ok=True)
+          artifact=dest/'Dexter-v1.cs3'
+          shutil.copyfile(source,artifact)
+          data=artifact.read_bytes()
+          prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/dexter-preview/'
+          plugin={'name':'Dexter.pw (experimental)','internalName':'Dexter',
+              'version':1,'fileSize':len(data),
+              'fileHash':'sha256-'+hashlib.sha256(data).hexdigest(),
+              'apiVersion':1,'repositoryUrl':'https://github.com/'+os.environ['GITHUB_REPOSITORY'],
+              'url':prefix+artifact.name,'status':3,'language':'en',
+              'authors':['Cinema Plus community'],'tvTypes':['Movie','TvSeries','Anime'],
+              'description':'Dexter movie/TV metadata and HLS candidates. Playback remains unverified.'}
+          repo={'name':'Dexter.pw (experimental)','manifestVersion':1,
+              'description':'Independent Dexter experimental CloudStream provider',
+              'pluginLists':[prefix+'plugins.json']}
+          (dest/'plugins.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
+          (dest/'repo.json').write_text(json.dumps(repo,ensure_ascii=False,indent=2)+'\n')
+          print('Dexter v1 package verified',len(data),'bytes')
+          PY
+      - name: Publish without modifying Akwam or CineLite
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/dexter-preview
+          publish_branch: dexter-preview
+          keep_files: true

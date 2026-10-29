@@ -154,7 +154,7 @@ class CineLiteBrowser(private val context: Context) {
                                 view: WebView?, request: WebResourceRequest
                             ): WebResourceResponse? {
                                 val target = request.url.toString()
-                                val subPath = request.url.encodedPath.lowercase()
+                                val subPath = request.url.encodedPath.orEmpty().lowercase()
                                 if (request.url.scheme == "https" &&
                                     listOf(".srt", ".vtt", ".ass", ".ssa").any { subPath.endsWith(it) }
                                 ) {

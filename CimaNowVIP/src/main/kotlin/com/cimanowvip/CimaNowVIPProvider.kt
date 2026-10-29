@@ -71,8 +71,8 @@ class CimaNowVIPProvider(private val session:VipAccess):MainAPI(){
     }
     override suspend fun loadLinks(data:String,isCasting:Boolean,subtitleCallback:(SubtitleFile)->Unit,callback:(ExtractorLink)->Unit):Boolean{
         val item=VipParser.stable(data) ?: return false
-        val doc=session.page(item)
-        val watch=VipParser.watchLink(doc,item)
+        val supplied=session.suppliedWatch(item)
+        val watch=supplied ?: VipParser.watchLink(session.page(item),item)
         var sources=emptyList<String>()
         if(watch!=null&&VipParser.site(watch)!=null)try{
             sources=VipParser.sources(session.page(watch,render=true,playback=true))

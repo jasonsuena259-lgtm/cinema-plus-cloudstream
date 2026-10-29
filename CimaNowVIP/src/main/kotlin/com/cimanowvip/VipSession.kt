@@ -2,6 +2,7 @@ package com.cimanowvip
 
 import android.annotation.SuppressLint
 import android.app.Dialog
+import android.app.AlertDialog
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -27,12 +28,27 @@ interface VipAccess {
     suspend fun home():Document
     suspend fun page(raw:String,render:Boolean=false,playback:Boolean=false):Document
     suspend fun capturePlayback(item:String):VipPlaybackCapture
+    fun suppliedWatch(item:String):String? = null
 }
 
 /** Account entry is visible and user-operated. No password, cookie or token is exported. */
 class VipSession(private val context:Context):VipAccess{
     private val ui=Handler(Looper.getMainLooper());private val pages=Mutex()
     private val mapper=jacksonObjectMapper()
+    private val watchLinks=VipWatchLinks()
+    override fun suppliedWatch(item:String)=watchLinks.get(item)
+    private fun pasteWatch(ctx:Context,expected:String?=null,open:(String)->Unit){
+        val input=EditText(ctx).apply{hint="رابط صفحة watching من Chrome";inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI;setSingleLine(true)}
+        val prompt=AlertDialog.Builder(ctx).setTitle("فتح رابط المشاهدة النهائي")
+            .setMessage("الصق عنوان الصفحة التي ظهرت فيها السيرفرات في Chrome. لا تلصق كوكيز أو كلمة مرور. الرابط مؤقت ولا يُحفظ على القرص.")
+            .setView(input).setNegativeButton("إلغاء",null).setPositiveButton("فتح",null).create()
+        prompt.setOnShowListener{prompt.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
+            val raw=input.text.toString().trim()
+            if(!watchLinks.put(raw,expected)){input.error="يلزم رابط HTTPS من موقع VIP ينتهي بمسار watching مع token، وللحلقة الحالية نفسها"}
+            else{prompt.dismiss();open(raw)}
+        }}
+        prompt.show()
+    }
     private val homeLock=Mutex()
     private var homeCache:Triple<Int,Long,Document>?=null
     override suspend fun home():Document = homeLock.withLock {
@@ -58,7 +74,8 @@ class VipSession(private val context:Context):VipAccess{
             }
         }
         val close=Button(ctx).apply{text="إغلاق والعودة للإضافة";setOnClickListener{CookieManager.getInstance().flush();dialog.dismiss()}}
-        layout.addView(title);layout.addView(view,LinearLayout.LayoutParams(-1,0,1f));layout.addView(close)
+        val paste=Button(ctx).apply{text="فتح رابط المشاهدة من Chrome";setOnClickListener{pasteWatch(ctx){view.loadUrl(it)}}}
+        layout.addView(title);layout.addView(paste);layout.addView(view,LinearLayout.LayoutParams(-1,0,1f));layout.addView(close)
         dialog.setContentView(layout);dialog.setOnDismissListener{view.stopLoading();view.destroy()};dialog.show();dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT)
         view.loadUrl(VipParser.BASE+"/home/")
     }}
@@ -174,9 +191,12 @@ class VipSession(private val context:Context):VipAccess{
                         }
                     }
                 }
-                layout.addView(label);layout.addView(location);layout.addView(view,LinearLayout.LayoutParams(-1,0,1f));layout.addView(back);layout.addView(button)
+                val paste=Button(activity).apply{text="فتح رابط المشاهدة من Chrome";setOnClickListener{pasteWatch(activity,item){fresh->
+                    embeds.clear();media.clear();current.set(fresh);view?.loadUrl(fresh)
+                }}}
+                layout.addView(label);layout.addView(paste);layout.addView(location);layout.addView(view,LinearLayout.LayoutParams(-1,0,1f));layout.addView(back);layout.addView(button)
                 dialog=Dialog(activity).apply{setContentView(layout);setOnCancelListener{finish(false)};show();window?.setLayout(-1,-1)}
-                view?.loadUrl(item)
+                view?.loadUrl(suppliedWatch(item) ?: item)
                 ui.postDelayed({finish(false)},100000)
             }catch(_:Exception){finish(false)}
         }

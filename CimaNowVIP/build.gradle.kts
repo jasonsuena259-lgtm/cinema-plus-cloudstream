@@ -1,4 +1,4 @@
-version = 3
+version = 4
 cloudstream {
     description = "CimaNow VIP — تسجيل دخول محلي، نسخة اختبار"
     authors = listOf("Cinema Plus community")

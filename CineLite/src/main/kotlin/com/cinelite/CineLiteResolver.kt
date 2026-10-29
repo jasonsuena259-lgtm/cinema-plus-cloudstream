@@ -77,7 +77,7 @@ class CineLiteResolver(private val context: Context) {
         // Try each actual iframe/player independently, including alternate servers.
         for (source in sources.take(8)) {
             val isAnimePlayer = "/anime/" in source.url || "/watch/anime/" in contentUrl
-            withTimeoutOrNull(13500) {
+            withTimeoutOrNull(23500) {
                 if (source.direct) {
                     val type = if (CineLiteParser.mediaKind(source.url) == "hls")
                         ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
@@ -112,7 +112,7 @@ class CineLiteResolver(private val context: Context) {
                             }
                         }
                         val siteSources = async {
-                            withTimeoutOrNull(11800) {
+                            withTimeoutOrNull(21500) {
                                 CineLiteMultiSourceBrowser(context).capture(source.url, contentUrl)
                             }
                         }
@@ -123,8 +123,12 @@ class CineLiteResolver(private val context: Context) {
                             // Associate each observed HLS/MP4 request with the
                             // actual server that the website had selected.
                             captured.streams
-                                .sortedBy { it.sourceName == "CineLite" }
-                                .take(16).forEach { stream ->
+                                .filter { CineLiteParser.mediaKind(it.url) != null }
+                                .sortedWith(compareBy<LiteMediaRequest> {
+                                    it.sourceName == "CineLite"
+                                }.thenBy { it.sourceName })
+                                .distinctBy { it.sourceName.lowercase() }
+                                .take(18).forEach { stream ->
                                     val label = stream.sourceName
                                         .takeUnless { it.isBlank() || it == "CineLite" }
                                         ?: source.name

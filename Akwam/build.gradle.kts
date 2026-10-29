@@ -1,6 +1,6 @@
-version = 3
+version = 4
 cloudstream {
-    description = "Akwam.ss v3 — independent movie, TV, episode, quality, verified MP4 and player-source provider (experimental)"
+    description = "Akwam.ss v4 — independent movie, TV, episode and quality routes with verified MP4/MKV/HLS support (experimental)"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

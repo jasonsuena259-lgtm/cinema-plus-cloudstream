@@ -156,6 +156,27 @@ class CineLiteParserTest {
         assertEquals("https://example.com/subs/ar.vtt", manifest.single().second)
     }
 
+    @Test fun subtitleProxyWithExtParameterComesFromRealHtmlOrHlsOnly() {
+        val html = """
+            <track kind="subtitles" srclang="ar" src="/proxy/subtitles?ext=.vtt&token=example">
+            <a href="/proxy/subtitles?ext=srt&token=example">English</a>
+            <a href="/proxy/subtitles?ext=mp4&token=example">Not a subtitle</a>
+        """.trimIndent()
+        val tracks = CineLiteParser.subtitleTracks(html)
+        assertEquals(2, tracks.size)
+        assertEquals(listOf("Arabic", "English"), tracks.map { it.first })
+        assertTrue(tracks.all { CineLiteParser.isSubtitleFile(it.second) })
+        val master = """
+            #EXTM3U
+            #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="s",LANGUAGE="ar",NAME="Arabic",URI="/proxy/subs?ext=.vtt&token=example"
+            #EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="s",LANGUAGE="en",NAME="English",URI="/subs/index.m3u8"
+        """.trimIndent()
+        val hlsTracks = CineLiteParser.hlsSubtitleTracks(master,
+            "https://example.com/master.m3u8")
+        assertEquals(1, hlsTracks.size)
+        assertEquals("Arabic", hlsTracks.single().first)
+    }
+
     @Test fun signedProxyStreamsUseRealHlsTypeWithoutPersistingAnyTokens() {
         val proxy = "https://media.example.org/proxy/hls?t=unit-test-only&ext=.m3u8"
         val vault = "https://media.example.org/vault/hls.m3u8?t=unit-test-only"

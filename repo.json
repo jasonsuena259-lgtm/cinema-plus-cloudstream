@@ -1,0 +1,8 @@
+{
+  "name": "Akwam.ss",
+  "manifestVersion": 1,
+  "description": "Standalone Akwam CloudStream plugin with in-place updates",
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/akwam-preview/plugins.json"
+  ]
+}

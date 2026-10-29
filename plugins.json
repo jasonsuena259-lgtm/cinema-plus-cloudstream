@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Akwam.ss (experimental)",
+    "internalName": "Akwam",
+    "version": 3,
+    "fileSize": 35015,
+    "fileHash": "sha256-a637449affea663dd74c7ce3d8418ee648bf0a7bf8584c6b6b9610cdcaf50520",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/akwam-preview/Akwam-v3.cs3",
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "description": "Real Akwam.ss watch/download quality routes, episodes, verified MP4; experimental."
+  }
+]

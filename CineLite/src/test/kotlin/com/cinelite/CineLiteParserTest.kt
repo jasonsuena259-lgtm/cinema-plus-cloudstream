@@ -144,4 +144,29 @@ class CineLiteParserTest {
         assertEquals(listOf("Arabic"), manifest.map { it.first })
         assertEquals("https://example.com/subs/ar.vtt", manifest.single().second)
     }
+
+    @Test fun signedProxyStreamsUseRealHlsTypeWithoutPersistingAnyTokens() {
+        val proxy = "https://media.example.org/proxy/hls?t=unit-test-only&ext=.m3u8"
+        val vault = "https://media.example.org/vault/hls.m3u8?t=unit-test-only"
+        val movie = "https://media.example.org/media/00000.png_v=.mp4"
+        assertEquals("hls", CineLiteParser.mediaKind(proxy))
+        assertEquals("hls", CineLiteParser.mediaKind(vault))
+        assertEquals("mp4", CineLiteParser.mediaKind(movie))
+        assertNull(CineLiteParser.mediaKind("https://media.example.org/proxy/hls?t=unit-test-only"))
+        assertNull(CineLiteParser.mediaKind("javascript:alert(1)"))
+        val html = """<video><source src="$proxy"></video>"""
+        val sources = CineLiteParser.sources(html, CineLiteParser.BASE)
+        assertEquals(1, sources.size)
+        assertTrue(sources.single().direct)
+        assertEquals(proxy, sources.single().url)
+    }
+
+    @Test fun verifiedWatchPagesResolveToFirstPartyEmbedOnly() {
+        assertEquals("https://embed.cinelite.xyz/1560520",
+            CineLiteParser.embeddedPlayerForWatchUrl("https://cinelite.xyz/watch/1560520"))
+        assertEquals("https://embed.cinelite.xyz/anime/195539/1",
+            CineLiteParser.embeddedPlayerForWatchUrl("https://cinelite.xyz/watch/anime/195539/1"))
+        assertNull(CineLiteParser.embeddedPlayerForWatchUrl("https://cinelite.xyz/search"))
+        assertNull(CineLiteParser.embeddedPlayerForWatchUrl("https://attacker.example/watch/1560520"))
+    }
 }

@@ -1,6 +1,6 @@
-version = 2
+version = 3
 cloudstream {
-    description = "Dexter.pw v2 experimental: API-backed movie/episode HLS/direct sources, master playlist variants and subtitles; live Cloudflare may block access."
+    description = "Dexter.pw v3: API-backed streams, real Arabic VTT subtitle lookup and fallback movie/series posters; Cloud3 compatibility testing."
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

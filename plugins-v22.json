@@ -1,0 +1,23 @@
+[
+  {
+    "fileHash": "sha256-ddcebd25103d83016de2fda5362b05dc4cc97018f8a901106e65c0af733949a8",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 90698,
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "version": 22,
+    "internalName": "CineLite",
+    "description": "EXPERIMENTAL v22: verify HLS video streams, reject audio-only TS and preserve signed sources before scan ends; playback varies by title.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v22.cs3",
+    "name": "CineLite (experimental)"
+  }
+]

@@ -56,8 +56,9 @@ class DexterProvider:MainAPI() {
     private suspend fun matchedMeta(
         title:String,tmdb:Int,isSeries:Boolean
     ):Pair<String,String>? {
-        val body=fetch(DexterCatalog.searchUrl(title,isSeries))?:return null
-        for((imdb,_) in DexterCatalog.searchCandidates(body,title).take(3)) {
+        val cleanTitle=title.replace(Regex("""\s*\(\d{4}\)\s*$"""),"")
+        val body=fetch(DexterCatalog.searchUrl(cleanTitle,isSeries))?:return null
+        for((imdb,_) in DexterCatalog.searchCandidates(body,title).take(2)) {
             val metaUrl=DexterCatalog.metaUrl(imdb,isSeries)?:continue
             val meta=fetch(metaUrl)?:continue
             if(DexterCatalog.metadataTmdbId(meta)==tmdb)return imdb to meta
@@ -72,7 +73,8 @@ class DexterProvider:MainAPI() {
      */
     private suspend fun decorateCards(cards:List<DexterCard>,page:Int):List<DexterCard> {
         if(cards.isEmpty())return cards
-        val needs=cards.filter { !validPoster(it.poster) }
+        val needs=cards.filter { !validPoster(it.poster) ||
+            it.poster?.contains("dexter.pw",ignoreCase=true)==true }
         if(needs.isEmpty())return cards
         val both=coroutineScope {
             listOf(false,true).map { show ->
@@ -84,12 +86,14 @@ class DexterProvider:MainAPI() {
         }.toMap()
         val known=cards.map { item ->
             val id=tmdbId(item.url)
-            if(validPoster(item.poster))item else {
+            if(validPoster(item.poster) && 
+                item.poster?.contains("dexter.pw",ignoreCase=true)!=true)item else {
                 val replacement=id?.let { popular[item.series to it] }
-                item.copy(poster=replacement?.takeIf(::validPoster))
+                item.copy(poster=replacement?.takeIf(::validPoster)?:item.poster)
             }
         }
-        val missing=known.filter { !validPoster(it.poster) }.take(16)
+        val missing=known.filter { !validPoster(it.poster) ||
+            it.poster?.contains("dexter.pw",ignoreCase=true)==true }.take(8)
         val resolved=mutableMapOf<String,String>()
         for(batch in missing.chunked(4)) {
             val fetched=coroutineScope {
@@ -103,8 +107,9 @@ class DexterProvider:MainAPI() {
             fetched.forEach { (url,poster)->resolved[url]=poster }
         }
         return known.map { item ->
-            if(validPoster(item.poster))item
-            else item.copy(poster=resolved[item.url])
+            val match=resolved[item.url]
+            if(validPoster(match))item.copy(poster=match)
+            else item
         }
     }
 

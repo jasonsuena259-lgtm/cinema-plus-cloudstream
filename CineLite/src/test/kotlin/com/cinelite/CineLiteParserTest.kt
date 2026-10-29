@@ -177,6 +177,23 @@ class CineLiteParserTest {
         assertEquals("Arabic", hlsTracks.single().first)
     }
 
+    @Test fun signedProxyHlsMasterWinsOverAudioOnlyMediaPlaylists() {
+        // Synthetic representative paths; never include user-supplied tokens.
+        val master = "https://media.example.org/proxy/hls?t=TEST&ext=.m3u8"
+        val variant = "https://media.example.org/variant/index.m3u8?t=TEST"
+        val audio = "https://media.example.org/streams/audio/track.m3u8?t=TEST"
+        val plain = "https://media.example.org/movie.mp4?t=TEST"
+        val options = listOf(audio, plain, variant, master)
+        assertEquals(master, options.minByOrNull(CineLiteParser::mediaPlaylistPriority))
+        assertEquals(0, CineLiteParser.mediaPlaylistPriority(master))
+        assertTrue(CineLiteParser.mediaPlaylistPriority(audio) >
+            CineLiteParser.mediaPlaylistPriority(variant))
+        assertEquals("hls", CineLiteParser.mediaKind(master))
+        assertEquals("mp4", CineLiteParser.mediaKind(plain))
+        assertEquals(99, CineLiteParser.mediaPlaylistPriority(
+            "https://media.example.org/video.ts"))
+    }
+
     @Test fun signedProxyStreamsUseRealHlsTypeWithoutPersistingAnyTokens() {
         val proxy = "https://media.example.org/proxy/hls?t=unit-test-only&ext=.m3u8"
         val vault = "https://media.example.org/vault/hls.m3u8?t=unit-test-only"

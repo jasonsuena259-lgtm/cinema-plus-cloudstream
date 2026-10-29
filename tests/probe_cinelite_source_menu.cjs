@@ -25,6 +25,23 @@ const { chromium }=require('playwright');
           return {options:data,lastText:text};
         });
         console.log('SOURCE_MENU_OPEN',JSON.stringify({route,menu:modal}));
+        if(route.startsWith('/anime/')){
+          const switched=await page.evaluate(()=>{
+            const row=[...document.querySelectorAll('div.group.cursor-pointer')]
+              .find(e=>e.textContent.includes('Chamber Sub'));
+            if(!row)return {selected:false};
+            row.click();
+            return {selected:true};
+          });
+          await page.waitForTimeout(800);
+          const state=await page.evaluate(()=>{
+            const current=[...document.querySelectorAll('button')].filter(b=>
+              /^(Reyna Sub|Reyna Dub|Chamber Sub|Chamber Dub|Neon Sub|Neon Dub)$/.test(b.textContent.trim())
+            ).map(b=>b.textContent.trim());
+            return {buttons:current.slice(0,5),menuStillOpen:document.body.innerText.includes('Stream Sources')};
+          });
+          console.log('SOURCE_MENU_SWITCH',JSON.stringify({route,clicked:switched.selected,state}));
+        }
       }catch(e){console.log('SOURCE_MENU_ERROR',JSON.stringify({route,error:e.message.slice(0,150)}));}
       finally{await page.close();}
     }

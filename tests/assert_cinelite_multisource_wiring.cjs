@@ -20,6 +20,18 @@ assert.doesNotThrow(()=>new Function(actualWebViewJS), 'Invalid embedded source-
  const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
  try{
   const page = await browser.newPage();
+  const mediaResponses = [];
+  // Passive response observations only. Signed manifest URLs and auth tokens
+  // must never enter artifacts or logs.
+  page.on('response', response => {
+    try {
+      const u = new URL(response.url());
+      const ext = (u.searchParams.get('ext') || '').toLowerCase();
+      if (/\\.(m3u8|mp4)$/i.test(u.pathname) || ext === '.m3u8' || ext === 'm3u8') {
+        mediaResponses.push(response.status());
+      }
+    } catch (_) {}
+  });
   try{
    await page.addInitScript(()=>{
     window.__CineLiteTestSourceNames=[];
@@ -41,11 +53,16 @@ assert.doesNotThrow(()=>new Function(actualWebViewJS), 'Invalid embedded source-
      const text = document.body.innerText;
      return {selected, advertisedSix: /6 Agents/.test(text), advertisesSources:/Stream Sources/.test(text)};
    });
-   // Never fabricate servers or report a success based only on headings.
+   // Never fabricate servers or report success based on headings alone.
+   // Site-side playback may still depend on user interaction/region;
+   // report actual HTTP media observations separately from menu navigation.
+   const ok = mediaResponses.filter(x=>x===200 || x===206).length;
    console.log('CINELITE_REAL_SOURCE_MENU_JS',JSON.stringify({
      advertisedSix:observation.advertisedSix,
      advertisesSources:observation.advertisesSources,
-     selected:observation.selected
+     selected:observation.selected,
+     mediaResponses:mediaResponses.length,
+     successfulMediaResponses:ok
    }));
    if(observation.advertisedSix)assert.ok(observation.selected.length>=2,
      'The native multi-source picker failed to select two real advertised Anime servers');

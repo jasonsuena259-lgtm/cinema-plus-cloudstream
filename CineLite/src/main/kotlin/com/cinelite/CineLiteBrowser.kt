@@ -336,6 +336,7 @@ class CineLiteBrowser(private val context: Context) {
             var done = false
             var clickAttempts = 0
             var episodeAttempts = 0
+            var searchRequested = false
             val episodes = linkedMapOf<Int, LiteEpisode>()
             fun finish() {
                 handler.post {
@@ -426,12 +427,35 @@ class CineLiteBrowser(private val context: Context) {
                     const annotated=document.querySelector(
                         '[data-cinelite-id="$id"][data-cinelite-type="anime"]');
                     if(annotated){annotated.click();return true;}
+                    // A title may be absent from today's rotating Anime carousels
+                    // but present in CineLite's real search results. Open only an
+                    // item whose React identity and title both match the request.
+                    for(const heading of document.querySelectorAll('h3,h4')){
+                        const label=norm(heading.textContent);
+                        if(label!==norm(requested))continue;
+                        const key=Object.keys(heading).find(x=>x.startsWith('__reactFiber'));
+                        let fiber=key?heading[key]:null;
+                        for(let depth=0;fiber&&depth<14;depth++,fiber=fiber.return){
+                            const item=fiber.memoizedProps?.item;
+                            if(item?.id===id&&(item?.media_type==='anime'||item?.media_type==='tv')){
+                                const card=heading.closest('[class*=cursor-pointer]');
+                                if(card){card.click();return true;}
+                            }
+                        }
+                    }
                     return false;
                 })()"""
                 view?.evaluateJavascript(script) { result ->
                     if (done) return@evaluateJavascript
                     if (result == "true") handler.postDelayed({ readEpisodes() }, 1250)
-                    else if (clickAttempts >= 5) finish()
+                    else if (clickAttempts >= 5 && !searchRequested) {
+                        // The section carousel rotates daily; search this
+                        // exact title instead of treating every missing carousel
+                        // card as an unreleased show.
+                        searchRequested = true
+                        clickAttempts = 0
+                        view?.loadUrl(CineLiteParser.BASE + "/search")
+                    } else if (clickAttempts >= 5) finish()
                     else {
                         clickAttempts++
                         handler.postDelayed({ openCard() }, 750)
@@ -455,7 +479,25 @@ class CineLiteBrowser(private val context: Context) {
                                 if (page?.let { CineLiteParser.siteUrl(it) } == null) {
                                     finish(); return
                                 }
-                                handler.postDelayed({ openCard() }, 1600)
+                                if (searchRequested) {
+                                    val query = mapper.writeValueAsString(title)
+                                    handler.postDelayed({
+                                        val js = """(function(){
+                                            const input=document.querySelector('input[type=text]');
+                                            if(!input)return false;
+                                            const setter=Object.getOwnPropertyDescriptor(
+                                                HTMLInputElement.prototype,'value')?.set;
+                                            if(!setter)return false;
+                                            setter.call(input,$query);
+                                            input.dispatchEvent(new Event('input',{bubbles:true}));
+                                            input.dispatchEvent(new Event('change',{bubbles:true}));
+                                            return true;
+                                        })()"""
+                                        view?.evaluateJavascript(js) {
+                                            handler.postDelayed({ openCard() }, 1600)
+                                        }
+                                    }, 700)
+                                } else handler.postDelayed({ openCard() }, 1600)
                             }
                         }
                         loadUrl(CineLiteParser.BASE + "/anime")

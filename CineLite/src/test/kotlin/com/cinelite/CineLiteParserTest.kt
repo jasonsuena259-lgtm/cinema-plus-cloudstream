@@ -208,4 +208,27 @@ class CineLiteParserTest {
         assertFalse(CineLiteParser.isRecognizedEmbedPath("/anime/0/1"))
     }
 
+
+    @Test fun compactAndroidSnapshotPreservesRealSectionCardsAndSearch() {
+        val html = """
+            <section><h2>Trending Anime</h2>
+              <div data-cinelite-id="21" data-cinelite-type="anime"><h3>ONE PIECE</h3>
+                <img src="https://img.example.org/onepiece.webp"></div>
+              <div data-cinelite-id="20" data-cinelite-type="anime"><h3>Naruto</h3></div>
+            </section>
+            <section><h2>Current &amp; upcoming TV shows</h2>
+              <div data-cinelite-id="1416" data-cinelite-type="tv"><h3>Grey's Anatomy</h3></div>
+            </section>
+        """.trimIndent()
+        val sections = CineLiteParser.sections(html)
+        assertEquals(2, sections.size)
+        assertEquals("Trending Anime", sections[0].first)
+        assertEquals(listOf("ONE PIECE", "Naruto"), sections[0].second.map { it.title })
+        val identity = CineLiteParser.identity(sections[0].second.first().url)!!
+        assertEquals(21, identity.id)
+        assertEquals("anime", identity.type)
+        assertEquals(1, sections[1].second.size)
+        assertEquals("Grey's Anatomy", sections[1].second.first().title)
+        assertEquals(3, CineLiteParser.cards(html).size)
+    }
 }

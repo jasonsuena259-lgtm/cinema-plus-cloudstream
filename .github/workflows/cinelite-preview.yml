@@ -6,6 +6,9 @@ on:
       - 'CineLite/**'
       - '.github/workflows/cinelite-preview.yml'
   workflow_dispatch:
+concurrency:
+  group: cinelite-preview-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:

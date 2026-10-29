@@ -1,6 +1,19 @@
 /* Validate first-party watch URL paths through the site's real React UI.
  * Never log signed HLS URLs, query parameters, cookies, or credentials. */
 const {chromium}=require('playwright');
+const fs=require('node:fs');
+// Run CineLite's exact Android WebView search-card JS on the live TV title,
+// rather than a separate test-only approximation.
+const native=fs.readFileSync(
+  'CineLite/src/main/kotlin/com/cinelite/CineLiteBrowser.kt','utf8');
+const tvBegin=native.indexOf('suspend fun seriesEpisodes(');
+const jsMarker='val selectScript = """(function(){';
+const jsBegin=native.indexOf(jsMarker,tvBegin);
+const jsEnd=native.indexOf('})()"""',jsBegin);
+if(tvBegin<0||jsBegin<0||jsEnd<jsBegin)
+ throw Error('TV episode native selection script missing');
+const nativeSelect=native.slice(jsBegin+jsMarker.indexOf('"""')+3,
+  jsEnd+'})()'.length).replaceAll('$safeQuery','"VisionQuest"').replaceAll('$id','213375');
 const targets=[
  {title:'VisionQuest',kind:'tv',episode:6},
  {title:'Fight Club',kind:'movie'}
@@ -17,14 +30,16 @@ const targets=[
     await input.waitFor({timeout:13000});
     await input.fill(target.title);
     await page.waitForTimeout(2100);
-    const matched=await page.evaluate(title=>{
-      const headers=[...document.querySelectorAll('h3')]
-        .filter(x=>x.textContent.trim().toLowerCase()===title.toLowerCase());
-      const card=headers.map(x=>x.closest('div.cursor-pointer,div.group'))
-        .find(Boolean);
-      if(!card)return false;
-      card.click();return true;
-    },target.title);
+    const matched=target.kind==='tv'
+      ? await page.evaluate(nativeSelect)
+      : await page.evaluate(title=>{
+          const headers=[...document.querySelectorAll('h3')]
+            .filter(x=>x.textContent.trim().toLowerCase()===title.toLowerCase());
+          const card=headers.map(x=>x.closest('div.cursor-pointer,div.group'))
+            .find(Boolean);
+          if(!card)return false;
+          card.click();return true;
+        },target.title);
     if(!matched){
       console.log('CINELITE_WATCH_ROUTE '+JSON.stringify({kind:target.kind,found:false}));
       continue;

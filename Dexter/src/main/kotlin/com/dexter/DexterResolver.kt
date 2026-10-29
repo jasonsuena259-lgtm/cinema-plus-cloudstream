@@ -167,6 +167,17 @@ class DexterResolver(private val base:String) {
                 }
             }
         }
+        // API does not consistently include Arabic captions. An independently
+        // verified subtitle index provides movie and episode-specific tracks.
+        // Run this even if streams were found, so the player receives them.
+        DexterSubtitles.endpoint(detail)?.let { subtitleUrl ->
+            val subtitlesJson=withTimeoutOrNull(7500L) { page(subtitleUrl,base) }
+            if(subtitlesJson!=null) {
+                DexterSubtitles.parse(subtitlesJson).forEach { entry ->
+                    emitSub(entry.url,entry.language)
+                }
+            }
+        }
         if(works>0)return true
 
         // Backwards-compatible fallback for older pages that embed their

@@ -45,19 +45,28 @@ class CineLiteResolver(private val context: Context) {
             val ref = request.headers.entries.firstOrNull {
                 it.key.equals("Referer", true)
             }?.value ?: referer
-            val type = if (request.url.substringBefore('?').endsWith(".m3u8", true))
+            val type = if (CineLiteParser.mediaKind(request.url) == "hls")
                 ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
-            add(newExtractorLink("CineLite", label, request.url, type) {
+            val valid = add(newExtractorLink("CineLite", label, request.url, type) {
                 this.referer = ref
                 this.headers = headers
             })
+            if (valid) {
+                // Actual SRT/VTT/ASS subtitle requests, not guesses from titles.
+                request.subtitleUrls.distinct().take(40).forEach { url ->
+                    val path = url.substringBefore('?').substringAfterLast('/')
+                    val title = path.substringBeforeLast('.').replace('.', ' ')
+                        .replace('_', ' ').take(90).ifBlank { "Subtitle" }
+                    subtitleQueue += SubtitleFile(title, url)
+                }
+            }
         }
         // Try each actual iframe/player independently, including alternate servers.
         for (source in sources.take(24)) {
             val isAnimePlayer = "/anime/" in source.url || "/watch/anime/" in contentUrl
             withTimeoutOrNull(if (isAnimePlayer) 60000 else 26000) {
                 if (source.direct) {
-                    val type = if (source.url.substringBefore('?').endsWith(".m3u8", true))
+                    val type = if (CineLiteParser.mediaKind(source.url) == "hls")
                         ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
                     add(newExtractorLink("CineLite", source.name, source.url, type) {
                         referer = contentUrl

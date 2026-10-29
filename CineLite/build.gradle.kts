@@ -1,6 +1,6 @@
-version = 9
+version = 10
 cloudstream {
-    description = "CineLite v9 — real movie/TV/anime server-menu discovery with stable fallback and clean source names"
+    description = "CineLite v10 — repair real Anime catalogue from AniList React cards; preserve old package links"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

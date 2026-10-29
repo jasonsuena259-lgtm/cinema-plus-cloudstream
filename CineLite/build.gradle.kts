@@ -1,6 +1,6 @@
-version = 13
+version = 14
 cloudstream {
-    description = "CineLite v13 — KodaStream-compatible Arabic tracks, real anime episodes and fast first-party video links"
+    description = "CineLite v14 — compact Android WebView cards, native KodaStream integration and real anime episodes"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

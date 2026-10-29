@@ -13,7 +13,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 data class LiteMediaRequest(
     val url: String,
     val headers: Map<String, String>,
-    val subtitleUrls: List<String> = emptyList()
+    val subtitleUrls: List<String> = emptyList(),
+    val sourceName: String = "CineLite"
 )
 
 /**

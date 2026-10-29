@@ -1,6 +1,6 @@
-version = 3
+version = 4
 cloudstream {
-    description = "CineLite v3 — signed-stream capture/validation fixes; playback still requires accessible servers"
+    description = "CineLite v4 — proxy HLS ext query recognition, embedded player fallback and subtitle capture; playback still needs live verification"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

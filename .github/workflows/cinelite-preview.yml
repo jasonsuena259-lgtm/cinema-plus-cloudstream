@@ -30,6 +30,11 @@ jobs:
       - name: Compile CineLite and run all unit tests
         run: |
           set -e
+          # Try previously cached dependencies before flaky JitPack metadata.
+          if ./gradlew --offline CineLite:testDebugUnitTest CineLite:make; then
+            test -s CineLite/build/CineLite.cs3
+            exit 0
+          fi
           for attempt in 1 2 3; do
             echo "Compiling CineLite (attempt $attempt)"
             if ./gradlew CineLite:testDebugUnitTest CineLite:make; then

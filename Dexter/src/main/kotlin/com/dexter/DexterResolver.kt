@@ -86,12 +86,81 @@ class DexterResolver(private val base:String) {
         val detail=DexterParser.site(data)?:return false
         if(!DexterParser.isMovie(detail) && !DexterParser.isEpisode(detail))
             return false
-        val html=page(detail) ?:throw ErrorLoadingException(
-            "Dexter: صفحة المشاهدة غير متاحة أو محجوبة؛ لا يمكن إثبات السيرفرات")
-        val candidates=DexterParser.sources(html,detail)
         val emitted=mutableSetOf<String>()
         val subtitles=mutableSetOf<String>()
         var works=0
+
+        // The watch page may contain only the browser player shell.
+        // The content's actual sources are listed by Dexter's public JSON API,
+        // keyed by the TMDB ID already present in the page URL.
+        val apiUrl=DexterApi.endpoint(detail)
+        val apiJson=apiUrl?.let { page(it,detail) }
+        if(apiJson!=null) {
+            val fromApi=DexterApi.parse(apiJson)
+            for(sub in fromApi.subtitles) {
+                if(allowed(sub.url) && subtitles.add(sub.url))
+                    subtitleCallback(SubtitleFile(sub.language,sub.url))
+            }
+            suspend fun emitApi(url:String,display:String,quality:Int,
+                                type:ExtractorLinkType,referer:String) {
+                if(!allowed(url) || !emitted.add(url))return
+                callback(newExtractorLink("Dexter",display,url,type) {
+                    this.referer=referer
+                    this.quality=quality
+                })
+                works++
+            }
+            for(source in fromApi.sources.take(32)) {
+                val display=source.label.take(55)
+                when(source.format) {
+                    "hls" -> {
+                        val label="Dexter • "+display+
+                            (if(source.quality>0)" • "+source.quality+"p" else " • Auto")
+                        // A genuine API-provided media URL is already a real
+                        // candidate. Don't hide it if CDN probe fails on mobile.
+                        emitApi(source.url,label,source.quality,
+                            ExtractorLinkType.M3U8,base)
+                        val playlist=page(source.url,base)
+                        if(playlist!=null)
+                            DexterApi.variants(playlist,source.url).forEach { variant ->
+                                emitApi(variant.url,"Dexter • "+display+
+                                    " • "+variant.quality+"p",
+                                    variant.quality,ExtractorLinkType.M3U8,base)
+                            }
+                    }
+                    "direct" -> {
+                        val path=runCatching{URI(source.url).path.lowercase()}.getOrNull()
+                            .orEmpty()
+                        if(listOf(".mp4",".mkv",".webm",".mov").any(path::endsWith))
+                            emitApi(source.url,"Dexter • "+display,
+                                source.quality,ExtractorLinkType.VIDEO,base)
+                    }
+                    "embed" -> withTimeoutOrNull(10000L) {
+                        try {
+                            loadExtractor(source.url,detail,{ sub ->
+                                if(allowed(sub.url) && subtitles.add(sub.url))
+                                    subtitleCallback(sub)
+                            },{ link ->
+                                if(allowed(link.url) && emitted.add(link.url)) {
+                                    callback(link)
+                                    works++
+                                }
+                            })
+                        } catch(e:CancellationException) { throw e }
+                        catch(_:Exception) {}
+                    }
+                }
+            }
+        }
+        if(works>0)return true
+
+        // Backwards-compatible fallback for older pages that embed their
+        // playable streams directly in HTML.
+        val html=page(detail) ?:throw ErrorLoadingException(
+            if(apiJson==null)
+                "Dexter: تعذر فتح API وصفحة المشاهدة (قد يكون HTTP 403 من Cloudflare)"
+            else "Dexter: لم ترجع API مصادر، وصفحة المشاهدة غير متاحة")
+        val candidates=DexterParser.sources(html,detail)
 
         fun publishSubtitles(text:String,sourceUrl:String) {
             DexterParser.subtitles(text,sourceUrl).forEach { (language,url) ->

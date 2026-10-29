@@ -4,6 +4,7 @@ on:
     paths:
       - 'CineLite/**'
       - 'tests/probe_cinelite_browser.cjs'
+      - 'tests/probe_cinelite_components.cjs'
       - '.github/workflows/cinelite-probe.yml'
   workflow_dispatch:
 permissions:
@@ -26,4 +27,6 @@ jobs:
       - name: Inspect rendered homepage and API routes
         env:
           NODE_PATH: /tmp/cinelite-probe/node_modules
-        run: node tests/probe_cinelite_browser.cjs
+        run: |
+          node tests/probe_cinelite_browser.cjs
+          node tests/probe_cinelite_components.cjs

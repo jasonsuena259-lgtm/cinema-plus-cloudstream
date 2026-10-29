@@ -59,6 +59,17 @@ object DexterCatalog {
         if(!metas.isArray)return emptyList()
         return metas.mapNotNull { entry(it,isSeries) }.distinctBy { it.url }
     }
+    fun searchImdbIds(body:String):List<String> {
+        val root=runCatching { mapper.readTree(body) }.getOrNull()
+            ?:return emptyList()
+        val metas=root.path("metas")
+        if(!metas.isArray)return emptyList()
+        return metas.mapNotNull {
+            it.value("imdb_id").ifBlank { it.value("id") }
+                .takeIf { id -> Regex("""tt\d{5,12}""").matches(id) }
+        }.distinct()
+    }
+
     fun entryFromMeta(body:String,isSeries:Boolean):DexterCard? {
         val root=runCatching{mapper.readTree(body)}.getOrNull()?:return null
         return entry(root.path("meta"),isSeries)

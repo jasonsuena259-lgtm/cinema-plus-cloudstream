@@ -14,7 +14,8 @@ data class LiteMediaRequest(
     val url: String,
     val headers: Map<String, String>,
     val subtitleUrls: List<String> = emptyList(),
-    val sourceName: String = "CineLite"
+    val sourceName: String = "CineLite",
+    val subtitleLabels: Map<String, String> = emptyMap()
 )
 
 /**
@@ -157,6 +158,7 @@ class CineLiteBrowser(private val context: Context) {
             var agent = ""
             val captured = AtomicBoolean(false)
             val subtitleUrls = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+            val subtitleLabels = java.util.Collections.synchronizedMap(mutableMapOf<String, String>())
             fun finish(result: LiteMediaRequest?) {
                 handler.post {
                     if (!done) {
@@ -190,9 +192,7 @@ class CineLiteBrowser(private val context: Context) {
                             ): WebResourceResponse? {
                                 val target = request.url.toString()
                                 val subPath = request.url.encodedPath.orEmpty().lowercase()
-                                if (request.url.scheme == "https" &&
-                                    listOf(".srt", ".vtt", ".ass", ".ssa").any { subPath.endsWith(it) }
-                                ) {
+                                if (CineLiteParser.isSubtitleFile(target)) {
                                     subtitleUrls.add(target)
                                 }
                                 if (CineLiteParser.mediaKind(target) != null
@@ -213,30 +213,70 @@ class CineLiteBrowser(private val context: Context) {
                                         val subtitles = synchronized(subtitleUrls) {
                                             subtitleUrls.take(40).toList()
                                         }
-                                        finish(LiteMediaRequest(target, headers, subtitles))
-                                    }, 1600)
+                                        val labels = synchronized(subtitleLabels) {
+                                            subtitleLabels.toMap()
+                                        }
+                                        finish(LiteMediaRequest(target, headers, subtitles,
+                                            subtitleLabels = labels))
+                                    }, 2100)
                                 }
                                 return null
                             }
 
                             override fun onPageFinished(view: WebView?, page: String?) {
-                                // Track only real subtitle anchors/HTML tracks from the
-                                // loaded player. Signed subtitle links remain in memory.
-                                view?.evaluateJavascript("""(function(){
-                                    return JSON.stringify([...document.querySelectorAll('track[src],a[href]')]
-                                        .map(x=>x.src||x.href).filter(Boolean).filter(x=>{
-                                            try {
-                                                const u=new URL(x,location.href);
-                                                return u.protocol==='https:' &&
-                                                  /\.(srt|vtt|ass|ssa)$/i.test(u.pathname);
-                                            }catch(e){return false;}
-                                        }).slice(0,40));
-                                })()""") { raw ->
-                                    runCatching {
-                                        mapper.readTree(mapper.readTree(raw).asText())
-                                            .forEach { subtitleUrls.add(it.asText()) }
+                                // Open the player's actual subtitle controls while
+                                // the same stream session is alive. No external subtitle
+                                // API calls, guessed subtitles or token logging.
+                                fun collect(openMenu: Boolean) {
+                                    if (done) return
+                                    val js = """(function(){
+                                        const open=$openMenu;
+                                        const label=e=>(e?.getAttribute?.('srclang')||
+                                          e?.getAttribute?.('label')||
+                                          e?.getAttribute?.('aria-label')||
+                                          e?.closest?.('[role=option],li')?.textContent||
+                                          e?.textContent||'').trim().slice(0,90);
+                                        if(open){
+                                          const btn=[...document.querySelectorAll('button,[role=button]')]
+                                            .find(x=>/audio\s*&\s*subs|subtitles|captions/i.test(
+                                              (x.textContent||'').trim()));
+                                          if(btn)btn.click();
+                                        }
+                                        const tracks=[];
+                                        const seen=new Set();
+                                        for(const e of document.querySelectorAll(
+                                          'track[src],a[href],[data-subtitle-url],[data-subtitle-src]')){
+                                          const raw=e.src||e.href||e.getAttribute('data-subtitle-url')||
+                                            e.getAttribute('data-subtitle-src');
+                                          if(!raw)continue;
+                                          try {
+                                            const u=new URL(raw,location.href);
+                                            if(u.protocol!=='https:'||
+                                               !/\.(srt|vtt|ass|ssa)$/i.test(u.pathname))continue;
+                                            if(seen.has(u.href))continue;
+                                            seen.add(u.href);
+                                            tracks.push({url:u.href,name:label(e)});
+                                            if(tracks.length===50)break;
+                                          }catch(err){}
+                                        }
+                                        return JSON.stringify(tracks);
+                                    })()"""
+                                    view?.evaluateJavascript(js) { raw ->
+                                        runCatching {
+                                            mapper.readTree(mapper.readTree(raw).asText()).forEach { item ->
+                                                val link = item.path("url").asText()
+                                                if (CineLiteParser.isSubtitleFile(link)) {
+                                                    subtitleUrls.add(link)
+                                                    val title = item.path("name").asText().trim()
+                                                    if (title.isNotBlank()) subtitleLabels[link] = title
+                                                }
+                                            }
+                                        }
                                     }
                                 }
+                                collect(false)
+                                handler.postDelayed({ collect(true) }, 250)
+                                handler.postDelayed({ collect(false) }, 1000)
                                 view?.evaluateJavascript(
                                     "(function(){document.querySelectorAll('video').forEach(v=>{v.muted=true;v.play().catch(()=>{})})})()",
                                     null
@@ -270,7 +310,7 @@ class CineLiteBrowser(private val context: Context) {
                         }
                         loadUrl(url, mapOf("Referer" to referer))
                     }
-                    handler.postDelayed({ finish(null) }, 18000)
+                    handler.postDelayed({ finish(null) }, 8500)
                 } catch (_: Exception) { finish(null) }
             }
         }

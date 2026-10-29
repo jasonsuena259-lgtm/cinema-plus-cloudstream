@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-3234178ce0c76a6877657e1a04696e277d4a91f0f11ee1495d26221346941a63",
+    "fileHash": "sha256-5e236299d29f36b17c05b9716a22423b91877ec2133a03ff616bccbc5e45fa74",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 74483,
+    "fileSize": 81731,
     "status": 3,
     "language": "en",
     "authors": [
@@ -14,10 +14,10 @@
       "TvSeries",
       "Anime"
     ],
-    "version": 13,
+    "version": 17,
     "internalName": "CineLite",
-    "description": "EXPERIMENTAL v13: KodaStream-compatible subtitle language names, anime episode grid with search fallback, fast first-party embed resolution. Extra servers still unverified.",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v13.cs3",
+    "description": "EXPERIMENTAL v17: real CineLite source-menu capture, anime search and native episodes; individual servers and subtitles remain under verification.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v17.cs3",
     "name": "CineLite (experimental)"
   }
 ]

@@ -163,6 +163,40 @@ object CineLiteParser {
         }.distinctBy { Triple(it.url, it.season, it.episode) }
     }
 
+    /**
+     * The player may serve a playlist from /proxy/hls?ext=.m3u8 rather than a
+     * *.m3u8 pathname. Do not strip query parameters: the signed token and
+     * extension are part of the actual URL handed to the media player.
+     */
+    fun mediaKind(raw: String): String? {
+        val parsed = raw.toHttpUrlOrNull() ?: return null
+        if (parsed.scheme != "https" || parsed.username.isNotEmpty() || parsed.password.isNotEmpty())
+            return null
+        val path = parsed.encodedPath.lowercase()
+        val ext = parsed.queryParameter("ext")?.trim()?.lowercase()?.removePrefix(".")
+        return when {
+            path.endsWith(".m3u8") || ext == "m3u8" -> "hls"
+            path.endsWith(".mp4") || ext == "mp4" -> "mp4"
+            else -> null
+        }
+    }
+
+    /** Real watch page routes observed in a browser; never synthesize media URLs. */
+    fun embeddedPlayerForWatchUrl(raw: String): String? {
+        val url = siteUrl(raw)?.toHttpUrlOrNull() ?: return null
+        val segments = url.pathSegments
+        return when {
+            segments.size == 2 && segments[0] == "watch" ->
+                segments[1].toIntOrNull()?.takeIf { it > 0 }?.let { embedMovie(it) }
+            segments.size == 4 && segments[0] == "watch" && segments[1] == "anime" -> {
+                val id = segments[2].toIntOrNull()?.takeIf { it > 0 } ?: return null
+                val ep = segments[3].toIntOrNull()?.takeIf { it > 0 } ?: return null
+                "https://embed.cinelite.xyz/anime/$id/$ep"
+            }
+            else -> null
+        }
+    }
+
     /** Only subtitle tracks actually declared by the loaded page/playlist are emitted. */
     fun subtitleTracks(html: String, base: String = BASE): List<Pair<String, String>> =
         doc(html, base).select("track[src][kind=subtitles],track[src][kind=captions]").mapNotNull { e ->
@@ -195,7 +229,7 @@ object CineLiteParser {
             val url = absolute(raw, base) ?: return
             val parsed = url.toHttpUrlOrNull() ?: return
             val path = parsed.encodedPath.lowercase()
-            val direct = Regex("\\.(?:m3u8|mp4)(?:$|\\?)").containsMatchIn(url.lowercase())
+            val direct = mediaKind(url) != null
             val embed = "embed" in parsed.host || "player" in parsed.host ||
                 Regex("/(?:embed|player|e)/(?:[^/]+)").containsMatchIn(path)
             if (!direct && !embed) return

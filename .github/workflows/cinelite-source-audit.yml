@@ -8,6 +8,7 @@ on:
       - 'tests/audit_cinelite_anime_cards.cjs'
       - 'tests/assert_cinelite_anime_cards.cjs'
       - 'tests/audit_cinelite_subtitles.cjs'
+      - 'tests/probe_cinelite_arabic_subtitles.cjs'
       - '.github/workflows/cinelite-source-audit.yml'
   workflow_dispatch:
 permissions:
@@ -35,3 +36,4 @@ jobs:
           node tests/audit_cinelite_anime_cards.cjs
           node tests/probe_cinelite_source_menu.cjs
           node tests/audit_cinelite_subtitles.cjs
+          node tests/probe_cinelite_arabic_subtitles.cjs

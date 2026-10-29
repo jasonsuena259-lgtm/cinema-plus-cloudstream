@@ -1,0 +1,23 @@
+[
+  {
+    "fileHash": "sha256-9d8c3a85769f41f0bebb667248d65b71be60fb48bef9880ea27a51af59b8c177",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 76685,
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "version": 15,
+    "internalName": "CineLite",
+    "description": "EXPERIMENTAL v15: Android React hydration diagnostics and compact cards; native playback remains unverified.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v15.cs3",
+    "name": "CineLite (experimental)"
+  }
+]

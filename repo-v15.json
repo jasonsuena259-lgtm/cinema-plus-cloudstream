@@ -1,6 +1,6 @@
 {
-  "name": "CineLite v15 - Android catalog diagnostic",
-  "description": "CineLite 15: compact real catalog, hydrate and test Android UI.",
+  "name": "CineLite v15 - automatic updates",
+  "description": "Keep this repository for CineLite v17 and future updates",
   "manifestVersion": 1,
   "pluginLists": [
     "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/plugins-v15.json"

@@ -1,6 +1,6 @@
 {
-  "name": "CineLite v16 - Real Anime Search",
-  "description": "CineLite 16: search actual Anime carousel and verify native episodes.",
+  "name": "CineLite v16 - automatic updates",
+  "description": "Keep this repository for CineLite v17 and future updates",
   "manifestVersion": 1,
   "pluginLists": [
     "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/plugins-v16.json"

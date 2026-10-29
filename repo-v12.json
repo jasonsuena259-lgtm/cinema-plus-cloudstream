@@ -1,6 +1,6 @@
 {
-  "name": "CineLite v12 - Arabic-first player",
-  "description": "CineLite 12: Arabic-first captions and faster playback",
+  "name": "CineLite v12 - automatic updates",
+  "description": "Keep this repository for CineLite v17 and future updates",
   "manifestVersion": 1,
   "pluginLists": [
     "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/plugins-v12.json"

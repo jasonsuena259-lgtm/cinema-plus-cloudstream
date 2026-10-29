@@ -1,0 +1,23 @@
+[
+  {
+    "fileHash": "sha256-5e236299d29f36b17c05b9716a22423b91877ec2133a03ff616bccbc5e45fa74",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 81731,
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "version": 17,
+    "internalName": "CineLite",
+    "description": "EXPERIMENTAL v17: real CineLite source-menu capture, anime search and native episodes; individual servers and subtitles remain under verification.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v17.cs3",
+    "name": "CineLite (experimental)"
+  }
+]

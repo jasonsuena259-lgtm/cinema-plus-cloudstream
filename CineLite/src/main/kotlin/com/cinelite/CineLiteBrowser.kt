@@ -341,7 +341,11 @@ class CineLiteBrowser(private val context: Context) {
                                 current.click();
                                 setTimeout(()=>{
                                     const option=[...document.querySelectorAll('button,[role=option],[role=menuitem]')]
-                                        .find(b=>new RegExp('^(Season|الموسم)\\s+$next
+                                        .find(b=>(label(b)==='Season $next'||label(b)==='الموسم $next')&&
+                                            b!==current&&b.getClientRects().length>0);
+                                    if(option)option.click();
+                                },160);
+                                return true;
                             })()"""
                             view?.evaluateJavascript(switchScript) {
                                 handler.postDelayed({ if (cont.isActive) readSeason() }, 1400)
@@ -418,118 +422,6 @@ class CineLiteBrowser(private val context: Context) {
                                                             v?.evaluateJavascript("""(function(){
                                                                 const buttons=Array.from(document.querySelectorAll('button'));
                                                                 const options=buttons.filter(x=>/^(?:Season|Saison|الموسم)\s+\d+$/i.test(x.textContent.trim()))
-                                                                    .map(x=>Number(x.textContent.trim().match(/\d+/)[0]));
-                                                                return JSON.stringify(Array.from(new Set(options)).filter(x=>x>=0&&x<=100).sort((a,b)=>a-b));
-                                                            })()""") { result ->
-                                                                val seasons = runCatching {
-                                                                    mapper.readTree(mapper.readTree(result).asText())
-                                                                        .map { it.asInt(-1) }.filter { it >= 0 }
-                                                                }.getOrDefault(emptyList())
-                                                                seasonOptions = seasons.take(35)
-                                                                // Close dropdown; the page initially displays season 1.
-                                                                v?.evaluateJavascript(openSeasons) {
-                                                                    if (seasonOptions.isEmpty())
-                                                                        seasonOptions = listOf(1)
-                                                                    handler.postDelayed({ readSeason() }, 220)
-                                                                }
-                                                            }
-                                                        }, 300)
-                                                    }
-                                                }, 1600)
-                                            }
-                                        }, 2300)
-                                    }
-                                }, 1700)
-                            }
-                        }
-                        loadUrl(CineLiteParser.BASE + "/search")
-                    }
-                    handler.postDelayed({ finish() }, 65000)
-                } catch (_: Exception) { finish() }
-            }
-        }
-
-}
-,'i').test(label(b))&&
-                                            b!==current&&b.getClientRects().length>0);
-                                    if(option)option.click();
-                                },160);
-                                return true;
-                            })()"""
-                            view?.evaluateJavascript(switchScript) {
-                                handler.postDelayed({ if (cont.isActive) readSeason() }, 1400)
-                            }
-                        }
-                    }
-                } else finish()
-            }
-            handler.post {
-                if (!cont.isActive) return@post
-                try {
-                    view = WebView(context).apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        settings.allowFileAccess = false
-                        settings.allowContentAccess = false
-                        webViewClient = object : WebViewClient() {
-                            override fun onReceivedSslError(
-                                v: WebView?, h: SslErrorHandler?, e: android.net.http.SslError?
-                            ) { h?.cancel(); finish() }
-                            override fun onPageFinished(v: WebView?, page: String?) {
-                                if (page?.let { CineLiteParser.siteUrl(it) } == null) {
-                                    finish(); return
-                                }
-                                handler.postDelayed({
-                                    val safeQuery = mapper.writeValueAsString(title)
-                                    val searchScript = """(function(){
-                                        const input=document.querySelector('input[type="text"]');
-                                        if(!input)return false;
-                                        const setter=Object.getOwnPropertyDescriptor(
-                                          window.HTMLInputElement.prototype,'value').set;
-                                        setter.call(input,$safeQuery);
-                                        input.dispatchEvent(new Event('input',{bubbles:true}));
-                                        input.dispatchEvent(new Event('change',{bubbles:true}));
-                                        return true;
-                                    })()"""
-                                    v?.evaluateJavascript(searchScript) {
-                                        handler.postDelayed({
-                                            val selectScript = """(function(){
-                                                for(const h of document.querySelectorAll('h3')){
-                                                    const key=Object.keys(h).find(k=>k.startsWith('__reactFiber'));
-                                                    let f=key?h[key]:null;
-                                                    for(let i=0;f&&i<10;i++,f=f.return){
-                                                        const item=f.memoizedProps&&f.memoizedProps.item;
-                                                        if(item&&item.id===$id&&item.media_type==='tv'){
-                                                            const card=h.closest('div.cursor-pointer');
-                                                            if(card){card.click();return true;}
-                                                        }
-                                                    }
-                                                }
-                                                return false;
-                                            })()"""
-                                            v?.evaluateJavascript(selectScript) { selected ->
-                                                if (selected != "true") { finish(); return@evaluateJavascript }
-                                                handler.postDelayed({
-                                                    val openSeasons = """(function(){
-                                                        const btn=Array.from(document.querySelectorAll('button'))
-                                                          .find(x=>/^Season\s+\d+$/.test(x.textContent.trim()) &&
-                                                            !x.className.includes('w-full'));
-                                                        if(!btn)return false;
-                                                        btn.click();return true;
-                                                    })()"""
-                                                    v?.evaluateJavascript(openSeasons) { opened ->
-                                                        if (opened != "true") {
-                                                            // CineLite sometimes renders only one
-                                                            // season without a selector. Still read
-                                                            // the actual visible episode cards.
-                                                            seasonOptions = listOf(1)
-                                                            handler.postDelayed({ readSeason() }, 220)
-                                                            return@evaluateJavascript
-                                                        }
-                                                        handler.postDelayed({
-                                                            v?.evaluateJavascript("""(function(){
-                                                                const buttons=Array.from(document.querySelectorAll('button'));
-                                                                const options=buttons.filter(x=>/^Season\s+\d+$/.test(x.textContent.trim()))
                                                                     .map(x=>Number(x.textContent.trim().match(/\d+/)[0]));
                                                                 return JSON.stringify(Array.from(new Set(options)).filter(x=>x>=0&&x<=100).sort((a,b)=>a-b));
                                                             })()""") { result ->

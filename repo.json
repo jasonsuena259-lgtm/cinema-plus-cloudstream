@@ -1,0 +1,8 @@
+{
+  "name": "CineLite Experimental",
+  "description": "CineLite test build; playback not verified",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/plugins.json"
+  ]
+}

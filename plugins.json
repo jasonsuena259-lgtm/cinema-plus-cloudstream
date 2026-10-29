@@ -1,0 +1,23 @@
+[
+  {
+    "fileHash": "sha256-f632c72230c7ef9aebdb74e9acc19514ba01a2637192b2024c263263aaffdb53",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 46515,
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries",
+      "Anime"
+    ],
+    "version": 1,
+    "internalName": "CineLite",
+    "description": "EXPERIMENTAL: real site cards verified; playback/server API currently returns HTTP 403 in CI, unverified on Android.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v1.cs3",
+    "name": "CineLite (experimental)"
+  }
+]

@@ -623,6 +623,7 @@ class CineLiteBrowser(private val context: Context) {
             var seasonOptions = listOf<Int>()
             var seasonIndex = 0
             var seasonReadRetries = 0
+            var selectAttempts = 0
             fun finish() {
                 handler.post {
                     if (!done) {
@@ -749,22 +750,61 @@ class CineLiteBrowser(private val context: Context) {
                                     })()"""
                                     v?.evaluateJavascript(searchScript) {
                                         handler.postDelayed({
+                                            // React may store identity on an ancestor
+                                            // Fiber, not directly on a search heading.
+                                            // The visible exact-title fallback is only
+                                            // allowed for one unambiguous result.
                                             val selectScript = """(function(){
-                                                for(const h of document.querySelectorAll('h3')){
-                                                    const key=Object.keys(h).find(k=>k.startsWith('__reactFiber'));
-                                                    let f=key?h[key]:null;
-                                                    for(let i=0;f&&i<10;i++,f=f.return){
-                                                        const item=f.memoizedProps&&f.memoizedProps.item;
-                                                        if(item&&item.id===$id&&item.media_type==='tv'){
-                                                            const card=h.closest('div.cursor-pointer');
-                                                            if(card){card.click();return true;}
+                                                const requested=$safeQuery;
+                                                const requestedId=$id;
+                                                const norm=x=>String(x||'').trim().toLowerCase()
+                                                    .replace(/\\s+/g,' ');
+                                                const headings=[...document.querySelectorAll('h3,h4')]
+                                                    .filter(h=>norm(h.textContent)===norm(requested) &&
+                                                      h.getClientRects().length>0);
+                                                const observedId=h=>{
+                                                    let element=h;
+                                                    for(let d=0;element&&d<7;d++,element=element.parentElement){
+                                                        const annotation=element.getAttribute('data-cinelite-id');
+                                                        if(annotation&&Number(annotation)===requestedId)
+                                                            return true;
+                                                        const key=Object.keys(element)
+                                                            .find(k=>k.startsWith('__reactFiber'));
+                                                        let fiber=key?element[key]:null;
+                                                        for(let depth=0;fiber&&depth<22;depth++,fiber=fiber.return){
+                                                            const item=fiber.memoizedProps?.item||
+                                                              fiber.pendingProps?.item;
+                                                            if(item&&Number(item.id)===requestedId&&
+                                                              ['tv','anime'].includes(item.media_type))
+                                                                return true;
                                                         }
                                                     }
-                                                }
-                                                return false;
+                                                    return false;
+                                                };
+                                                const idMatches=headings.filter(observedId);
+                                                const h=idMatches[0]||
+                                                  (headings.length===1?headings[0]:null);
+                                                if(!h)return false;
+                                                const card=h.closest('div.cursor-pointer')||
+                                                  h.closest('[role=button]')||
+                                                  h.closest('div.group.cursor-pointer')||
+                                                  h.closest('div.group');
+                                                if(!card||!card.getClientRects().length)return false;
+                                                card.click();return true;
                                             })()"""
+                                            lateinit var selectCard: () -> Unit
+                                            selectCard = {
                                             v?.evaluateJavascript(selectScript) { selected ->
-                                                if (selected != "true") { finish(); return@evaluateJavascript }
+                                                if (selected != "true") {
+                                                    // Allow search React cards to
+                                                    // hydrate instead of declaring
+                                                    // real releases unavailable.
+                                                    selectAttempts++
+                                                    if (selectAttempts < 15 && cont.isActive) {
+                                                        handler.postDelayed({ selectCard() }, 700)
+                                                    } else finish()
+                                                    return@evaluateJavascript
+                                                }
                                                 handler.postDelayed({
                                                     val openSeasons = """(function(){
                                                         const btn=[...document.querySelectorAll('button,[role=button]')]
@@ -806,7 +846,8 @@ class CineLiteBrowser(private val context: Context) {
                                                     }
                                                 }, 1600)
                                             }
-                                        }, 2300)
+                                            }
+                                            handler.postDelayed({ selectCard() }, 1100)
                                     }
                                 }, 1700)
                             }

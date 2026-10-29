@@ -133,6 +133,30 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                 return null
                             }
 
+                            override fun onReceivedHttpError(
+                                v: WebView?,
+                                request: WebResourceRequest?,
+                                errorResponse: WebResourceResponse?
+                            ) {
+                                // An intercepted request may return 403/404 after
+                                // it was observed. Don't show that failed manifest
+                                // as a playable KodaStream server.
+                                val url = request?.url?.toString() ?: return
+                                if (CineLiteParser.mediaKind(url) != null &&
+                                    (errorResponse?.statusCode ?: 0) >= 400
+                                ) streams.remove(url)
+                            }
+
+                            override fun onReceivedError(
+                                v: WebView?,
+                                request: WebResourceRequest?,
+                                error: WebResourceError?
+                            ) {
+                                val url = request?.url?.toString() ?: return
+                                if (CineLiteParser.mediaKind(url) != null)
+                                    streams.remove(url)
+                            }
+
                             override fun onPageFinished(v: WebView?, page: String?) {
                                 v ?: return
                                 // Read actual source options, not a fixed list. Interact

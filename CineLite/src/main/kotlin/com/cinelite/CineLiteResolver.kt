@@ -122,12 +122,23 @@ class CineLiteResolver(private val context: Context) {
                         siteSources.await()?.let { captured ->
                             // Associate each observed HLS/MP4 request with the
                             // actual server that the website had selected.
+                            // The player's HLS master can load distinct
+                            // MPEG-TS video and audio playlists. Group actual
+                            // captured requests by site agent and prefer the
+                            // proxy master, not the first arbitrary audio URL.
                             captured.streams
                                 .filter { CineLiteParser.mediaKind(it.url) != null }
+                                .groupBy { it.sourceName.trim().lowercase() }
+                                .values.mapNotNull { candidates ->
+                                    candidates.minWithOrNull(
+                                        compareBy<LiteMediaRequest> {
+                                            CineLiteParser.mediaPlaylistPriority(it.url)
+                                        }.thenBy { it.url.length }
+                                    )
+                                }
                                 .sortedWith(compareBy<LiteMediaRequest> {
                                     it.sourceName == "CineLite"
                                 }.thenBy { it.sourceName })
-                                .distinctBy { it.sourceName.lowercase() }
                                 .take(18).forEach { stream ->
                                     val label = stream.sourceName
                                         .takeUnless { it.isBlank() || it == "CineLite" }

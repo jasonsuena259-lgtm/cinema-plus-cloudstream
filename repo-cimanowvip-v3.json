@@ -3,6 +3,6 @@
   "description": "CimaNow VIP — تجريبي؛ أقسام ومشاهدة تفاعلية عند الحاجة",
   "manifestVersion": 1,
   "pluginLists": [
-    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/plugins-cimanowvip-v2.json"
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/plugins-cimanowvip-v3.json"
   ]
 }

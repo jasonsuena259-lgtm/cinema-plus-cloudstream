@@ -38,7 +38,7 @@ jobs:
           if git diff --quiet "$SHA" HEAD -- CineLite; then
             echo "Using independently tested CI run $RUN_ID (identical CineLite source)"
             gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" -n cinema-plus -D downloaded
-            BUILT=$(find downloaded -name 'CineLite-v5.cs3' -type f -print -quit)
+            BUILT=$(find downloaded -name 'CineLite-v6.cs3' -type f -print -quit)
             test -n "$BUILT"
             cp "$BUILT" CineLite/build/CineLite.cs3
           else
@@ -62,10 +62,10 @@ jobs:
           with zipfile.ZipFile(package) as archive:
               manifest=json.loads(archive.read('manifest.json'))
               assert manifest['pluginClassName']=='com.cinelite.CineLitePlugin', manifest
-              assert manifest['version']==5, manifest
+              assert manifest['version']==6, manifest
           dest=base/'dist/cinelite-preview'
           dest.mkdir(parents=True,exist_ok=True)
-          artifact=dest/'CineLite-v5.cs3'
+          artifact=dest/'CineLite-v6.cs3'
           shutil.copyfile(package,artifact)
           data=artifact.read_bytes()
           prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/cinelite-preview/'
@@ -76,8 +76,8 @@ jobs:
               'fileSize':len(data),
               'status':3,'language':'en','authors':['Cinema Plus community'],
               'tvTypes':['Movie','TvSeries','Anime'],
-              'version':5,'internalName':'CineLite',
-              'description':'EXPERIMENTAL v5: single WebView source discovery, native subtitle track capture and 9.4s cap; source availability depends on player.',
+              'version':6,'internalName':'CineLite',
+              'description':'EXPERIMENTAL v6: restored v4 stream extraction following v5 regression; extra servers still unverified.',
               'url':prefix+artifact.name, 'name':'CineLite (experimental)'
           }
           (dest/'plugins.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')

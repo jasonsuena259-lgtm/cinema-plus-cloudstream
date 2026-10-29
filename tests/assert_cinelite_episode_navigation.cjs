@@ -16,8 +16,8 @@ function webViewScript(stage) {
   return source.slice(start + 'val script = """'.length, end + '})()'.length);
 }
 const openJS = webViewScript('openCard = open@{')
-  .replace('const id=$id;', 'const id=21;')
-  .replace('const requested=$safeTitle;', 'const requested="ONE PIECE";');
+  .replaceAll('$id', '21')
+  .replaceAll('$safeTitle', '"ONE PIECE"');
 const episodesJS = webViewScript('readEpisodes = read@{');
 assert.ok(!openJS.includes('$id') && !openJS.includes('$safeTitle'),
   'Unresolved Kotlin placeholders in WebView JS');

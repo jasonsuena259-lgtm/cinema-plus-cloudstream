@@ -1,6 +1,6 @@
-version = 21
+version = 22
 cloudstream {
-    description = "CineLite v21 — fix TV episode discovery and false Coming Soon state; playback still experimental"
+    description = "CineLite v22 — experimental media-profile HLS verification and progressive signed server capture"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

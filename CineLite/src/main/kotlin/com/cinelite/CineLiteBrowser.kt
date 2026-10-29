@@ -8,6 +8,7 @@ import android.webkit.*
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
+import java.util.concurrent.atomic.AtomicBoolean
 
 data class LiteMediaRequest(val url: String, val headers: Map<String, String>)
 
@@ -115,6 +116,7 @@ class CineLiteBrowser(private val context: Context) {
             var webView: WebView? = null
             var done = false
             var agent = ""
+            val captured = AtomicBoolean(false)
             fun finish(result: LiteMediaRequest?) {
                 handler.post {
                     if (!done) {
@@ -147,7 +149,8 @@ class CineLiteBrowser(private val context: Context) {
                                 view: WebView?, request: WebResourceRequest
                             ): WebResourceResponse? {
                                 val target = request.url.toString()
-                                if (Regex("""(?i)\.(?:m3u8|mp4)(?:\?|$)""").containsMatchIn(target)) {
+                                if (Regex("""(?i)\.(?:m3u8|mp4)(?:\?|$)""").containsMatchIn(target)
+                                    && captured.compareAndSet(false, true)) {
                                     val headers = request.requestHeaders.toMutableMap()
                                     if (headers.keys.none { it.equals("User-Agent", true) })
                                         headers["User-Agent"] = agent
@@ -156,7 +159,13 @@ class CineLiteBrowser(private val context: Context) {
                                     CookieManager.getInstance().getCookie(target)?.takeIf {
                                         it.isNotBlank()
                                     }?.let { headers["Cookie"] = it }
-                                    finish(LiteMediaRequest(target, headers))
+                                    // Let the browser's original fetch complete before
+                                    // closing its WebView. Some signed HLS sessions are
+                                    // registered by that first request, and stopping it
+                                    // immediately can invalidate an otherwise usable URL.
+                                    handler.postDelayed({
+                                        finish(LiteMediaRequest(target, headers))
+                                    }, 1600)
                                 }
                                 return null
                             }

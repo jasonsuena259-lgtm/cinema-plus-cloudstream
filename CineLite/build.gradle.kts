@@ -1,6 +1,6 @@
-version = 15
+version = 16
 cloudstream {
-    description = "CineLite v15 — Android WebView hydration fixes, real card/search diagnostics and anime episodes"
+    description = "CineLite v16 — real AniList Anime catalogue search and Android 15 tested episode navigation"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

@@ -203,7 +203,8 @@ class CineLiteParserTest {
         assertTrue(CineLiteParser.isRecognizedEmbedPath("/1560520"))
         assertTrue(CineLiteParser.isRecognizedEmbedPath("/1399/1/1"))
         assertFalse(CineLiteParser.isRecognizedEmbedPath("/anime/21"))
-        assertFalse(CineLiteParser.isRecognizedEmbedPath("/e/a1"))
+        assertTrue(CineLiteParser.isRecognizedEmbedPath("/e/a1"))
+        assertFalse(CineLiteParser.isRecognizedEmbedPath("/e/a%2Fb"))
         assertFalse(CineLiteParser.isRecognizedEmbedPath("/anime/0/1"))
     }
 

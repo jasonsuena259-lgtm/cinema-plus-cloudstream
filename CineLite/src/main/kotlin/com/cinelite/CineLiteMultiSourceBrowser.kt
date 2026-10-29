@@ -29,10 +29,11 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
         return try {
             val u = raw.toHttpUrlOrNull() ?: return false
             if (u.scheme != "https") return false
-            val path = u.encodedPath.lowercase()
-            path.endsWith(".srt") || path.endsWith(".vtt") ||
-                path.endsWith(".ass") || path.endsWith(".ssa") ||
-                (u.host.endsWith("subtitlecat.com") && path.startsWith("/subs/"))
+            // Some real first-party subtitle endpoints use ?ext=.vtt or
+            // ?ext=srt rather than a filename extension.
+            CineLiteParser.isSubtitleFile(raw) ||
+                (u.host.endsWith("subtitlecat.com") &&
+                    u.encodedPath.lowercase().startsWith("/subs/"))
         } catch (_: Exception) { false }
     }
 
@@ -195,13 +196,19 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                     return rows;
                                   }
                                   function harvestSubtitles(){
-                                    [...document.querySelectorAll('track[src],a[href],[data-href]')].forEach(el=>{
-                                      const raw=el.src||el.href||el.getAttribute('data-href');
+                                    [...document.querySelectorAll(
+                                      'track[src],a[href],[data-href],[data-subtitle-url],[data-subtitle-src]'
+                                    )].forEach(el=>{
+                                      const raw=el.getAttribute('data-subtitle-url')||
+                                        el.getAttribute('data-subtitle-src')||
+                                        el.getAttribute('data-href')||el.src||el.href;
                                       if(!raw)return;
                                       try{
                                         const url=new URL(raw,location.href);
                                         if(url.protocol==='https:'&&
                                            (/\.(srt|vtt|ass|ssa)$/i.test(url.pathname)||
+                                            /^(?:\\.)?(?:srt|vtt|ass|ssa)$/i.test(
+                                              url.searchParams.get('ext')||'')||
                                             (url.hostname.endsWith('subtitlecat.com')&&url.pathname.startsWith('/subs/')))){
                                           window.CineLiteSubtitles?.collect(label(el).slice(0,60),url.href);
                                         }
@@ -233,7 +240,10 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                       lastSelected=name;
                                       bridge?.select(name);
                                       click(entry.element);
-                                      await wait(450);
+                                      // A server selection is not a video. Give its
+                                      // player a chance to actually request a
+                                      // manifest before switching to the next.
+                                      await wait(850);
                                       document.querySelectorAll('video').forEach(v=>{
                                         v.muted=true;v.play().catch(()=>{});
                                       });
@@ -258,7 +268,9 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                         }, "CineLiteSubtitles")
                         loadUrl(url, mapOf("Referer" to referer))
                     }
-                    handler.postDelayed({ complete() }, 7300)
+                    // Six real server choices can take over six seconds to
+                    // hydrate and initiate their separate playback requests.
+                    handler.postDelayed({ complete() }, 11000)
                 } catch (_: Exception) { complete() }
             }
         }

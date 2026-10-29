@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: write
+  actions: read
 jobs:
   preview:
     runs-on: ubuntu-latest
@@ -25,13 +26,30 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0
-      - name: Compile CineLite (retry transient JitPack failures)
+      - name: Reuse verified CineLite build artifact or compile as fallback
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          for attempt in 1 2 3; do
-            if ./gradlew CineLite:testDebugUnitTest CineLite:make; then exit 0; fi
-            if [ "$attempt" -eq 3 ]; then exit 1; fi
-            sleep 12
-          done
+          set -e
+          mkdir -p CineLite/build downloaded
+          RUN_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=feature%2Fcinelite-provider&per_page=40" --jq '.workflow_runs[] | select(.name == "Build and publish independent providers" and .conclusion == "success") | .id' | head -n 1)
+          SHA=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" --jq '.head_sha')
+          git fetch --no-tags --depth=1 origin "$SHA"
+          if git diff --quiet "$SHA" HEAD -- CineLite; then
+            echo "Using independently tested CI run $RUN_ID (identical CineLite source)"
+            gh run download "$RUN_ID" --repo "$GITHUB_REPOSITORY" -n cinema-plus -D downloaded
+            BUILT=$(find downloaded -name 'CineLite-v5.cs3' -type f -print -quit)
+            test -n "$BUILT"
+            cp "$BUILT" CineLite/build/CineLite.cs3
+          else
+            echo "CineLite source differs from CI artifact: compiling this commit"
+            for attempt in 1 2 3; do
+              if ./gradlew CineLite:testDebugUnitTest CineLite:make; then break; fi
+              if [ "$attempt" -eq 3 ]; then exit 1; fi
+              sleep 10
+            done
+          fi
+          test -s CineLite/build/CineLite.cs3
       - name: Assemble standalone experimental repository
         env:
           PUBLISH_BRANCH: cinelite-preview

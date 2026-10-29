@@ -3,34 +3,53 @@ package com.akwam
 import org.junit.Assert.*
 import org.junit.Test
 
+/**
+ * Contract tests for Akwam.ss rather than removed akwam.day/JWPlayer routes.
+ * These fixtures contain no actual signed video or download links.
+ */
 class AkwamMediaTest {
-    @Test fun directAndVariableSourcesFromObservedPlayers() {
-        val script = """var links={"hls2":"https://media.example/hls/master.m3u8?t=token&s=1","hls3":"https://media.example/hls/master.txt","hls4":"/stream/file/master.m3u8"};jwplayer("vplayer").setup({sources:[{file:links.hls4||links.hls3||links.hls2,type:"hls"}]});"""
-        assertEquals(listOf("https://media.example/hls/master.m3u8?t=token&s=1", "https://media.example/hls/master.txt", "https://fastvid.cam/stream/file/master.m3u8"), AkwamParser.mediaUrls(script,"https://fastvid.cam/e/file"))
-        val direct = """jwplayer("vplayer").setup({sources:[{file:"https://media.example/master.m3u8?t=1"}]});"""
-        assertEquals(listOf("https://media.example/master.m3u8?t=1"), AkwamParser.mediaUrls(direct,"https://luluvido.com/e/file"))
+    @Test fun separateQualityRoutesArePreservedWithoutInventedServers() {
+        val html = """
+          <div class="download-list">
+            <div><span>720p</span>
+              <a href="/watch/183443/11572/love-language">مشاهدة</a>
+              <a href="/download/183443/11572/love-language">تحميل</a>
+            </div>
+            <div><span>360p</span>
+              <a href="/watch/183444/11572/love-language">مشاهدة</a>
+              <a href="/download/183444/11572/love-language">تحميل</a>
+            </div>
+          </div>
+        """.trimIndent()
+        val entries=AkwamParser.qualities(html)
+        assertEquals(2,entries.size)
+        assertEquals(listOf(720,360),entries.map { it.quality })
+        assertTrue(entries.all { it.watch != null && it.download != null })
+        assertEquals(2,entries.mapNotNull { it.watch }.distinct().size)
     }
-    @Test fun watchRoutePreservesArabicAndRejectsOtherHosts() {
-        assertEquals("https://akwam.day/watch/movie-name", AkwamParser.watchUrl("https://akwam.day/film/movie-name"))
-        val arabic = AkwamParser.watchUrl("https://akwam.day/episode/مسلسل-الحلقة-6")!!
-        assertTrue(arabic.contains("/watch/%"))
-        assertEquals(arabic,AkwamParser.watchUrl("https://akwam.day/episode/مسلسل-الحلقة-6?ref=search"))
-        assertNull(AkwamParser.watchUrl("https://other.example/episode/test"))
-        assertNull(AkwamParser.watchUrl("https://akwam.day/series/test"))
+
+    @Test fun videoElementsExposeOnlyObservedMediaAndEmbeds() {
+        val html = """
+           <video controls>
+             <source src="https://files.example.org/real-media.mp4" type="video/mp4">
+             <source src="https://files.example.org/real-media-low.mp4" type="video/mp4">
+           </video>
+           <iframe src="https://player.example.org/e/a1"></iframe>
+        """.trimIndent()
+        assertEquals(
+            listOf(
+                "https://files.example.org/real-media.mp4",
+                "https://files.example.org/real-media-low.mp4",
+                "https://player.example.org/e/a1"
+            ).sorted(),
+            AkwamParser.embeds(html,"https://akwam.ss/watch/183443/11572/love-language").sorted()
+        )
     }
-    @Test fun arabicWatchUrlsMustBeEncodedForHttpHeaders() {
-        val raw = "https://akwam.day/watch/مسلسل-الحلقة-6"
-        try {
-            okhttp3.Headers.Builder().add("Referer", raw).build()
-            fail("OkHttp must reject raw Arabic header characters")
-        } catch (_: IllegalArgumentException) { }
-        val safe = AkwamParser.watchUrl("https://akwam.day/episode/مسلسل-الحلقة-6")!!
-        val headers = okhttp3.Headers.Builder().add("Referer", safe).build()
-        assertEquals(safe, headers["Referer"])
-    }
-    @Test fun duplicatesAndNonMediaAreExcluded() {
-        val script = """{image:"https://img.example/a.jpg",a:"https://cdn.example/master.m3u8",b:"https://cdn.example/master.m3u8"}"""
-        assertEquals(1,AkwamParser.mediaUrls(script,"https://luluvido.com/e/file").size)
-        assertTrue(AkwamParser.mediaUrls("<html>Unavailable</html>","https://luluvido.com/e/file").isEmpty())
+
+    @Test fun noFakePlayerLinksOrRoutesAreEmitted() {
+        val html = "<div>مشاهدة جودة عالية - 720p</div>"
+        assertTrue(AkwamParser.embeds(html,"https://akwam.ss").isEmpty())
+        assertTrue(AkwamParser.qualities(html).isEmpty())
+        assertTrue(AkwamParser.downloads(html,"https://akwam.ss").isEmpty())
     }
 }

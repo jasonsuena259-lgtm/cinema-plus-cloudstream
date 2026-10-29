@@ -4,6 +4,9 @@ import android.content.Context
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 /** Content must be present in CineLite's rendered DOM. No synthetic TMDB cards. */
 class CineLiteProvider(private val context: Context) : MainAPI() {
@@ -64,16 +67,31 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
         return newHomePageResponse(request.name, list.map(::card), hasNext = false)
     }
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        if (query.isBlank()) return emptyList()
-        val url = mainUrl + "/search"
-        val raw = browser.snapshot(url, query)
-            ?: throw ErrorLoadingException("CineLite: search page did not render")
-        val list = CineLiteParser.cards(raw, url)
-        if (list.isEmpty()) throw ErrorLoadingException(
-            "CineLite: no matching real cards were found in search results"
+    override suspend fun search(query: String): List<SearchResponse> = coroutineScope {
+        val term = query.trim()
+        if (term.isEmpty()) return@coroutineScope emptyList()
+        // CineLite's /search currently returns movie and TV catalogue entries,
+        // while actual AniList-backed series are rendered separately on /anime.
+        // Query both *real* site catalogues concurrently. Never synthesize cards.
+        suspend fun cardsAt(route: String, searchTerm: String?): List<LiteCard> =
+            try {
+                browser.snapshot(mainUrl + route, searchTerm)
+                    ?.let { CineLiteParser.cards(it, mainUrl + route) }.orEmpty()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) { emptyList() }
+        val regular = async { cardsAt("/search", term) }
+        val anime = async {
+            cardsAt("/anime", null).filter { item ->
+                item.type == "anime" && item.title.contains(term, ignoreCase = true)
+            }
+        }
+        val items = (anime.await() + regular.await())
+            .distinctBy { it.url }
+        if (items.isEmpty()) throw ErrorLoadingException(
+            "CineLite: no matching real cards were found in search or Anime catalogue"
         )
-        return list.map(::card)
+        items.map(::card)
     }
 
     override suspend fun load(url: String): LoadResponse {

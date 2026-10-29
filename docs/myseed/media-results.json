@@ -1,0 +1,522 @@
+[
+  {
+    "source": "Vidspeed",
+    "page_http": null,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "Mp4",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 2355648,
+    "encryption": "Standard HLS AES-128, key accessible with normal request",
+    "probe": {
+      "programs": [
+        {
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 856,
+              "height": 356
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            },
+            {
+              "codec_name": "timed_id3",
+              "codec_type": "data"
+            }
+          ]
+        }
+      ],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 856,
+          "height": 356
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        },
+        {
+          "codec_name": "timed_id3",
+          "codec_type": "data"
+        }
+      ],
+      "format": {
+        "duration": "10.093422"
+      }
+    },
+    "sha256": "591577e5c3c66034b4cedba51f24a682a33bb9569bc0042bf0a32807cfd3f17a"
+  },
+  {
+    "source": "Rty1",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 120704,
+    "encryption": "Standard HLS AES-128, key accessible with normal request",
+    "probe": {
+      "programs": [
+        {
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 1280,
+              "height": 534
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            },
+            {
+              "codec_name": "timed_id3",
+              "codec_type": "data"
+            }
+          ]
+        }
+      ],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 534
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        },
+        {
+          "codec_name": "timed_id3",
+          "codec_type": "data"
+        }
+      ],
+      "format": {
+        "duration": "6.089400"
+      }
+    },
+    "sha256": "9866fb0fb5bc5126a61594295510dba34127b5891a8493f88855a6015fd517c9"
+  },
+  {
+    "source": "Vidoba",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 644088,
+    "probe": {
+      "programs": [
+        {
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 864,
+              "height": 360
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            },
+            {
+              "codec_name": "timed_id3",
+              "codec_type": "data"
+            }
+          ]
+        }
+      ],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 864,
+          "height": 360
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        },
+        {
+          "codec_name": "timed_id3",
+          "codec_type": "data"
+        }
+      ],
+      "format": {
+        "duration": "20.033333"
+      }
+    },
+    "sha256": "b1313dbe7bd3cc6c3671cff4500ed7b9b1bb33cc7923ff73ae0ac8d9565e56ed"
+  },
+  {
+    "source": "Mp4plus",
+    "page_http": null,
+    "browser_requests": 2,
+    "hls_validation": "UNSUPPORTED",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1152,
+          "height": 480
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        }
+      ]
+    },
+    "mp4_validation": "PASS"
+  },
+  {
+    "source": "Anafast",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 722296,
+    "probe": {
+      "programs": [
+        {
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 864,
+              "height": 360
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            },
+            {
+              "codec_name": "timed_id3",
+              "codec_type": "data"
+            }
+          ]
+        }
+      ],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 864,
+          "height": 360
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        },
+        {
+          "codec_name": "timed_id3",
+          "codec_type": "data"
+        }
+      ],
+      "format": {
+        "duration": "20.033333"
+      }
+    },
+    "sha256": "0067ff7dbdf0ab51caf44bdcd64269c691789b2c9ee3d03c4b5ddbce41e9ca8a"
+  },
+  {
+    "source": "Vidmoly",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 334264,
+    "probe": {
+      "programs": [
+        {
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 1280,
+              "height": 534
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            },
+            {
+              "codec_name": "timed_id3",
+              "codec_type": "data"
+            }
+          ]
+        }
+      ],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 534
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        },
+        {
+          "codec_name": "timed_id3",
+          "codec_type": "data"
+        }
+      ],
+      "format": {
+        "duration": "10.093400"
+      }
+    },
+    "sha256": "6fe38a52bd64cd59619c5ef2ef639f84b89a0628c00e77236911133a20d0ffed"
+  },
+  {
+    "source": "Vidara",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 122576,
+    "first_segment_note": "Unexpected cached partial response (1024 bytes); sample uses second segment",
+    "sample_segment": 2,
+    "probe": {
+      "programs": [
+        {
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 1280,
+              "height": 534
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            }
+          ]
+        }
+      ],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 534
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        }
+      ],
+      "format": {
+        "duration": "4.082422"
+      }
+    },
+    "sha256": "a1b9ab0d7fd893ef94d462e1a56b909e2aca9cf044fa39c273efe5c160efcf59"
+  },
+  {
+    "source": "Upzur",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "UNSUPPORTED",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 720,
+          "height": 300
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        }
+      ]
+    },
+    "mp4_validation": "PASS"
+  },
+  {
+    "source": "Hgcloud",
+    "page_http": null,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "Streamhls",
+    "page_http": null,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "Luluvdo",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "PASS",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "segment_http": 200,
+    "segment_bytes": 334272,
+    "encryption": "Standard HLS AES-128, key accessible with normal request",
+    "probe": {
+      "programs": [
+        {
+          "streams": [
+            {
+              "codec_name": "h264",
+              "codec_type": "video",
+              "width": 1280,
+              "height": 534
+            },
+            {
+              "codec_name": "aac",
+              "codec_type": "audio"
+            },
+            {
+              "codec_name": "timed_id3",
+              "codec_type": "data"
+            }
+          ]
+        }
+      ],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 534
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        },
+        {
+          "codec_name": "timed_id3",
+          "codec_type": "data"
+        }
+      ],
+      "format": {
+        "duration": "10.093400"
+      }
+    },
+    "sha256": "a364132dbee51990e105f96a5e1e3bdc85a51c8200121412c770ae502293b580"
+  },
+  {
+    "source": "Bysejikuar",
+    "page_http": null,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "Mixdrop",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "UNSUPPORTED",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1280,
+          "height": 534
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio"
+        }
+      ]
+    },
+    "mp4_validation": "PASS"
+  },
+  {
+    "source": "Dsvplay",
+    "page_http": null,
+    "browser_requests": 0,
+    "hls_validation": "NOT_TESTED",
+    "sample_download": "NOT_TESTED",
+    "sample_decode": "NOT_TESTED",
+    "android_playback": "NOT_TESTED"
+  },
+  {
+    "source": "Voe",
+    "page_http": null,
+    "browser_requests": 1,
+    "hls_validation": "UNSUPPORTED",
+    "sample_download": "PASS",
+    "sample_decode": "PASS",
+    "android_playback": "NOT_TESTED",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "av1",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080
+        }
+      ]
+    },
+    "mp4_validation": "PASS"
+  }
+]

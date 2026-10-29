@@ -69,3 +69,13 @@ https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/mai
 لإعادة الاختبارات المحلية: `./gradlew CineWave:testDebugUnitTest CineWave:make`.
 للاختبارات الحية أضف `CINEWAVE_LIVE_TEST=1`؛ اختبار الروابط المؤقتة يتطلب
 `CINEWAVE_LINK_CAPTURE` يشير إلى ملف خاص خارج المستودع. لا ترفع روابط موقعة أو cookies إلى Git.
+
+### MySeed | ماي سيد — مستقل
+
+[تعليمات MySeed](MySeed/README.md) · [تحليل الموقع](docs/myseed/SITE_ANALYSIS.md) · [نتائج السيرفرات والتنزيل](docs/myseed/SERVER_TEST_REPORT.md)
+
+```text
+https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/repo-myseed-v1.json
+```
+
+نسخة تجريبية مبنية؛ عينات فيديو موثقة من 12 مصدرًا، مع قيود Vidspeed والمستضيفين الآخرين في التقرير. تشغيل Android غير مثبت.

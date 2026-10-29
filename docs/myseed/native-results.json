@@ -1,0 +1,98 @@
+[
+  {
+    "source": "Vidspeed",
+    "extracted": 1,
+    "validated": 0,
+    "error": null
+  },
+  {
+    "source": "Mp4",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Rty1",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Vidoba",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Mp4plus",
+    "extracted": 2,
+    "validated": 2,
+    "error": null
+  },
+  {
+    "source": "Anafast",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Vidmoly",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Vidara",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Upzur",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Hgcloud",
+    "extracted": 0,
+    "validated": 0,
+    "error": null
+  },
+  {
+    "source": "Streamhls",
+    "extracted": 0,
+    "validated": 0,
+    "error": null
+  },
+  {
+    "source": "Luluvdo",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Bysejikuar",
+    "extracted": 0,
+    "validated": 0,
+    "error": null
+  },
+  {
+    "source": "Mixdrop",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  },
+  {
+    "source": "Dsvplay",
+    "extracted": 0,
+    "validated": 0,
+    "error": "IOException"
+  },
+  {
+    "source": "Voe",
+    "extracted": 1,
+    "validated": 1,
+    "error": null
+  }
+]

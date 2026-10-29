@@ -8,6 +8,7 @@ import org.jsoup.nodes.Element
 data class LiteCard(val title: String, val url: String, val poster: String?, val type: String)
 data class LiteEpisode(val title: String, val url: String, val season: Int?, val episode: Int?)
 data class LiteSource(val name: String, val url: String, val direct: Boolean)
+data class LiteIdentity(val id: Int, val type: String, val title: String, val poster: String?)
 
 object CineLiteParser {
     const val BASE = "https://cinelite.xyz"
@@ -41,9 +42,45 @@ object CineLiteParser {
         }
     }
 
+    fun cardUrl(id: Int, type: String, title: String, poster: String?): String =
+        BASE.toHttpUrlOrNull()!!.newBuilder()
+            .addQueryParameter("cineliteId", id.toString())
+            .addQueryParameter("cineliteType", type)
+            .addQueryParameter("cineliteTitle", title)
+            .apply { if (!poster.isNullOrBlank()) addQueryParameter("cinelitePoster", poster) }
+            .build().toString()
+
+    fun identity(raw: String): LiteIdentity? {
+        val u = siteUrl(raw)?.toHttpUrlOrNull() ?: return null
+        if (u.encodedPath != "/") return null
+        val id = u.queryParameter("cineliteId")?.toIntOrNull()?.takeIf { it > 0 } ?: return null
+        val type = u.queryParameter("cineliteType")?.takeIf { it in setOf("movie","tv","anime") } ?: return null
+        val title = u.queryParameter("cineliteTitle")?.takeIf { it.isNotBlank() } ?: return null
+        return LiteIdentity(id, type, title, u.queryParameter("cinelitePoster"))
+    }
+
+    /** These routes are specified by CineLite's public embed documentation. */
+    fun embedMovie(id: Int): String? = id.takeIf { it > 0 }?.let { "https://embed.cinelite.xyz/" + it }
+    fun embedEpisode(id: Int, season: Int, episode: Int): String? =
+        if (id > 0 && season >= 0 && episode > 0)
+            "https://embed.cinelite.xyz/" + id + "/" + season + "/" + episode
+        else null
+
     fun cards(html: String, base: String = BASE): List<LiteCard> {
         val document = doc(html, base)
-        return document.select("a[href], a[data-href]").mapNotNull { a ->
+        // CineLite's React components do not render <a> tags for media cards.
+        // The WebView assigns attributes only from real React memoizedProps.item values.
+        val annotated = document.select("[data-cinelite-id][data-cinelite-type]").mapNotNull { e ->
+            val id = e.attr("data-cinelite-id").toIntOrNull()?.takeIf { it > 0 } ?: return@mapNotNull null
+            val type = e.attr("data-cinelite-type").lowercase()
+                .takeIf { it in setOf("movie", "tv", "anime") } ?: return@mapNotNull null
+            val title = e.selectFirst("h3,h4")?.text()?.trim()?.takeIf { it.isNotBlank() }
+                ?: return@mapNotNull null
+            val rawPoster = e.selectFirst("img[src],img[data-src]")?.let { attr(it, "src","data-src") }
+            val poster = rawPoster?.let { absolute(it, base) }
+            LiteCard(title, cardUrl(id,type,title,poster), poster, type)
+        }
+        val anchors = document.select("a[href], a[data-href]").mapNotNull { a ->
             val link = siteUrl(attr(a, "href", "data-href") ?: return@mapNotNull null, base)
                 ?: return@mapNotNull null
             val type = mediaType(link) ?: return@mapNotNull null
@@ -61,7 +98,8 @@ object CineLiteParser {
                 else absolute(raw, base)
             }
             LiteCard(title, link, poster, type)
-        }.distinctBy { it.url }
+        }
+        return (annotated + anchors).distinctBy { it.url }
     }
 
     fun title(html: String, base: String): String? {

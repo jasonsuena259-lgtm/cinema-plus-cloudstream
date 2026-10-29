@@ -163,6 +163,31 @@ object CineLiteParser {
         }.distinctBy { Triple(it.url, it.season, it.episode) }
     }
 
+    /** Only subtitle tracks actually declared by the loaded page/playlist are emitted. */
+    fun subtitleTracks(html: String, base: String = BASE): List<Pair<String, String>> =
+        doc(html, base).select("track[src][kind=subtitles],track[src][kind=captions]").mapNotNull { e ->
+            val url = absolute(e.attr("src"), base) ?: return@mapNotNull null
+            val lang = e.attr("srclang").ifBlank { e.attr("label") }.ifBlank { "Unknown" }
+            lang to url
+        }.distinctBy { it.second }
+
+    fun hlsSubtitleTracks(playlist: String, base: String): List<Pair<String, String>> =
+        playlist.lineSequence().filter {
+            it.startsWith("#EXT-X-MEDIA:") && Regex("""TYPE=SUBTITLES(?:,|$)""").containsMatchIn(it)
+        }.mapNotNull { line ->
+            val uri = Regex("""(?:^|,)URI="([^"]+)"""").find(line)?.groupValues?.get(1)
+                ?: return@mapNotNull null
+            val url = absolute(uri, base) ?: return@mapNotNull null
+            // A nested .m3u8 track is natively understood by HLS players. Only expose
+            // directly usable text tracks via CloudStream's separate subtitle callback.
+            if (!Regex("""\.(?:vtt|srt|ass|ssa)(?:\?|$)""", RegexOption.IGNORE_CASE)
+                    .containsMatchIn(url)) return@mapNotNull null
+            val name = Regex("""(?:^|,)NAME="([^"]+)"""").find(line)?.groupValues?.get(1)
+                ?: Regex("""(?:^|,)LANGUAGE="([^"]+)"""").find(line)?.groupValues?.get(1)
+                ?: "Unknown"
+            name to url
+        }.distinctBy { it.second }.toList()
+
     fun sources(html: String, base: String): List<LiteSource> {
         val d = doc(html, base)
         val result = mutableListOf<LiteSource>()

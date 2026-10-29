@@ -1,6 +1,6 @@
-version = 12
+version = 13
 cloudstream {
-    description = "CineLite v12 — Arabic-first real subtitle tracks, faster playback links, preserve short-lived HLS tokens"
+    description = "CineLite v13 — KodaStream-compatible Arabic tracks, real anime episodes and fast first-party video links"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

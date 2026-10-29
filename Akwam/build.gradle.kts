@@ -1,29 +1,13 @@
-version = 2
+version = 3
 cloudstream {
-    description = "أكوام — إضافة مستقلة"
+    description = "Akwam.ss v3 — independent movie, TV, episode, quality, verified MP4 and player-source provider (experimental)"
     authors = listOf("Cinema Plus community")
     status = 3
-    tvTypes = listOf("Movie", "TvSeries")
+    tvTypes = listOf("Movie", "TvSeries", "Anime")
     language = "ar"
 }
-dependencies { testImplementation("junit:junit:4.13.2") }
-dependencies { implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0") }
-
 dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+    testImplementation("junit:junit:4.13.2")
     testImplementation(files(gradle.gradleUserHomeDir.resolve("caches/cloudstream/cloudstream/cloudstream.jar")))
-    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-}
-
-tasks.withType<Test>().configureEach {
-    if (System.getenv("AKWAM_LIVE_TEST") == "1") {
-        listOf("http.proxyHost", "http.proxyPort", "https.proxyHost", "https.proxyPort").forEach { key ->
-            System.getProperty(key)?.let { systemProperty(key, it) }
-        }
-    }
-}
-
-// CloudStream initializes its extractor registry even for newExtractorLink.
-// These are test-only host application dependencies, not bundled plugin code.
-dependencies {
-    testImplementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0")
 }

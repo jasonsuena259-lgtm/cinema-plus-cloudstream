@@ -77,6 +77,19 @@ class MySeedTest {
         System.getenv("MYSEED_CAPTURE_PATH")?.let{java.io.File(it).writeText(mapper.writeValueAsString(rows.map{(source,links,_)->mapOf("name" to source.name,"status" to null,"found" to links.map{mapOf("url" to it.url,"type" to it.type.name,"headers" to (it.headers+mapOf("Referer" to it.referer)))})}))}
         for(name in listOf("Mp4","Vidmoly"))assertTrue("No verified link from $name",rows.first{it.first.name==name}.second.isNotEmpty())
     }
+    @Test fun liveDifferentEpisodeAndMovie()=runBlocking {
+        assumeTrue(System.getenv("MYSEED_LIVE_TEST")=="1")
+        val provider=MySeedProvider()
+        val firstEpisode=MySeedParser.episodes(fixture("episode")).first().url
+        val results=mutableListOf<Map<String,Any>>()
+        for(url in listOf(firstEpisode,"https://myseed.baby/watch.php?vid=d507467a3")){
+            val links=mutableListOf<ExtractorLink>()
+            assertTrue(provider.loadLinks(url,false,{},links::add));assertTrue(links.isNotEmpty())
+            results+=mapOf("content" to url,"verified_sources" to links.map{it.name}.distinct())
+        }
+        System.getenv("MYSEED_REPORT_PATH")?.let{java.io.File(it+".additional").writeText(jacksonObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(results))}
+        Unit
+    }
     @Test fun liveVidspeedReachability()=runBlocking {
         assumeTrue(System.getenv("MYSEED_LIVE_TEST")=="1")
         val source=MySeedParser.sources(MySeedRepository().page(play)).first{it.name=="Vidspeed"}

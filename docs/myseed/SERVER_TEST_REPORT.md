@@ -32,3 +32,5 @@ Vidspeed: الاختبار المستقل متجاوز (SKIPPED) بسبب 403 ا
 أدلة قابلة للمراجعة: native-results.json وmedia-results.json، اختبارات MySeedTest، وأداة tests/probe_myseed_media.py. لا تحتوي التقارير على روابط تشغيل مؤقتة أو كوكيز.
 
 محاولة Android الأخيرة: اكتمل إقلاع API 30 بعد 327 ثانية، ثم فشل تثبيت CloudStream 4.8.0 بالرسالة `Failure calling service package: Broken pipe (32)`. لم تصل المحاولة إلى تحميل الإضافة أو تشغيل فيديو.
+
+فحص محتوى إضافي: نجح loadLinks للحلقة الأولى من قائمة Silo وللفيلم Sense and Sensibility 2026، مع مصادر فيديو مختلفة صالحة؛ أسماء المصادر في additional-content-results.json. هذا تحقق روابط ووسائط، وليس تشغيلًا داخل Android.

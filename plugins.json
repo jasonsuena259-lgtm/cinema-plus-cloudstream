@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-ceaeceb10128a795482486e783250075d79e939964178545b4248b8eb57532ee",
+    "fileHash": "sha256-2c3206b63b925f573e104bdc72176a3a54a792d71a40feaeee0590850731a506",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 63828,
+    "fileSize": 64613,
     "status": 3,
     "language": "en",
     "authors": [
@@ -14,10 +14,10 @@
       "TvSeries",
       "Anime"
     ],
-    "version": 6,
+    "version": 7,
     "internalName": "CineLite",
-    "description": "EXPERIMENTAL v6: restored v4 stream extraction following v5 regression; extra servers still unverified.",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v6.cs3",
+    "description": "EXPERIMENTAL v7: repaired real series episodes and season parsing; retains v4 playback extraction. Server availability varies.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v7.cs3",
     "name": "CineLite (experimental)"
   }
 ]

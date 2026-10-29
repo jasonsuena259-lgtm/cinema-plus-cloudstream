@@ -108,7 +108,8 @@ object DexterApi {
     fun playlistSubtitles(master:String,source:String):List<DexterApiSubtitle> {
         if(!DexterParser.isHls(master))return emptyList()
         val found=linkedMapOf<String,DexterApiSubtitle>()
-        for(line in master.lines()) {
+        for(rawLine in master.lines()) {
+            val line=rawLine.trim()
             if(!line.startsWith("#EXT-X-MEDIA:",ignoreCase=true))continue
             val values=mutableMapOf<String,String>()
             // HLS attributes can be quoted and contain commas in quoted names.

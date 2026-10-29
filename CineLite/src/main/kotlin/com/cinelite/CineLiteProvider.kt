@@ -134,8 +134,12 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
         }
         val url = CineLiteParser.siteUrl(data) ?: return false
         val rendered = html(url)
-        return CineLiteResolver(context).resolve(
+        val resolved = CineLiteResolver(context).resolve(
             CineLiteParser.sources(rendered, url), url, subtitleCallback, callback
         )
+        if (resolved) CineLiteParser.subtitleTracks(rendered, url).forEach { (language, track) ->
+            subtitleCallback(SubtitleFile(language, track))
+        }
+        return resolved
     }
 }

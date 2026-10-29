@@ -16,9 +16,17 @@ const code=source.slice(start+3,end+4);
    const page=await b.newPage();
    try{
     await page.goto('https://cinelite.xyz'+route,{waitUntil:'domcontentloaded',timeout:35000});
-    await page.waitForTimeout(4500);
-    const raw=await page.evaluate(code);
-    const result=JSON.parse(raw);
+    // CI runners sometimes receive the React shell before the real carousels.
+    // Wait for cards instead of assuming a fixed hydration time.
+    await page.waitForFunction(() =>
+      document.querySelectorAll('.slider-track h3,.slider-track h4,section h3').length>=5,
+      null,{timeout:18000}).catch(()=>{});
+    let result={html:'',count:0};
+    for(let attempt=0;attempt<4;attempt++){
+      result=JSON.parse(await page.evaluate(code));
+      if(result.count>=5)break;
+      await page.waitForTimeout(1400);
+    }
     assert.equal(typeof result.html,'string');
     assert.ok(result.html.length<250000,
       'Android WebView IPC payload is unexpectedly large');

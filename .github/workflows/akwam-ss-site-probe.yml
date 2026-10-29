@@ -41,6 +41,24 @@ jobs:
                 counters[fragment]=len(soup.select('a[href*="'+fragment+'"]'))
               poster_classes=[x.get("class") for x in soup.select("a[href]") if
                 any(f in x.get("href","") for f in ["/movie/","/series/"])][:5]
+              if name in ("movies","series","series-detail","watch","download"):
+                candidates=soup.select("a[href*='/movie/'],a[href*='/series/'],a[href*='/episode/']")
+                samples=[{
+                  "tag":a.name,"classes":a.get("class",[]),
+                  "textLen":len(a.get_text(" ",strip=True)),
+                  "childTags":[el.name for el in a.find_all(recursive=False)[:5]],
+                  "hasImage":bool(a.select_one("img")),
+                  "hasHeading":bool(a.select_one("h2,h3,h4")),
+                  "parentClass":a.parent.get("class",[]) if a.parent else []
+                } for a in candidates[:7]]
+                print("AKWAM_CARD_MARKUP",json.dumps({"area":name,"samples":samples}))
+              if name=="watch":
+                media=soup.select("video,iframe")
+                print("AKWAM_WATCH_MARKUP",json.dumps({
+                  "elements":[{"tag":el.name,"attrKeys":list(el.attrs.keys()),
+                    "childTags":[c.name for c in el.find_all(recursive=False)[:6]]} for el in media[:5]],
+                  "playerScriptCount":len(soup.select("script[src]"))
+                }))
               has_episodes=bool(soup.select("a[href*='/episode/']"))
               # Avoid recording signed player links or download tokens in logs.
               print("AKWAM_SITE_REPORT",json.dumps({

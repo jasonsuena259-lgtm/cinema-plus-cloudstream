@@ -207,7 +207,7 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                         const url=new URL(raw,location.href);
                                         if(url.protocol==='https:'&&
                                            (/\.(srt|vtt|ass|ssa)$/i.test(url.pathname)||
-                                            /^(?:\\.)?(?:srt|vtt|ass|ssa)$/i.test(
+                                            /^(?:\.)?(?:srt|vtt|ass|ssa)$/i.test(
                                               url.searchParams.get('ext')||'')||
                                             (url.hostname.endsWith('subtitlecat.com')&&url.pathname.startsWith('/subs/')))){
                                           window.CineLiteSubtitles?.collect(label(el).slice(0,60),url.href);

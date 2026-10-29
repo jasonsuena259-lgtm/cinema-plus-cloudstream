@@ -18,8 +18,8 @@ class AkwamProvider:MainAPI(){
         "/movies" to "الأفلام",
         "/series" to "المسلسلات",
         "/shows" to "التلفزيون",
-        "/movies?category=1" to "أفلام عربية",
-        "/series?category=30" to "مسلسلات أنمي"
+        "/movies?section=29" to "أفلام عربية",
+        "/series?section=30" to "مسلسلات أجنبية"
     )
     private suspend fun fetch(url:String):String?=try {
         app.get(url,timeout=18).takeIf{it.code in 200..299}?.text
@@ -46,9 +46,8 @@ class AkwamProvider:MainAPI(){
     override suspend fun search(query:String,page:Int):SearchResponseList{
         if(query.isBlank())return newSearchResponseList(emptyList(),false)
         val encoded=URLEncoder.encode(query.trim(),"UTF-8")
-        // Old Akwam supported ?q; current Akwam forms may use ?s.
-        // Try both real search routes; do not invent catalogue entries.
-        for(endpoint in listOf("/search?q=","/search?s=")){
+        // Verified live Akwam.ss search form uses ?q; ?s returned unrelated cards.
+        for(endpoint in listOf("/search?q=")){
             val url=mainUrl+endpoint+encoded+"&page="+page
             val html=fetch(url)?:continue
             val items=AkwamParser.cards(html,url).map(::result)
@@ -67,7 +66,7 @@ class AkwamProvider:MainAPI(){
         val poster=AkwamParser.poster(doc)
         val plot=AkwamParser.plot(doc)
         val entries=AkwamParser.qualities(html,valid)
-        val tags=doc.select("a[href*='category='],a[href*='/genre/']")
+        val tags=doc.select("a[href*='section='],a[href*='/genre/']")
             .map{it.text()}.filter{it.isNotBlank()}.distinct()
         if(valid.contains("/movie/")){
             return newMovieLoadResponse(title,valid,TvType.Movie,valid){
@@ -76,7 +75,16 @@ class AkwamProvider:MainAPI(){
         }
         val groups=AkwamParser.seasons(doc)
         val all=mutableListOf<AkwamEpisode>()
-        if(groups.isEmpty())all+=AkwamParser.episodes(doc,1)
+        val baseSeason = when {
+            Regex("""(?:الموسم|season)\s*(?:الرابع|fourth|4)""",RegexOption.IGNORE_CASE)
+                .containsMatchIn(title) -> 4
+            Regex("""(?:الموسم|season)\s*(?:الثالث|third|3)""",RegexOption.IGNORE_CASE)
+                .containsMatchIn(title) -> 3
+            Regex("""(?:الموسم|season)\s*(?:الثاني|second|2)""",RegexOption.IGNORE_CASE)
+                .containsMatchIn(title) -> 2
+            else -> 1
+        }
+        if(groups.isEmpty())all+=AkwamParser.episodes(doc,baseSeason)
         else for((link,number) in groups){
             val seasonHtml=fetch(link)?:continue
             all+=AkwamParser.episodes(AkwamParser.document(seasonHtml,link),number)

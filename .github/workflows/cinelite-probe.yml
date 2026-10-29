@@ -4,6 +4,7 @@ on:
     paths:
       - 'CineLite/**'
       - 'tests/probe_cinelite_browser.cjs'
+      - 'tests/assert_cinelite_live.cjs'
       - 'tests/probe_cinelite_components.cjs'
       - 'tests/probe_cinelite_episode.cjs'
       - 'tests/probe_cinelite_media.cjs'
@@ -30,6 +31,7 @@ jobs:
         env:
           NODE_PATH: /tmp/cinelite-probe/node_modules
         run: |
+          node tests/assert_cinelite_live.cjs
           node tests/probe_cinelite_browser.cjs
           node tests/probe_cinelite_components.cjs
           node tests/probe_cinelite_episode.cjs

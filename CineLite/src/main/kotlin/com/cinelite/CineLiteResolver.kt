@@ -54,7 +54,8 @@ class CineLiteResolver(private val context: Context) {
         }
         // Try each actual iframe/player independently, including alternate servers.
         for (source in sources.take(24)) {
-            withTimeoutOrNull(26000) {
+            val isAnimePlayer = "/anime/" in source.url || "/watch/anime/" in contentUrl
+            withTimeoutOrNull(if (isAnimePlayer) 60000 else 26000) {
                 if (source.direct) {
                     val type = if (source.url.substringBefore('?').endsWith(".m3u8", true))
                         ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
@@ -74,8 +75,25 @@ class CineLiteResolver(private val context: Context) {
                     var valid = false
                     for (link in found) if (add(link)) valid = true
                     if (!valid) {
-                        browser.media(source.url, contentUrl)?.let {
-                            emitCaptured(it, source.name, source.url)
+                        withTimeoutOrNull(12000) {
+                            browser.media(source.url, contentUrl)?.let {
+                                emitCaptured(it, source.name, source.url)
+                            }
+                        }
+                    }
+                    if (isAnimePlayer) {
+                        // Six labels were observed in CineLite's real anime player UI.
+                        // Visit actual buttons individually; return only HLS/MP4 bytes
+                        // that pass validate(). Never reuse a user's temporary token.
+                        for (agent in listOf(
+                            "Reyna Sub", "Reyna Dub", "Chamber Sub",
+                            "Chamber Dub", "Neon Sub", "Neon Dub"
+                        )) {
+                            withTimeoutOrNull(7000) {
+                                browser.media(source.url, contentUrl, agent)?.let {
+                                    emitCaptured(it, agent, source.url)
+                                }
+                            }
                         }
                     }
                     if (emitted.isNotEmpty()) subtitleQueue += discoveredSubs

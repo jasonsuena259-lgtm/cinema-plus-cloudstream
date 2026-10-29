@@ -241,9 +241,9 @@ class CineLiteBrowser(private val context: Context) {
                             return {number:number,title:el.querySelector('h4')?.textContent?.trim()||''};
                         }).filter(e=>e.number>0&&e.title);
                         const btn=Array.from(document.querySelectorAll('button'))
-                            .find(x=>/^Season\\s+\\d+$/.test(x.textContent.trim()) &&
+                            .find(x=>/^Season\s+\d+$/.test(x.textContent.trim()) &&
                                 !x.className.includes('w-full'));
-                        const active=btn ? Number(btn.textContent.trim().match(/\\d+/)[0]) : -1;
+                        const active=btn ? Number(btn.textContent.trim().match(/\d+/)[0]) : -1;
                         return JSON.stringify({season:active,episodes:episodes});
                     })()"""
                     view?.evaluateJavascript(parse) { raw ->

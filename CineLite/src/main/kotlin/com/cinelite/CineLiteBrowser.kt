@@ -54,7 +54,24 @@ class CineLiteBrowser(private val context: Context) {
                     webViewClient = object : WebViewClient() {
                         override fun onReceivedSslError(
                             view: WebView?, handler: SslErrorHandler?, error: android.net.http.SslError?
-                        ) { handler?.cancel(); finish(null) }
+                        ) {
+                            android.util.Log.w("CineLiteSnapshot", "SSL error in page")
+                            handler?.cancel(); finish(null)
+                        }
+                        override fun onReceivedError(
+                            view: WebView?, request: WebResourceRequest?, error: WebResourceError?
+                        ) {
+                            if (request?.isForMainFrame == true)
+                                android.util.Log.w("CineLiteSnapshot",
+                                    "Main-frame WebView error code=" + error?.errorCode)
+                        }
+                        override fun onReceivedHttpError(
+                            view: WebView?, request: WebResourceRequest?, error: WebResourceResponse?
+                        ) {
+                            if (request?.isForMainFrame == true)
+                                android.util.Log.w("CineLiteSnapshot",
+                                    "Main-frame HTTP status=" + error?.statusCode)
+                        }
 
                         override fun onPageFinished(view: WebView?, page: String?) {
                             if (page?.let { CineLiteParser.siteUrl(it) } == null) {
@@ -105,9 +122,48 @@ class CineLiteBrowser(private val context: Context) {
                                                     if(matches.length===1)annotate(card,matches[0]);
                                                 }
                                             }
+                                            // A full React document can exceed Android's
+                                            // evaluateJavascript IPC payload limit. Only
+                                            // serialize real annotated card metadata.
+                                            const esc=x=>String(x||'').replace(/&/g,'&amp;')
+                                              .replace(/</g,'&lt;').replace(/>/g,'&gt;')
+                                              .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+                                            const seen=new Set(),blocks=[];
+                                            const itemHTML=e=>{
+                                              const id=Number(e.getAttribute('data-cinelite-id'));
+                                              const type=e.getAttribute('data-cinelite-type');
+                                              const h=e.querySelector('h3,h4');
+                                              const name=(h?.textContent||'').trim();
+                                              if(!Number.isInteger(id)||id<1||
+                                                !['movie','tv','anime'].includes(type)||!name||
+                                                seen.has(type+':'+id))return null;
+                                              seen.add(type+':'+id);
+                                              const img=e.querySelector('img');
+                                              const poster=img?.getAttribute('src')||
+                                                img?.getAttribute('data-src')||'';
+                                              return '<div data-cinelite-id="'+id+
+                                                '" data-cinelite-type="'+esc(type)+'">'+
+                                                '<h3>'+esc(name)+'</h3>'+
+                                                (poster?'<img src="'+esc(poster)+'">':'')+
+                                                '</div>';
+                                            };
+                                            for(const section of document.querySelectorAll('section')){
+                                              if(seen.size>=240)break;
+                                              const heading=(section.querySelector('h2')?.textContent||'').trim();
+                                              if(!heading)continue;
+                                              const items=[...section.querySelectorAll('[data-cinelite-id]')]
+                                                .map(itemHTML).filter(Boolean);
+                                              if(items.length)blocks.push('<section><h2>'+esc(heading)+
+                                                '</h2>'+items.join('')+'</section>');
+                                            }
+                                            const remaining=[...document.querySelectorAll('[data-cinelite-id]')]
+                                              .slice(0,500).map(itemHTML).filter(Boolean);
+                                            if(remaining.length)blocks.push(
+                                              '<section><h2>More on CineLite</h2>'+
+                                              remaining.join('')+'</section>');
                                             return JSON.stringify({
-                                                html:document.documentElement.outerHTML,
-                                                count:document.querySelectorAll('[data-cinelite-id]').length
+                                                html:blocks.join(''),
+                                                count:seen.size
                                             });
                                         })()"""
                                     ) { raw ->
@@ -116,6 +172,8 @@ class CineLiteBrowser(private val context: Context) {
                                         }.getOrNull()
                                         val html = payload?.path("html")?.asText()
                                         val count = payload?.path("count")?.asInt(0) ?: 0
+                                        android.util.Log.i("CineLiteSnapshot",
+                                            "Cards=" + count + " payloadBytes=" + (html?.length ?: 0))
                                         if (count == 0 && attempt < 3) {
                                             handler.postDelayed({ readDom(attempt + 1) }, 750)
                                         } else finish(html?.takeIf { it.isNotBlank() })

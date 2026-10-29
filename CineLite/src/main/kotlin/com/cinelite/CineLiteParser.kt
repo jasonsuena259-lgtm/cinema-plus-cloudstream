@@ -184,6 +184,29 @@ object CineLiteParser {
         }
     }
 
+    /**
+     * Prefer a first-party HLS master over its derived audio/video-only media
+     * playlists. CineLite's proxy can return separate MPEG-TS audio and video
+     * playlists, and choosing the first captured request at random may show a
+     * black screen. This ranks REAL observed URLs; it never creates URLs.
+     */
+    fun mediaPlaylistPriority(raw: String): Int {
+        val parsed = raw.toHttpUrlOrNull() ?: return 99
+        val path = parsed.encodedPath.lowercase()
+        val ext = parsed.queryParameter("ext")?.lowercase()?.removePrefix(".")
+        if (mediaKind(raw) == null) return 99
+        return when {
+            (path == "/proxy/hls" || path.endsWith("/proxy/hls")) &&
+                ext == "m3u8" -> 0
+            path.endsWith("/master.m3u8") -> 1
+            path.endsWith("/index.m3u8") -> 2
+            (path.contains("audio") || path.contains("sound")) &&
+                mediaKind(raw) == "hls" -> 10
+            mediaKind(raw) == "hls" -> 3
+            else -> 4
+        }
+    }
+
     /** Restrict direct embed shortcuts to CineLite's observed numeric routes. */
     fun isRecognizedEmbedPath(path: String): Boolean {
         val parts = path.trim('/').split('/')

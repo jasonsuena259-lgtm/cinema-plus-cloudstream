@@ -1,0 +1,22 @@
+[
+  {
+    "fileHash": "sha256-6e96ebf4b2ba68c9f78217d76725a8569cc9889ed0aa324581299cc45e30011c",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 32709,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "version": 2,
+    "internalName": "Akwam",
+    "description": "Akwam — إضافة مستقلة",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/Akwam-v2.cs3",
+    "name": "Akwam | أكوام"
+  }
+]

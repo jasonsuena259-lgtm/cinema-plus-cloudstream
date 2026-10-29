@@ -1,0 +1,22 @@
+[
+  {
+    "fileHash": "sha256-41c513de19b0a1d8297ca917ad92199d0346da6036b324dca851283c1d3f212d",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 37145,
+    "status": 3,
+    "language": "en",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "version": 1,
+    "internalName": "CineWave",
+    "description": "CineWave — تجريبي؛ تشغيل Android غير مُثبت",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/CineWave-v1.cs3",
+    "name": "CineWave"
+  }
+]

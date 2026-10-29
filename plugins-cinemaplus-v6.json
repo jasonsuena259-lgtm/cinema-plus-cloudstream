@@ -1,0 +1,22 @@
+[
+  {
+    "fileHash": "sha256-e73c0257a694e8455761d545c92aa77cf8931e6119fb16a8557c65145ca8be4c",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 40467,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "version": 6,
+    "internalName": "CinemaPlus",
+    "description": "CinemaPlus — إضافة مستقلة",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/CinemaPlus-v6.cs3",
+    "name": "Cinema Plus"
+  }
+]

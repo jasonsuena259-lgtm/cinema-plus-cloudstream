@@ -12,6 +12,7 @@ on:
       - 'tests/audit_cinelite_tv.cjs'
       - 'tests/probe_cinelite_actual_player_routes.cjs'
       - 'tests/probe_cinelite_media.cjs'
+      - 'tests/probe_cinelite_source_menu.cjs'
       - '.github/workflows/cinelite-probe.yml'
   workflow_dispatch:
 permissions:
@@ -44,3 +45,4 @@ jobs:
           node tests/audit_cinelite_tv.cjs
           node tests/probe_cinelite_episode.cjs
           node tests/probe_cinelite_media.cjs
+          node tests/probe_cinelite_source_menu.cjs

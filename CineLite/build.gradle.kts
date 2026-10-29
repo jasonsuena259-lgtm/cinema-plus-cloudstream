@@ -1,6 +1,6 @@
-version = 11
+version = 12
 cloudstream {
-    description = "CineLite v11 — restore v4 proven single-player HLS extraction; maintain v10 Anime cards"
+    description = "CineLite v12 — Arabic-first real subtitle tracks, faster playback links, preserve short-lived HLS tokens"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

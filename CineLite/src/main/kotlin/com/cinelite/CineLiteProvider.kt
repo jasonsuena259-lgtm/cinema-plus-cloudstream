@@ -88,9 +88,7 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
         }
         val items = (anime.await() + regular.await())
             .distinctBy { it.url }
-        if (items.isEmpty()) throw ErrorLoadingException(
-            "CineLite: no matching real cards were found in search or Anime catalogue"
-        )
+        if (items.isEmpty()) return@coroutineScope emptyList()
         items.map(::card)
     }
 

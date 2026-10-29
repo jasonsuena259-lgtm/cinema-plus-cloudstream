@@ -1,6 +1,6 @@
-version = 7
+version = 8
 cloudstream {
-    description = "CineLite v7 — universal TV episode card/season parsing, safe empty details, restored v4 server extraction"
+    description = "CineLite v8 — dynamic real source menu scanning with original verified playback fallback"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

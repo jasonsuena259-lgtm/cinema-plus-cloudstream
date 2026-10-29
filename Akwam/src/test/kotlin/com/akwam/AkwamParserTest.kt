@@ -49,6 +49,20 @@ class AkwamParserTest{
         assertEquals(1,found.size)
         assertTrue(found.single().endsWith("/movie.mp4"))
     }
+    @Test fun signedSubtitleUrlsKeepLanguageAndSkipUnrelatedLinks(){
+        val html="""<video>
+            <track src="/subtitles/ar.vtt?token=123" srclang="ar">
+            <track src="/subtitles/unknown.vtt?token=456">
+          </video>
+          <a href="https://cdn.example.org/captions/en.srt?auth=abc">English</a>
+          <a href="https://cdn.example.org/tracker.html">Banner</a>"""
+        val tracks=AkwamParser.subtitles(html,AkwamParser.BASE)
+        assertEquals(3,tracks.size)
+        assertEquals(listOf("ar","Unknown","English"),tracks.map{it.first})
+        assertTrue(tracks[0].second.contains("ar.vtt?token=123"))
+        assertTrue(tracks[2].second.contains("en.srt?auth=abc"))
+    }
+
     @Test fun paginationDoesNotAssumeInfinitePages(){
         val doc=AkwamParser.document("""<a href="/movies?page=2">2</a>""",AkwamParser.BASE)
         assertTrue(AkwamParser.hasNext(doc,1))

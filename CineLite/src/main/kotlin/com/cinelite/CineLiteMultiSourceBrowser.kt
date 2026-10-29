@@ -25,14 +25,16 @@ data class LiteSourceCapture(
 class CineLiteMultiSourceBrowser(private val context: Context) {
     private val safeSubtitleName = Regex("(?i)(?:arabic|\\bar\\b|عربي|العربية|english|\\ben\\b|french|spanish)")
 
-    private fun isSubtitle(raw: String): Boolean = try {
-        val u = raw.toHttpUrlOrNull() ?: return false
-        if (u.scheme != "https") return false
-        val path = u.encodedPath.lowercase()
-        path.endsWith(".srt") || path.endsWith(".vtt") ||
-            path.endsWith(".ass") || path.endsWith(".ssa") ||
-            (u.host.endsWith("subtitlecat.com") && path.startsWith("/subs/"))
-    } catch (_: Exception) { false }
+    private fun isSubtitle(raw: String): Boolean {
+        return try {
+            val u = raw.toHttpUrlOrNull() ?: return false
+            if (u.scheme != "https") return false
+            val path = u.encodedPath.lowercase()
+            path.endsWith(".srt") || path.endsWith(".vtt") ||
+                path.endsWith(".ass") || path.endsWith(".ssa") ||
+                (u.host.endsWith("subtitlecat.com") && path.startsWith("/subs/"))
+        } catch (_: Exception) { false }
+    }
 
     private fun subtitleTitle(raw: String, label: String = ""): String {
         val path = runCatching { java.net.URI(raw).path.substringAfterLast('/') }.getOrDefault("")

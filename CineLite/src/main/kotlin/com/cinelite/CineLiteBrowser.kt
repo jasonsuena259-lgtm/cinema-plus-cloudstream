@@ -60,30 +60,64 @@ class CineLiteBrowser(private val context: Context) {
                                 finish(null); return
                             }
                             handler.postDelayed({
-                                fun readDom() {
+                                fun readDom(attempt: Int = 0) {
                                     view?.evaluateJavascript(
                                         """(function(){
+                                            const valid=x=>x&&Number.isInteger(x.id)&&x.id>0&&
+                                                ['movie','tv','anime'].includes(x.media_type);
+                                            function annotate(card,item){
+                                                if(!card||!valid(item))return;
+                                                card.setAttribute('data-cinelite-id',String(item.id));
+                                                card.setAttribute('data-cinelite-type',item.media_type);
+                                            }
+                                            // Movie/TV cards carry a single React item.
                                             for(const h of document.querySelectorAll('h3')){
-                                                const key=Object.keys(h).find(k=>k.startsWith('__reactFiber'));
-                                                let f=key?h[key]:null;
-                                                for(let i=0;f&&i<10;i++,f=f.return){
-                                                    const item=f.memoizedProps&&f.memoizedProps.item;
-                                                    if(item&&Number.isInteger(item.id)&&item.id>0&&
-                                                        (item.media_type==='movie'||item.media_type==='tv')){
-                                                        const card=h.closest('div.cursor-pointer');
-                                                        if(card){
-                                                            card.setAttribute('data-cinelite-id',String(item.id));
-                                                            card.setAttribute('data-cinelite-type',item.media_type);
-                                                        }
+                                                const k=Object.keys(h).find(x=>x.startsWith('__reactFiber'));
+                                                let f=k?h[k]:null;
+                                                for(let i=0;f&&i<14;i++,f=f.return){
+                                                    const item=f.memoizedProps?.item;
+                                                    if(valid(item)){
+                                                        annotate(h.closest('div.cursor-pointer'),item);
                                                         break;
                                                     }
                                                 }
                                             }
-                                            return document.documentElement.outerHTML;
+                                            // Anime carousels expose an items array with AniList IDs.
+                                            const norm=x=>String(x||'').trim().toLowerCase()
+                                                .replace(/\s+/g,' ');
+                                            for(const slider of document.querySelectorAll('.slider-track')){
+                                                const key=Object.keys(slider).find(x=>x.startsWith('__reactFiber'));
+                                                let f=key?slider[key]:null,items=null;
+                                                for(let depth=0;f&&depth<14;depth++,f=f.return)
+                                                    if(Array.isArray(f.memoizedProps?.items)){
+                                                        items=f.memoizedProps.items;break;
+                                                    }
+                                                if(!items?.length)continue;
+                                                for(const card of slider.children){
+                                                    if(!card.querySelector('h3,h4'))continue;
+                                                    if(card.hasAttribute('data-cinelite-id'))continue;
+                                                    const label=norm(card.querySelector('h3,h4')?.textContent);
+                                                    const matches=items.filter(x=>valid(x)&&[
+                                                        x.title,x.name,x.displayTitle,x.titleEnglish,
+                                                        x.titleRomaji,x.titleUserPreferred
+                                                    ].some(name=>norm(name)===label));
+                                                    if(matches.length===1)annotate(card,matches[0]);
+                                                }
+                                            }
+                                            return JSON.stringify({
+                                                html:document.documentElement.outerHTML,
+                                                count:document.querySelectorAll('[data-cinelite-id]').length
+                                            });
                                         })()"""
                                     ) { raw ->
-                                        val html = runCatching { mapper.readTree(raw).asText() }.getOrNull()
-                                        finish(html?.takeIf { it.isNotBlank() })
+                                        val payload = runCatching {
+                                            mapper.readTree(mapper.readTree(raw).asText())
+                                        }.getOrNull()
+                                        val html = payload?.path("html")?.asText()
+                                        val count = payload?.path("count")?.asInt(0) ?: 0
+                                        if (count == 0 && attempt < 3) {
+                                            handler.postDelayed({ readDom(attempt + 1) }, 750)
+                                        } else finish(html?.takeIf { it.isNotBlank() })
                                     }
                                 }
                                 if (searchQuery == null) {

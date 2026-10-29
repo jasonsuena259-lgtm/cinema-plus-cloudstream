@@ -85,7 +85,10 @@ object CineLiteParser {
             val title = e.selectFirst("h3,h4")?.text()?.trim()?.takeIf { it.isNotBlank() }
                 ?: return@mapNotNull null
             val rawPoster = e.selectFirst("img[src],img[data-src]")?.let { attr(it, "src","data-src") }
-            val poster = rawPoster?.let { absolute(it, base) }
+            val poster = rawPoster?.let { raw ->
+                if (raw.startsWith("/t/p/")) "https://image.tmdb.org$raw"
+                else absolute(raw, base)
+            }
             LiteCard(title, cardUrl(id,type,title,poster), poster, type)
         }
         val anchors = document.select("a[href], a[data-href]").mapNotNull { a ->

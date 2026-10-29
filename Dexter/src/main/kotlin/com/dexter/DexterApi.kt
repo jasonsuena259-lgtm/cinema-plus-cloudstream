@@ -74,19 +74,64 @@ object DexterApi {
             candidates.putIfAbsent(url,DexterApiSource(url,label,q,format))
         }
         val subs=linkedMapOf<String,DexterApiSubtitle>()
-        val subtitles=root.path("subtitles").takeIf { it.isArray }
-            ?:root.path("tracks")
-        if(subtitles.isArray)for(item in subtitles) {
-            val url=DexterParser.externalUrl(item.field("url"),DexterParser.BASE)?:continue
-            val path=runCatching { URI(url).path.lowercase() }.getOrNull()?:continue
-            if(listOf("thumbs.vtt","thumbnails.vtt","storyboard").any(path::contains))
-                continue
-            if(!listOf(".srt",".vtt",".ass",".ssa").any(path::endsWith))continue
-            val language=item.field("lang").ifBlank { item.field("language") }
-                .ifBlank { item.field("label") }.ifBlank { "Unknown" }
-            subs.putIfAbsent(url,DexterApiSubtitle(url,language))
+        fun collect(container:JsonNode) {
+            for(key in listOf("subtitles","tracks","captions")) {
+                val rows=container.path(key)
+                if(!rows.isArray)continue
+                for(item in rows) {
+                    val raw=if(item.isTextual)item.asText() else
+                        item.field("url").ifBlank { item.field("file") }
+                            .ifBlank { item.field("src") }
+                    val url=DexterParser.externalUrl(raw,DexterParser.BASE)?:continue
+                    val path=runCatching { URI(url).path.lowercase() }.getOrNull()
+                        ?:continue
+                    if(listOf("thumbs.vtt","thumbnails.vtt","storyboard","sprite")
+                            .any(path::contains))continue
+                    if(!listOf(".srt",".vtt",".ass",".ssa").any(path::endsWith))
+                        continue
+                    val language=item.field("lang").ifBlank { item.field("language") }
+                        .ifBlank { item.field("srclang") }
+                        .ifBlank { item.field("label") }
+                        .ifBlank { "Unknown" }
+                    subs.putIfAbsent(url,DexterApiSubtitle(url,language))
+                }
+            }
         }
+        collect(root)
+        for(source in items.takeIf { it.isArray } ?: emptyList<JsonNode>())
+            collect(source)
+        collect(root.path("episode"))
         return DexterApiResult(candidates.values.toList(),subs.values.toList(),playable)
+    }
+
+    /** External WebVTT/SRT captions explicitly listed in an HLS master. */
+    fun playlistSubtitles(master:String,source:String):List<DexterApiSubtitle> {
+        if(!DexterParser.isHls(master))return emptyList()
+        val found=linkedMapOf<String,DexterApiSubtitle>()
+        for(line in master.lines()) {
+            if(!line.startsWith("#EXT-X-MEDIA:",ignoreCase=true))continue
+            val values=mutableMapOf<String,String>()
+            // HLS attributes can be quoted and contain commas in quoted names.
+            val pattern=Regex("""([A-Z-]+)=(?:"([^"]*)"|([^,]*))(?:,|$)""")
+            for(match in pattern.findAll(line.substringAfter(':'))) {
+                values[match.groupValues[1]]=match.groupValues[2]
+                    .ifBlank { match.groupValues[3] }.trim()
+            }
+            if(values["TYPE"]?.uppercase()!="SUBTITLES")continue
+            val url=DexterParser.externalUrl(values["URI"].orEmpty(),source)?:continue
+            val path=runCatching { URI(url).path.lowercase() }.getOrNull()?:continue
+            if(listOf("thumbs.vtt","thumbnails.vtt","storyboard")
+                    .any(path::contains))continue
+            // A .m3u8 subtitle media playlist is handled as an embedded
+            // timed-text track by the HLS player, not as an external VTT.
+            if(!listOf(".srt",".vtt",".ass",".ssa").any(path::endsWith))
+                continue
+            val language=values["LANGUAGE"].orEmpty().ifBlank {
+                values["NAME"].orEmpty().ifBlank { "Unknown" }
+            }
+            found.putIfAbsent(url,DexterApiSubtitle(url,language))
+        }
+        return found.values.toList()
     }
 
     /**

@@ -169,18 +169,25 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                   }
                                   function sourceRows(panel){
                                     if(!panel)return [];
-                                    const all=[...panel.querySelectorAll('button,[role=option],[role=menuitem],[role=button],[class*=cursor-pointer]')]
-                                      .filter(visible);
-                                    const rows=[];
-                                    const seen=new Set();
+                                    // Real CineLite items are clickable rows (not
+                                    // the source switcher's Network/Addons tabs).
+                                    const all=[...panel.querySelectorAll(
+                                      '[role=option],[role=menuitem],[class*=cursor-pointer],button'
+                                    )].filter(visible);
+                                    const rows=[],seen=new Set();
                                     for(const el of all){
-                                      let t=label(el);
-                                      // Source rows can contain a badge following the name.
-                                      t=t.replace(/\s+(SUB|DUB)(?:\s+SUB|\s+DUB)?$/i,'').trim();
-                                      if(t.length<2||t.length>58||skip.test(t)||
-                                        /\b(?:agents available|stream sources|servers|network)\b/i.test(t))continue;
-                                      // Prefer the deepest clickable item, not a parent list.
-                                      if([...el.querySelectorAll('button,[role=option],[role=button],[class*=cursor-pointer]')]
+                                      let pieces=[...el.querySelectorAll('span,div,p')]
+                                        .filter(node=>node.children.length===0&&visible(node))
+                                        .map(label)
+                                        .filter(x=>x&&x.length<55&&!/[•]/.test(x)&&
+                                          /[a-zA-Z0-9\u0600-\u06FF]/.test(x)&&
+                                          !/^(?:SUB|DUB|HD|4K|1080p|720p|Auto|Network|Addons|Server|Servers)$/i.test(x));
+                                      let t=pieces[0]||label(el).replace(/\s+(?:SUB|DUB)\s*$/i,'').trim();
+                                      if(t.length<2||t.length>55||skip.test(t)||
+                                        /\b(?:agents|stream sources|servers|network|addons|add token|febbox cloud)\b/i.test(t))continue;
+                                      if(!el.matches('[role=option],[role=menuitem],[class*=cursor-pointer]')&&
+                                        !/^(clove|reyna|chamber|neon)/i.test(t))continue;
+                                      if([...el.querySelectorAll('[role=option],[role=menuitem],[class*=cursor-pointer]')]
                                         .some(child=>visible(child)&&label(child)===label(el)))continue;
                                       const key=t.toLowerCase();
                                       if(!seen.has(key)){seen.add(key);rows.push({name:t,element:el});}

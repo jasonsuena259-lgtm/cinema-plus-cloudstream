@@ -1,30 +1,42 @@
-# CineLite CloudStream module — experimental
+# CineLite — CloudStream provider status (2026-10-29)
 
-Site: https://cinelite.xyz
-GitHub branch: feature/cinelite-provider
+Pull request: https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream/pull/2
+Branch: `feature/cinelite-provider`
+Status: **Experimental / draft; not confirmed playable, not ready to merge.**
 
-## Grounded facts (2026-10-29)
-- CineLite publicly advertises films, TV and anime.
-- External site inspection reported the app uses api.cinelite.xyz and embed.cinelite.xyz.
-- We could not fetch actual film HTML, inspect the live JSON API schema, or validate one video link from the assistant environment.
-- No sample content cards, media URLs, server names or video availability are claimed as confirmed.
+## Verified with independent live Playwright tests in GitHub Actions
 
-## What has been implemented
-- A self-contained provider and registered plugin for CloudStream, without altering existing providers.
-- Android WebView-rendered DOM inspection for JavaScript-heavy home/details pages.
-- Card discovery ONLY from actual links and titles on the rendered site. Empty catalogue produces a diagnostic error (never 20 fake examples).
-- Attempted query-based search. The /search?q= route is a candidate, **not confirmed**.
-- Details and TV episodes only when links are exposed in DOM. No fabricated episodes.
-- Per-iframe/server extraction using CloudStream extractors, with WebView capture of HLS/MP4 if necessary.
-- Byte-prefix validation of HLS/MP4 candidates prior to publishing playback links.
-- Synthetic parser tests and a GitHub Actions live DOM **diagnostic**.
+- `https://cinelite.xyz/` loaded successfully and rendered 371 image elements with real movie/TV cards.
+- Cards are React-rendered clickable `div` elements, **not** `a href` anchors.
+- An actual React fiber item on Grey's Anatomy contained `id=1416`, `media_type=tv`.
+- Selecting Grey's Anatomy opened a detail overlay without a URL change, with named episodes for season 1 and an interactive season menu; switching to season 2 displayed its own real episodes. The season dropdown listed seasons 1–23 during the probe.
+- Search is at `/search`; its text box returned film and TV search results for Fight Club.
+- The public embed documentation at `https://embed.cinelite.xyz/` specifies movie route `/550` and TV route `/1399/1/1`. Both routes rendered their correct movie/episode metadata in an actual browser.
+- Player UI exposed `Clove`, `Cast`, `Audio & Subs` controls and a video element.
 
-## Known blockers (not a finished end-to-end integration)
-- SPA internal navigation and URL patterns may not be exposed as anchor elements.
-- Home cards may rely on JS router buttons; search, TV season switching and other UI interactions need real DOM traces.
-- There is no verified player API endpoint or site-authored list of all selectable servers.
-- No Android run, real-title search, episode list, verified stream/segment or subtitles have been observed in this environment.
-- Browser media capture can miss MediaSource/blob streams, protected media or server tabs requiring user interaction.
-- A compiler/CI result is required before calling this build usable.
+## Current code
 
-This PR is not ready to merge as a fully working source. After obtaining live DOM / safe request traces, replace heuristic selectors and routes with site-specific confirmed integration and test actual movie and series playback.
+- CineLite module includes a registered CloudStream provider and Android WebView React DOM parser.
+- Only `memoizedProps.item` containing real IDs from the website's rendered cards can create home/search cards, with an anchor parser as compatibility fallback.
+- Movie links use CineLite's documented public embed route, with the site's actual item ID.
+- Series episodes are gathered by searching the actual title, selecting the actual React card, opening the actual season selector, and reading actual episode titles/numbers. Only the documented embed route is used for episode data.
+- Stream handling tries CloudStream's extractors and, where possible, captures real HLS/MP4 network requests; a playable stream is only returned if its downloaded prefix validates as HLS/MP4.
+- This approach does not bypass access restrictions, and **must not display fake playable links when server extraction fails**.
+
+## Confirmed blockers
+
+- The live public embed player generated requests to `api.mycinebackendfuckoff.site/servers`, `/provider/vault`, and `/subtitles` that returned **HTTP 403** in the GitHub Actions browser. A Cloudflare verification was also encountered.
+- On the tested film and episode player, the HTML and metadata appeared but the video element remained uninitialized; **no working video media request or HLS/MP4 URL was verified**.
+- Therefore **working playback, download links, subtitles and complete server coverage are NOT demonstrated**.
+- Live Android/CloudStream provider verification has not been run.
+- CloudStream Gradle build CI initially failed to resolve `com.github.recloudstream:gradle:-SNAPSHOT` from JitPack (an external build dependency). A trial with `master-SNAPSHOT` is under CI evaluation, not a validated fix.
+- Search/card/season UI may change. Synthetic unit fixtures alone cannot prove Android behavior.
+
+## Merge criteria
+
+1. Android Gradle build and unit tests must pass, with a valid `.cs3` artifact.
+2. Launch the addon and confirm home cards, search cards, series selection and more than one season.
+3. Confirm real media bytes from a movie and an episode, for each source actually offered by the site, using access legitimately available from the app.
+4. Verify subtitles, playback headers, downloads and source switching individually. If the server API continues returning 403, clearly report playback unavailable; do not claim success.
+
+Public site API was inspected only to learn the observable supported format; no challenges were bypassed.

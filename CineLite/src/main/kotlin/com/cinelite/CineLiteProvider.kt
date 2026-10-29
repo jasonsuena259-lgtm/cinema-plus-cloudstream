@@ -139,15 +139,24 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val parsed = data.toHttpUrlOrNull() 
-        if (parsed?.scheme == "https" && parsed.host == "embed.cinelite.xyz"
-            && parsed.pathSegments.all { it.toIntOrNull() != null }) {
+        val directEmbed = data.toHttpUrlOrNull()?.takeIf {
+            it.scheme == "https" && it.host == "embed.cinelite.xyz" &&
+                CineLiteParser.isRecognizedEmbedPath(it.encodedPath)
+        }?.toString()
+        val url = CineLiteParser.siteUrl(data)
+        val firstPartyEmbed = directEmbed ?:
+            url?.let(CineLiteParser::embeddedPlayerForWatchUrl)
+        // The React watch page only hosts this actual first-party embed. Fetching
+        // the entire outer page first delays the player and may change cookies
+        // that bind a short-lived signed manifest to an older browser session.
+        // Both ordinary CloudStream and KodaStream call provider.loadLinks(data).
+        if (firstPartyEmbed != null) {
             return CineLiteResolver(context).resolve(
-                listOf(LiteSource("CineLite", data, false)),
-                mainUrl, subtitleCallback, callback
+                listOf(LiteSource("CineLite", firstPartyEmbed, false)),
+                url ?: mainUrl, subtitleCallback, callback
             )
         }
-        val url = CineLiteParser.siteUrl(data) ?: return false
+        if (url == null) return false
         val rendered = html(url)
         val discovered = CineLiteParser.sources(rendered, url)
         // The verified CineLite watch pages embed first-party players; if the

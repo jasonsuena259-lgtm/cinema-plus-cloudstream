@@ -1,0 +1,10 @@
+{
+  "name": "Cinema Collection (Integration Preview)",
+  "description": "CineWave, CinemaPlus, MySeed. CineLite pending source verification. Existing releases unchanged.",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-cinewave-v1.json",
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-cinemaplus-v6.json",
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-myseed-v2.json"
+  ]
+}

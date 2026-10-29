@@ -49,3 +49,25 @@ try:
              "isHls":body.startswith(b"#EXTM3U"),"tags":dict(collections.Counter(tags)),
              "streamUrlsRedacted":True})
 except Exception as e:report("userHls",{"error":type(e).__name__,"detail":str(e)[:110]})
+
+
+# Dexter public API is used by independent clients to obtain sources.
+# Print only status and JSON schema; never log expiring media URLs or tokens.
+for name,route in [
+    ("apiMovie","/api/movie/429617?site=dexter"),
+    ("apiEpisode","/api/tv/1405/episode/1/1?site=dexter"),
+    ("apiShow","/api/tv/1405?site=dexter")
+]:
+    try:
+        r=session.get(ROOT+route,timeout=15,headers={"Accept":"application/json",
+            "Referer":ROOT})
+        report(name,{"http":r.status_code,
+           "mime":r.headers.get("Content-Type","").split(";")[0],
+           "json":("json" in r.headers.get("Content-Type","").lower()),
+           "topLevelKeys":list(r.json().keys())[:18] if r.status_code==200 and
+               isinstance(r.json(),dict) else [],
+           "sourceCount":len(r.json().get("sources",[])) if r.status_code==200 and
+               isinstance(r.json(),dict) and isinstance(r.json().get("sources"),list) else 0
+         })
+    except Exception as e:
+        report(name,{"error":type(e).__name__})

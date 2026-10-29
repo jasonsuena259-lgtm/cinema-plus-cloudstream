@@ -117,7 +117,10 @@ class CineLiteResolver(private val context: Context) {
                             }
                         }
                         defaultSource.await()?.let {
-                            emitCaptured(it, source.name, source.url)
+                            // Do not autoplay a single audio-only HLS child
+                            // manifest just because WebView requested it first.
+                            if (CineLiteParser.mediaPlaylistPriority(it.url) < 10)
+                                emitCaptured(it, source.name, source.url)
                         }
                         siteSources.await()?.let { captured ->
                             // Associate each observed HLS/MP4 request with the
@@ -127,7 +130,7 @@ class CineLiteResolver(private val context: Context) {
                             // captured requests by site agent and prefer the
                             // proxy master, not the first arbitrary audio URL.
                             captured.streams
-                                .filter { CineLiteParser.mediaKind(it.url) != null }
+                                .filter { CineLiteParser.mediaPlaylistPriority(it.url) < 10 }
                                 .groupBy { it.sourceName.trim().lowercase() }
                                 .values.mapNotNull { candidates ->
                                     candidates.minWithOrNull(

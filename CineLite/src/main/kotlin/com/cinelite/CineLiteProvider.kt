@@ -58,7 +58,7 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
                     posterUrl = identity.poster
                 }
             }
-            val episodes = browser.seriesEpisodes(identity.id)
+            val episodes = browser.seriesEpisodes(identity.id, identity.title)
             if (episodes.isEmpty()) throw ErrorLoadingException(
                 "CineLite: no confirmed episode list for this series"
             )

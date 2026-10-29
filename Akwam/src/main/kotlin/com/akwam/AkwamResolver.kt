@@ -1,110 +1,152 @@
 package com.akwam
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.lagradost.cloudstream3.SubtitleFile
-import com.lagradost.cloudstream3.app
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.ExtractorLinkType
-import com.lagradost.cloudstream3.utils.loadExtractor
-import com.lagradost.cloudstream3.utils.JsUnpacker
-import com.lagradost.cloudstream3.utils.newExtractorLink
-import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.Request
 import java.net.URI
+import java.util.concurrent.TimeUnit
+import org.jsoup.Jsoup
 
-class AkwamResolver(private val base: String) {
-    suspend fun resolve(data: String, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit): Boolean {
-        val uri = runCatching { URI(data) }.getOrNull() ?: return false
-        if (uri.host != "akwam.day" || uri.scheme != "https" || !(uri.path.startsWith("/film/") || uri.path.startsWith("/episode/"))) return false
-        // The site's public watch route shares the film/episode slug. Request it
-        // directly: playback does not require reloading the details page first.
-        val watchUrl = AkwamParser.watchUrl(data) ?: return false
-        val watch = try { app.get(watchUrl, referer = uri.toASCIIString(), timeout = 15) }
-            catch (e: CancellationException) { throw e }
-            catch (e: Exception) { throw ErrorLoadingException("أكوام v2: تعذر الاتصال بصفحة المشاهدة (${e.javaClass.simpleName}).") }
-        if (watch.code !in 200..299) throw ErrorLoadingException("أكوام v2: صفحة المشاهدة أعادت HTTP ${watch.code}.")
-        val keys = AkwamParser.videoParameters(watch.text) ?: throw ErrorLoadingException("أكوام v2: تعذر قراءة بيانات صفحة المشاهدة.")
-        val sessionCookies = watch.cookies
-        val failures = java.util.concurrent.ConcurrentLinkedQueue<String>()
-        val serverTokens = watch.document.select(".btn-server[data-token]").map { it.text().trim() to it.attr("data-token") }.filter { it.second.isNotBlank() }.distinctBy { it.second }
-        val results = coroutineScope {
-            serverTokens.map { (serverName, token) -> async {
-                withTimeoutOrNull(30000L) {
-                    val links = mutableListOf<ExtractorLink>()
-                    val subtitles = mutableListOf<SubtitleFile>()
-                    try {
-                        val response = app.post("$base/watch/resolve", referer = watchUrl, cookies = sessionCookies,
-                            headers = mapOf("Accept" to "application/json", "X-CSRF-TOKEN" to keys.second, "X-Requested-With" to "XMLHttpRequest"),
-                            json = mapOf("key" to keys.first, "token" to token, "human_signal" to null), timeout = 12)
-                        if (response.code !in 200..299) { failures.add("$serverName: HTTP ${response.code}"); return@withTimeoutOrNull links to subtitles }
-                        val node = jacksonObjectMapper().readTree(response.text)
-                        if (!node.path("ok").asBoolean()) return@withTimeoutOrNull links to subtitles
-                        val wrapper = URI(base).resolve(node.path("url").asText()).toString()
-                        if (!wrapper.startsWith("$base/m/")) return@withTimeoutOrNull links to subtitles
-                        val hostPage = app.get(wrapper, referer = watchUrl, cookies = sessionCookies, timeout = 12)
-                        val hostUrl = hostPage.url
-                        if (!hostUrl.startsWith("https://") || hostUrl.startsWith(base + "/")) return@withTimeoutOrNull links to subtitles
-                        // Do not interact with CAPTCHA or protection challenges.
-                        if (Regex("(?i)recaptcha|hcaptcha|cf-turnstile").containsMatchIn(hostPage.text)) { failures.add("$serverName: يتطلب تحققًا"); return@withTimeoutOrNull links to subtitles }
-                        val hostname = runCatching { URI(hostUrl).host.orEmpty().lowercase() }.getOrDefault("")
-                        if (hostname == "luluvido.com" || hostname == "fastvid.cam" || hostname == "fastved.cam") {
-                            for (script in hostPage.document.select("script")) {
-                                val packed = script.data()
-                                val unpacked = if (packed.contains("eval(function(p,a,c,k,e")) JsUnpacker(packed).unpack() ?: continue else packed
-                                for (media in AkwamParser.mediaUrls(unpacked, hostUrl)) {
-                                    links.add(newExtractorLink("Akwam", serverName, media, ExtractorLinkType.M3U8) {
-                                        referer = "https://$hostname/"
-                                    })
-                                }
-                            }
-                        } else loadExtractor(hostUrl, watchUrl, { subtitles.add(it) }, { links.add(it) })
-                    } catch (e: CancellationException) { throw e }
-                    catch (e: LinkageError) { failures.add("$serverName: مستخرج غير متوافق مع نسخة التطبيق (${e.javaClass.simpleName}: ${e.message})") }
-                    catch (e: Exception) { failures.add("$serverName: ${e.javaClass.simpleName}") }
-                    links to subtitles
-                } ?: (emptyList<ExtractorLink>() to emptyList<SubtitleFile>())
-            } }.awaitAll()
-        }
-        val links = results.flatMap { it.first }
-        val subtitles = results.flatMap { it.second }
-        var emitted = false
-        for (link in links.distinctBy { it.url to it.headers }) {
-            val valid = validate(link)
-            if (valid) { callback(link); emitted = true }
-        }
-        if (emitted) subtitles.distinctBy { it.url }.forEach(subtitleCallback)
-        if (!emitted) throw ErrorLoadingException("أكوام v2: لم يُتحقق من رابط فيديو صالح من ${serverTokens.size} سيرفر. " + failures.take(5).joinToString("؛ "))
-        return emitted
+/**
+ * Akwam.ss exposes one watch + download route per real quality identifier:
+ * /watch/STREAM_ID/TITLE_ID/... and /download/STREAM_ID/TITLE_ID/...
+ * Never extrapolate a quality, server name or file URL from an ID.
+ */
+class AkwamResolver(private val base:String){
+    private suspend fun page(url:String,referer:String=base):String?=
+        try { app.get(url,referer=referer,timeout=15)
+            .takeIf{it.code in 200..299}?.text
+        }catch(e:CancellationException){throw e}
+        catch(_:Exception){null}
+
+    private fun allowedMedia(url:String):Boolean {
+        val parsed=runCatching{URI(url)}.getOrNull()?:return false
+        if(parsed.scheme!="https"||parsed.userInfo!=null||parsed.host.isNullOrBlank())return false
+        val host=parsed.host.lowercase()
+        if(host=="localhost"||host.endsWith(".local")||host.startsWith("127.")||
+           host.startsWith("10.")||host.startsWith("192.168.")||host.startsWith("169.254."))
+           return false
+        return true
     }
-    private suspend fun validate(link: ExtractorLink): Boolean {
-      return try {
-        if (link.type == ExtractorLinkType.M3U8) {
-            var url = link.url
-            var response = app.get(url, referer = link.referer, headers = link.headers, timeout = 15)
-            if (response.code !in 200..299) return false
-            var manifest = response.text
-            if (!manifest.trimStart().startsWith("#EXTM3U") || manifest.contains("#EXT-X-KEY:METHOD=SAMPLE-AES")) return false
-            if (manifest.contains("#EXT-X-STREAM-INF:")) {
-                val lines = manifest.lines()
-                val index = lines.indexOfFirst { it.startsWith("#EXT-X-STREAM-INF:") }
-                val variant = lines.drop(index + 1).firstOrNull { it.isNotBlank() && !it.startsWith("#") } ?: return false
-                url = URI(url).resolve(variant.trim()).toString()
-                response = app.get(url, referer = link.referer, headers = link.headers, timeout = 15)
-                if (response.code !in 200..299) return false
-                manifest = response.text
+    /**
+     * Download pages expose direct MP4 files. Validate a short byte range
+     * before treating them as playable sources. Do not fetch whole movies.
+     */
+    private suspend fun verifiedMp4(url:String,referer:String):Boolean=withContext(Dispatchers.IO){
+        if(!allowedMedia(url))return@withContext false
+        val client=app.baseClient.newBuilder().callTimeout(10,TimeUnit.SECONDS).build()
+        try {
+            val req=Request.Builder().url(url).header("Range","bytes=0-2047")
+                .header("Referer",referer).build()
+            client.newCall(req).execute().use{response->
+                if(!response.isSuccessful)return@use false
+                val mime=response.header("Content-Type").orEmpty().lowercase()
+                if("text/html" in mime || "text/plain" in mime || "application/json" in mime)
+                    return@use false
+                val stream=response.body?.byteStream()?:return@use false
+                val first=ByteArray(16);var read=0
+                while(read<16){
+                    val n=stream.read(first,read,16-read)
+                    if(n<=0)break
+                    read+=n
+                }
+                if(read<12)return@use false
+                val atom=String(first,4,4,Charsets.US_ASCII)
+                atom in setOf("ftyp","styp","moof")
             }
-            if (!manifest.trimStart().startsWith("#EXTM3U") || !manifest.contains("#EXTINF:") || manifest.contains("#EXT-X-KEY:METHOD=SAMPLE-AES")) return false
-            val segment = manifest.lines().firstOrNull { it.isNotBlank() && !it.startsWith("#") } ?: return false
-            val part = app.get(URI(url).resolve(segment.trim()).toString(), referer = link.referer, headers = link.headers + mapOf("Range" to "bytes=0-1023"), timeout = 15)
-            part.code in 200..299
-        } else {
-            val response = app.get(link.url, referer = link.referer, headers = link.headers + mapOf("Range" to "bytes=0-1023"), timeout = 15)
-            response.code in 200..299 && response.headers["content-type"]?.contains("text/html", true) != true
+        }catch(e:CancellationException){throw e}
+        catch(_:Exception){false}
+    }
+    private fun subtitleTracks(html:String,url:String):List<SubtitleFile> {
+        val doc=Jsoup.parse(html,url)
+        return doc.select("track[src],a[href$=.srt],a[href$=.vtt],a[href$=.ass]")
+            .mapNotNull{t->
+                val raw=t.attr("src").ifBlank{t.attr("href")}
+                val link=runCatching{URI(url).resolve(raw).toString()}.getOrNull()
+                    ?:return@mapNotNull null
+                if(!allowedMedia(link))return@mapNotNull null
+                SubtitleFile(t.attr("srclang").ifBlank{t.attr("label").ifBlank{"Arabic"}},link)
+            }.distinctBy{it.url}
+    }
+
+    suspend fun resolve(
+        data:String,
+        subtitleCallback:(SubtitleFile)->Unit,
+        callback:(ExtractorLink)->Unit
+    ):Boolean {
+        val url=AkwamParser.site(data) ?:return false
+        val path=URI(url).path
+        if(!Regex("""^/(movie|episode)/\d+(?:/|$)""").containsMatchIn(path))
+            return false
+        val detailHtml=page(url)?:throw ErrorLoadingException("أكوام: لم تُفتح صفحة المحتوى")
+        val rows=AkwamParser.qualities(detailHtml,url)
+        if(rows.isEmpty())throw ErrorLoadingException(
+            "أكوام: الصفحة لا تحتوي روابط مشاهدة أو تحميل حقيقية")
+        val emitted=mutableSetOf<String>()
+        val subSet=mutableSetOf<String>()
+        var works=0
+        suspend fun publishFile(link:String,name:String,quality:Int,referer:String){
+            if(!verifiedMp4(link,referer)||!emitted.add(link))return
+            callback(newExtractorLink("Akwam",name,link,ExtractorLinkType.VIDEO){
+                this.referer=referer
+                this.quality=quality
+            })
+            works++
         }
-      } catch (e: CancellationException) { throw e } catch (e: Exception) { false }
+        for(row in rows.take(12)){
+            val q=row.quality.takeIf{it>0} ?: 0
+            // Download routes are a confirmed source of MP4 links, even when
+            // a JS-only streaming iframe does not expose its video in HTML.
+            row.download?.let{download->
+                val raw=page(download,url)
+                if(raw!=null){
+                    subtitleTracks(raw,download).forEach{
+                        if(subSet.add(it.url))subtitleCallback(it)
+                    }
+                    AkwamParser.downloads(raw,download).take(8).forEach{file->
+                        publishFile(file,"Akwam Download • "+(if(q>0)q.toString()+"p" else "MP4"),
+                            q,download)
+                    }
+                }
+            }
+            row.watch?.let{watchUrl->
+                val watchHtml=page(watchUrl,url) ?:return@let
+                subtitleTracks(watchHtml,watchUrl).forEach{
+                    if(subSet.add(it.url))subtitleCallback(it)
+                }
+                val embedded=AkwamParser.embeds(watchHtml,watchUrl)
+                for(source in embedded.take(12)){
+                    if(!allowedMedia(source))continue
+                    val p=URI(source).path.lowercase()
+                    if(p.endsWith(".mp4")){
+                        publishFile(source,"Akwam Watch • "+(if(q>0)q.toString()+"p" else "MP4"),
+                            q,watchUrl)
+                    } else {
+                        // Only registered CloudStream extractors can supply real
+                        // links from a player host. Do not invent server URLs.
+                        withTimeoutOrNull(14000L) {
+                            try {
+                                loadExtractor(source,watchUrl,{sub->
+                                    if(subSet.add(sub.url))subtitleCallback(sub)
+                                },{link->
+                                    if(allowedMedia(link.url)&&emitted.add(link.url)){
+                                        callback(link);works++
+                                    }
+                                })
+                            }catch(e:CancellationException){throw e}
+                            catch(_:Exception){}
+                        }
+                    }
+                }
+            }
+        }
+        if(works==0)throw ErrorLoadingException(
+            "أكوام: لم يتم التحقق من ملف فيديو صالح من روابط هذا العنوان. " +
+            "ظهور زر المشاهدة أو التحميل لا يثبت عمل السيرفر.")
+        return true
     }
 }

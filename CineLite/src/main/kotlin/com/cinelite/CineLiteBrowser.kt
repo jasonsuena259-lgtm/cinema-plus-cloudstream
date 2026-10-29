@@ -240,18 +240,26 @@ class CineLiteBrowser(private val context: Context) {
                             const number=span?Number(span.textContent.match(/\d+/)[0]):0;
                             return {number:number,title:el.querySelector('h4')?.textContent?.trim()||''};
                         }).filter(e=>e.number>0&&e.title);
-                        return JSON.stringify(episodes);
+                        const btn=Array.from(document.querySelectorAll('button'))
+                            .find(x=>/^Season\\s+\\d+$/.test(x.textContent.trim()) &&
+                                !x.className.includes('w-full'));
+                        const active=btn ? Number(btn.textContent.trim().match(/\\d+/)[0]) : -1;
+                        return JSON.stringify({season:active,episodes:episodes});
                     })()"""
                     view?.evaluateJavascript(parse) { raw ->
                         val parsed = runCatching {
                             mapper.readTree(mapper.readTree(raw).asText())
                         }.getOrNull()
-                        parsed?.forEach { episode ->
+                        // Match the season actually displayed by the website, not
+                        // the requested menu index (which may start with Specials/0).
+                        val displayedSeason = parsed?.path("season")?.asInt(-1)
+                            ?.takeIf { it >= 0 } ?: season
+                        parsed?.path("episodes")?.forEach { episode ->
                             val number = episode.path("number").asInt()
                             val episodeName = episode.path("title").asText()
-                            val url = CineLiteParser.embedEpisode(id, season, number)
+                            val url = CineLiteParser.embedEpisode(id, displayedSeason, number)
                             if (url != null && episodeName.isNotBlank()) {
-                                found[url] = LiteEpisode(episodeName, url, season, number)
+                                found[url] = LiteEpisode(episodeName, url, displayedSeason, number)
                             }
                         }
                         seasonIndex++

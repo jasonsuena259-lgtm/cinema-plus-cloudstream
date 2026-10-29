@@ -133,6 +133,7 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                   if(window.__cineliteScanStarted)return;
                                   window.__cineliteScanStarted=true;
                                   const bridge=window.CineLiteSourceName;
+                                  let lastSelected='';
                                   const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
                                   const label=e=>(e?.textContent||'').replace(/\s+/g,' ').trim();
                                   const visible=e=>!!e&&e.getClientRects().length>0;
@@ -153,6 +154,7 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                   function trigger(){
                                     const candidates=[...document.querySelectorAll('button,[role=button]')]
                                       .filter(visible).filter(e=>
+                                        (lastSelected&&label(e).toLowerCase()===lastSelected.toLowerCase())||
                                         /^(clove|reyna|chamber|neon|viper|vault)|sources|servers|agents/i.test(label(e))||
                                         /server|source/i.test(e.getAttribute('aria-label')||''));
                                     // Footer switcher is normally last, not the header label.
@@ -221,6 +223,7 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                       const entry=sourceRows(panel).find(x=>x.name===name);
                                       if(!entry||played.has(name))continue;
                                       played.add(name);
+                                      lastSelected=name;
                                       bridge?.select(name);
                                       click(entry.element);
                                       await wait(450);

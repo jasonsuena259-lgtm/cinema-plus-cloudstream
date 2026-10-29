@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-e2a619884b306ddb7fc7f9a42ab49d619b77d5a6d7488b40e07d89d5c1630441",
+    "fileHash": "sha256-97beea6d8db2566758c7c6208a27af05a02f25315224f0334ce8191f92dca1eb",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 67049,
+    "fileSize": 71420,
     "status": 3,
     "language": "ar",
     "authors": [
@@ -13,10 +13,10 @@
       "Movie",
       "TvSeries"
     ],
-    "version": 3,
+    "version": 4,
     "internalName": "CimaNowVIP",
     "description": "CimaNow VIP — تجريبي؛ أقسام ومشاهدة تفاعلية عند الحاجة",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/CimaNowVIP-v3.cs3",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/CimaNowVIP-v4.cs3",
     "name": "CimaNow VIP | سيما ناو"
   }
 ]

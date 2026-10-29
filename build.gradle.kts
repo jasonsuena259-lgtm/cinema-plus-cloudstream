@@ -13,11 +13,9 @@ buildscript {
 
     dependencies {
         classpath("com.android.tools.build:gradle:8.7.3")
-        classpath("com.android.tools:r8:9.5.28")
-        // Cloudstream gradle plugin which makes everything work and builds plugins
-        // Use official CloudStream template coordinate. CI tries a
-        // cached offline build first when JitPack is temporarily unavailable.
-        classpath("com.github.recloudstream:gradle:-SNAPSHOT")
+        // JitPack -SNAPSHOT has intermittently returned 404/521; use the
+        // explicitly named master branch snapshot, with CI diagnostics.
+        classpath("com.github.recloudstream:gradle:master-SNAPSHOT")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.0")
     }
 }

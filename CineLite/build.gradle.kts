@@ -1,6 +1,6 @@
-version = 17
+version = 18
 cloudstream {
-    description = "CineLite v17 — experimental real multi-source menu extraction for KodaStream; server playback varies by title"
+    description = "CineLite v18 — experimental multiple first-party source capture and query-based subtitles; stream availability varies"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

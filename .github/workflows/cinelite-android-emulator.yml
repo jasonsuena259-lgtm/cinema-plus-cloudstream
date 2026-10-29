@@ -60,10 +60,10 @@ jobs:
           fi
       - uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: 35
           arch: x86_64
           target: google_apis
-          profile: pixel_3a
+          profile: pixel_5
           ram-size: 2048M
           heap-size: 384M
           disk-size: 4096M
@@ -71,6 +71,7 @@ jobs:
           emulator-boot-timeout: 700
           disable-animations: true
           script: |
+            adb shell dumpsys webviewupdate | head -n 25
             adb install -r /tmp/cloud3-105.apk
             adb shell wm size 720x1280
             adb shell wm density 320

@@ -64,7 +64,7 @@ class CineLiteResolver(private val context: Context) {
             val semaphore = Semaphore(4)
             val verified = observed.streams.distinctBy { it.url }.take(18).map { request ->
                 async(Dispatchers.IO) {
-                    semaphore.withPermit { verifyLiveCapture(request, player.url) }
+                    semaphore.withPermit { verifyLiveCapture(request, player?.url ?: contentUrl) }
                 }
             }.awaitAll().filterNotNull()
             for (link in verified) onLink(link)

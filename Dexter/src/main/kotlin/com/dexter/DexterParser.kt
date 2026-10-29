@@ -33,11 +33,22 @@ object DexterParser {
     private fun image(node:Element?):String? {
         if(node==null)return null
         val img=if(node.normalName()=="img")node else node.selectFirst("img")
-        val source=img?.let {
-            listOf("data-src","data-original","data-lazy-src","src")
-                .firstNotNullOfOrNull { attr -> it.attr(attr).takeIf(String::isNotBlank) }
-        } ?:return null
-        return img.baseUri().toHttpUrlOrNull()?.resolve(source)?.toString()
+        val source=sequenceOf(
+            img?.attr("data-src"),img?.attr("data-original"),
+            img?.attr("data-lazy-src"),img?.attr("data-poster"),
+            img?.attr("src"),
+            img?.attr("srcset")?.split(",")?.firstOrNull()?.trim()?.split(" ")?.firstOrNull(),
+            node.attr("data-poster"),node.attr("data-image"),
+            node.attr("data-background"),
+            node.selectFirst("source[srcset]")?.attr("srcset")
+                ?.split(",")?.firstOrNull()?.trim()?.split(" ")?.firstOrNull(),
+            Regex("""url\(['"]?([^'")]+)""").find(node.attr("style"))
+                ?.groupValues?.getOrNull(1)
+        ).filterNotNull().map(String::trim)
+            .firstOrNull { it.isNotEmpty() && !it.startsWith("data:") &&
+                !it.startsWith("blob:") } ?:return null
+        val base=img?.baseUri()?.ifBlank{node.baseUri()} ?:node.baseUri()
+        return base.toHttpUrlOrNull()?.resolve(source)?.toString()
             ?.takeIf { it.startsWith("https://") }
     }
 
@@ -75,9 +86,11 @@ object DexterParser {
             val match=episode.find(url.toHttpUrlOrNull()?.encodedPath.orEmpty())?:continue
             val season=match.groupValues[1].toIntOrNull()?:continue
             val number=match.groupValues[2].toIntOrNull()?:continue
-            val title=a.attr("title").ifBlank { a.text().trim() }.takeIf {
-                it.isNotBlank() && it.length<=100
-            }
+            val label=a.attr("title").ifBlank { a.text().trim() }
+            // A link named "Watch Season 1 (24 episodes)" is a season
+            // shortcut to E01, not a genuine episode title.
+            if(DexterSeasons.isSeasonLink(label))continue
+            val title=label.takeIf { it.isNotBlank() && it.length<=100 }
             found.putIfAbsent(url,DexterEpisode(url,season,number,title))
         }
         return found.values.sortedWith(compareBy<DexterEpisode> { it.season }.thenBy { it.number })

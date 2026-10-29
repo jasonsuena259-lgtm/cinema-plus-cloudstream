@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Verify published v14 repo and package
+      - name: Verify published v15 repo and package
         env:
           RELEASE_REPO: https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview
         run: |
@@ -25,12 +25,23 @@ jobs:
           def read(name):
               with urllib.request.urlopen(base+'/'+name,timeout=20) as res:
                   return res.read()
-          repo=json.loads(read('repo-v14.json'))
-          entry=json.loads(read('plugins-v14.json'))[0]
-          assert entry['version']==14,entry.get('version')
-          assert entry['url'].endswith('/CineLite-v14.cs3'),entry['url']
-          assert repo['pluginLists']==[base+'/plugins-v14.json']
-          print('Verified exact v14 native repository metadata')
+          import time
+          for attempt in range(20):
+              try:
+                  repo=json.loads(read('repo-v15.json'))
+                  entry=json.loads(read('plugins-v15.json'))[0]
+                  assert entry['version']==15,entry.get('version')
+                  assert entry['url'].endswith('/CineLite-v15.cs3'),entry['url']
+                  assert repo['pluginLists']==[base+'/plugins-v15.json']
+                  with urllib.request.urlopen(entry['url'],timeout=25) as stream:
+                      assert stream.status==200
+                      assert stream.headers.get('Content-Type') is not None
+                  print('Verified published v15 APK-compatible CloudStream package metadata')
+                  break
+              except Exception as exc:
+                  if attempt==19: raise RuntimeError('v15 binary not published or invalid') from exc
+                  print('Versioned package not yet published; retry',attempt+1)
+                  time.sleep(15)
           PY
       - name: Download public KodaStream release
         env:
@@ -63,7 +74,7 @@ jobs:
             adb install -r /tmp/cloud3-105.apk
             adb shell wm size 720x1280
             adb shell wm density 320
-            CINELITE_REPO=https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/repo-v14.json CINELITE_VERSION=14 python3 tests/android_cinelite_smoke.py
+            CINELITE_REPO=https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/repo-v15.json CINELITE_VERSION=15 python3 tests/android_cinelite_smoke.py
             python3 tests/android_cinelite_catalog_probe.py
       - name: Upload screenshots and UI semantics (also on failure)
         if: always()

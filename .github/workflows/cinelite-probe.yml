@@ -6,6 +6,7 @@ on:
       - 'tests/probe_cinelite_browser.cjs'
       - 'tests/probe_cinelite_components.cjs'
       - 'tests/probe_cinelite_episode.cjs'
+      - 'tests/probe_cinelite_media.cjs'
       - '.github/workflows/cinelite-probe.yml'
   workflow_dispatch:
 permissions:
@@ -32,3 +33,4 @@ jobs:
           node tests/probe_cinelite_browser.cjs
           node tests/probe_cinelite_components.cjs
           node tests/probe_cinelite_episode.cjs
+          node tests/probe_cinelite_media.cjs

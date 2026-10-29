@@ -848,6 +848,7 @@ class CineLiteBrowser(private val context: Context) {
                                             }
                                             }
                                             handler.postDelayed({ selectCard() }, 1100)
+                                        }, 2300)
                                     }
                                 }, 1700)
                             }

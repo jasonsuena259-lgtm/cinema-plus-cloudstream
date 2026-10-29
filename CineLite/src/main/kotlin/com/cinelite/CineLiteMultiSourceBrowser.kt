@@ -5,10 +5,10 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.webkit.*
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import kotlin.coroutines.resume
 
 data class LiteObservedSubtitle(val title: String, val url: String)
@@ -23,11 +23,10 @@ data class LiteSourceCapture(
  * Bounded at 7.3 seconds, leaving time for CloudStream to validate captured links.
  */
 class CineLiteMultiSourceBrowser(private val context: Context) {
-    private val mapper = jacksonObjectMapper()
     private val safeSubtitleName = Regex("(?i)(?:arabic|\\bar\\b|عربي|العربية|english|\\ben\\b|french|spanish)")
 
     private fun isSubtitle(raw: String): Boolean = try {
-        val u = okhttp3.HttpUrl.Companion.toHttpUrlOrNull(raw) ?: return false
+        val u = raw.toHttpUrlOrNull() ?: return false
         if (u.scheme != "https") return false
         val path = u.encodedPath.lowercase()
         path.endsWith(".srt") || path.endsWith(".vtt") ||

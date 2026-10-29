@@ -31,7 +31,7 @@ object AkwamParser {
             val url=site(a.attr("href"),base)?:continue
             val path=url.toHttpUrlOrNull()?.encodedPath.orEmpty()
             val series=when{
-                Regex("""^/movie/\d+(?:/|$)""").containsMatchIn(path)->false
+                Regex("""^/(?:movie|shows)/\d+(?:/|$)""").containsMatchIn(path)->false
                 Regex("""^/series/\d+(?:/|$)""").containsMatchIn(path)->true
                 else->continue
             }

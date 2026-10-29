@@ -141,7 +141,7 @@ class CineLiteParserTest {
             #EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",URI="/audio.m3u8"
         """.trimIndent()
         val manifest = CineLiteParser.hlsSubtitleTracks(master, "https://example.com/master.m3u8")
-        assertEquals(listOf("Arabic"), manifest.map { it.first })
+        assertEquals(listOf("Arabic / العربية"), manifest.map { it.first })
         assertEquals("https://example.com/subs/ar.vtt", manifest.single().second)
     }
 

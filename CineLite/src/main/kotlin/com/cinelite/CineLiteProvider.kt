@@ -3,7 +3,6 @@ package com.cinelite
 import android.content.Context
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import java.net.URLEncoder
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /** Content must be present in CineLite's rendered DOM. No synthetic TMDB cards. */
@@ -39,11 +38,12 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         if (query.isBlank()) return emptyList()
-        // This candidate URL is deliberately not treated as a verified site contract.
-        val url = mainUrl + "/search?q=" + URLEncoder.encode(query, "UTF-8")
-        val list = CineLiteParser.cards(html(url), url)
+        val url = mainUrl + "/search"
+        val raw = browser.snapshot(url, query)
+            ?: throw ErrorLoadingException("CineLite: search page did not render")
+        val list = CineLiteParser.cards(raw, url)
         if (list.isEmpty()) throw ErrorLoadingException(
-            "CineLite: search route or rendered results unavailable"
+            "CineLite: no matching real cards were found in search results"
         )
         return list.map(::card)
     }

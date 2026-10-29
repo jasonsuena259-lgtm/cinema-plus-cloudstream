@@ -30,6 +30,10 @@ jobs:
       - name: Test and build actual Akwam extension
         run: |
           set -e
+          if ./gradlew --offline Akwam:testDebugUnitTest Akwam:make --stacktrace; then
+            test -s Akwam/build/Akwam.cs3
+            exit 0
+          fi
           for attempt in 1 2 3; do
             if ./gradlew Akwam:testDebugUnitTest Akwam:make --stacktrace; then
               test -s Akwam/build/Akwam.cs3

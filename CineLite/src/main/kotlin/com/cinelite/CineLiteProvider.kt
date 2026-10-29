@@ -4,6 +4,7 @@ import android.content.Context
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import java.net.URLEncoder
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /** Content must be present in CineLite's rendered DOM. No synthetic TMDB cards. */
 class CineLiteProvider(private val context: Context) : MainAPI() {
@@ -48,34 +49,39 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
+        val identity = CineLiteParser.identity(url)
+        if (identity != null) {
+            if (identity.type == "movie") {
+                val embed = CineLiteParser.embedMovie(identity.id)
+                    ?: throw ErrorLoadingException("CineLite: invalid movie ID")
+                return newMovieLoadResponse(identity.title, url, TvType.Movie, embed) {
+                    posterUrl = identity.poster
+                }
+            }
+            val episodes = browser.seriesEpisodes(identity.id)
+            if (episodes.isEmpty()) throw ErrorLoadingException(
+                "CineLite: no confirmed episode list for this series"
+            )
+            return newTvSeriesLoadResponse(
+                identity.title, url,
+                if (identity.type == "anime") TvType.Anime else TvType.TvSeries,
+                episodes.map { episode ->
+                    newEpisode(episode.url) {
+                        name = episode.title
+                        season = episode.season
+                        this.episode = episode.episode
+                    }
+                }
+            ) { posterUrl = identity.poster }
+        }
         val valid = CineLiteParser.siteUrl(url)
             ?: throw ErrorLoadingException("CineLite: invalid content URL")
         val raw = html(valid)
         val title = CineLiteParser.title(raw, valid)
-            ?: throw ErrorLoadingException("CineLite: no content title in rendered page")
+            ?: throw ErrorLoadingException("CineLite: no title found")
         val poster = CineLiteParser.poster(raw, valid)
         val plot = CineLiteParser.description(raw)
-        val type = if (Regex("/(?:tv|shows?|series|anime)/", RegexOption.IGNORE_CASE)
-                .containsMatchIn(valid)) {
-            if (valid.contains("/anime/")) TvType.Anime else TvType.TvSeries
-        } else TvType.Movie
-        if (type == TvType.Movie) {
-            return newMovieLoadResponse(title, valid, TvType.Movie, valid) {
-                posterUrl = poster
-                this.plot = plot
-            }
-        }
-        val episodes = CineLiteParser.episodes(raw, valid)
-        if (episodes.isEmpty()) throw ErrorLoadingException(
-            "CineLite: no confirmed episode links in the rendered series page"
-        )
-        return newTvSeriesLoadResponse(title, valid, type, episodes.map {
-            newEpisode(it.url) {
-                name = it.title
-                season = it.season
-                episode = it.episode
-            }
-        }) {
+        return newMovieLoadResponse(title, valid, TvType.Movie, valid) {
             posterUrl = poster
             this.plot = plot
         }
@@ -87,6 +93,14 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
+        val parsed = data.toHttpUrlOrNull() 
+        if (parsed?.scheme == "https" && parsed.host == "embed.cinelite.xyz"
+            && parsed.pathSegments.all { it.toIntOrNull() != null }) {
+            return CineLiteResolver(context).resolve(
+                listOf(LiteSource("CineLite", data, false)),
+                mainUrl, subtitleCallback, callback
+            )
+        }
         val url = CineLiteParser.siteUrl(data) ?: return false
         val rendered = html(url)
         return CineLiteResolver(context).resolve(

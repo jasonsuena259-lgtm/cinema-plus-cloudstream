@@ -222,9 +222,23 @@ class CineLiteBrowser(private val context: Context) {
                                         input.dispatchEvent(new Event('change',{bubbles:true}));
                                         return true;
                                     })()"""
-                                    view?.evaluateJavascript(action) {
-                                        handler.postDelayed({ readDom() }, 2300)
+                                    fun submitSearch(attempt: Int = 0) {
+                                        view?.evaluateJavascript(action) { result ->
+                                            if (done) return@evaluateJavascript
+                                            if (result == "true") {
+                                                handler.postDelayed({ readDom() }, 2400)
+                                            } else if (attempt < 6) {
+                                                // Hydration may create React's input after
+                                                // onPageFinished, especially in Android WebView.
+                                                handler.postDelayed({ submitSearch(attempt + 1) }, 650)
+                                            } else {
+                                                android.util.Log.w("CineLiteSnapshot",
+                                                    "Search input absent after React hydration")
+                                                finish(null)
+                                            }
+                                        }
                                     }
+                                    submitSearch()
                                 }
                             }, 1900)
                         }

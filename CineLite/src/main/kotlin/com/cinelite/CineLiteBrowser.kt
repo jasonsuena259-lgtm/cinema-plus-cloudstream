@@ -109,7 +109,7 @@ class CineLiteBrowser(private val context: Context) {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    suspend fun media(url: String, referer: String): LiteMediaRequest? =
+    suspend fun media(url: String, referer: String, preferredServer: String? = null): LiteMediaRequest? =
         suspendCancellableCoroutine { cont ->
             val handler = Handler(Looper.getMainLooper())
             var webView: WebView? = null
@@ -166,6 +166,31 @@ class CineLiteBrowser(private val context: Context) {
                                     "(function(){document.querySelectorAll('video').forEach(v=>{v.muted=true;v.play().catch(()=>{})})})()",
                                     null
                                 )
+                                if (!preferredServer.isNullOrBlank()) handler.postDelayed({
+                                    // Select an agent only when its label exists in the
+                                    // player's live DOM; never manufacture a media URL.
+                                    val name = mapper.writeValueAsString(preferredServer)
+                                    view?.evaluateJavascript("""(function(){
+                                        const wanted=$name;
+                                        const find=t=>[...document.querySelectorAll('button,[role=button],span')]
+                                            .find(x=>x.textContent?.trim()===t);
+                                        const click=x=>{
+                                            const target=x?.closest('button,[role=button],[class*=cursor-pointer]')||x;
+                                            if(target){target.click();return true;}return false;
+                                        };
+                                        const now=[...document.querySelectorAll('button')]
+                                            .find(x=>/Reyna|Chamber|Neon|Clove/i.test(x.textContent||''));
+                                        if(now)click(now);
+                                        setTimeout(()=>{
+                                            const selected=find(wanted);
+                                            if(selected)click(selected);
+                                            document.querySelectorAll('video').forEach(v=>{
+                                                v.muted=true;v.play().catch(()=>{});
+                                            });
+                                        },350);
+                                        return true;
+                                    })()""", null)
+                                }, 1300)
                             }
                         }
                         loadUrl(url, mapOf("Referer" to referer))

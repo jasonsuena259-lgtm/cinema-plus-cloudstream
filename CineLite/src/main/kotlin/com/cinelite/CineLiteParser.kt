@@ -116,7 +116,8 @@ object CineLiteParser {
      */
     fun sections(html: String, base: String = BASE): List<Pair<String, List<LiteCard>>> =
         doc(html, base).select("section").mapNotNull { section ->
-            val heading = section.selectFirst("h2")?.text()?.trim()?.takeIf { it.isNotBlank() }
+            val heading = section.selectFirst("h2")?.text()
+                ?.trim()?.trimEnd('›', '»', '→', ' ').takeIf { !it.isNullOrBlank() }
                 ?: return@mapNotNull null
             val actual = cards(section.outerHtml(), base)
             if (actual.isEmpty()) null else heading to actual

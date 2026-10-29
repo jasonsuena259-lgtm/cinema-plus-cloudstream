@@ -51,27 +51,27 @@ jobs:
           with zipfile.ZipFile(source) as z:
               manifest=json.loads(z.read('manifest.json'))
               assert manifest['pluginClassName']=='com.akwam.AkwamPlugin',manifest
-              assert manifest['version']==3,manifest
+              assert manifest['version']==4,manifest
           dest=pathlib.Path('dist/akwam-preview')
           dest.mkdir(parents=True,exist_ok=True)
-          artifact=dest/'Akwam-v3.cs3'
+          artifact=dest/'Akwam-v4.cs3'
           shutil.copyfile(source,artifact)
           data=artifact.read_bytes()
           prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/akwam-preview/'
           plugin={'name':'Akwam.ss (experimental)','internalName':'Akwam',
-              'version':3,'fileSize':len(data),
+              'version':4,'fileSize':len(data),
               'fileHash':'sha256-'+hashlib.sha256(data).hexdigest(),
               'apiVersion':1,'repositoryUrl':'https://github.com/'+os.environ['GITHUB_REPOSITORY'],
               'url':prefix+artifact.name,'status':3,'language':'ar',
               'authors':['Cinema Plus community'],
               'tvTypes':['Movie','TvSeries','Anime'],
-              'description':'Real Akwam.ss watch/download quality routes, episodes, verified MP4; experimental.'}
+              'description':'Real Akwam.ss watch/download quality routes, episodes, verified MP4/MKV/HLS; experimental.'}
           repo={'name':'Akwam.ss','manifestVersion':1,
               'description':'Standalone Akwam CloudStream plugin with in-place updates',
               'pluginLists':[prefix+'plugins.json']}
           for name,value in [('plugins.json',[plugin]),('repo.json',repo)]:
               (dest/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n')
-          print('Akwam v3 package verified',len(data),'bytes')
+          print('Akwam v4 package verified',len(data),'bytes')
           PY
       - name: Publish without modifying CineLite
         uses: peaceiris/actions-gh-pages@v4

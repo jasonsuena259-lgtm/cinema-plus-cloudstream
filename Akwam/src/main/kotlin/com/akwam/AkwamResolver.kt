@@ -33,10 +33,11 @@ class AkwamResolver(private val base:String){
         return true
     }
     /**
-     * Download pages expose direct MP4 files. Validate a short byte range
-     * before treating them as playable sources. Do not fetch whole movies.
+     * Download pages expose direct media files. Validate a short byte range
+     * against MP4/MKV container signatures before advertising a playable file.
+     * Never fetch whole movies or bypass TLS certificate errors.
      */
-    private suspend fun verifiedMp4(url:String,referer:String):Boolean=withContext(Dispatchers.IO){
+    private suspend fun verifiedVideo(url:String,referer:String):Boolean=withContext(Dispatchers.IO){
         if(!allowedMedia(url))return@withContext false
         val client=app.baseClient.newBuilder().callTimeout(10,TimeUnit.SECONDS).build()
         try {
@@ -54,13 +55,25 @@ class AkwamResolver(private val base:String){
                     if(n<=0)break
                     read+=n
                 }
-                if(read<12)return@use false
-                val atom=String(first,4,4,Charsets.US_ASCII)
-                atom in setOf("ftyp","styp","moof")
+                val path=URI(url).path.lowercase()
+                if(path.endsWith(".mkv")) {
+                    read>=4 && first[0]==0x1a.toByte() && first[1]==0x45.toByte() &&
+                        first[2]==0xdf.toByte() && first[3]==0xa3.toByte()
+                } else {
+                    if(read<12)return@use false
+                    val atom=String(first,4,4,Charsets.US_ASCII)
+                    atom in setOf("ftyp","styp","moof")
+                }
             }
         }catch(e:CancellationException){throw e}
         catch(_:Exception){false}
     }
+    /** HLS master/variant playlists must be text playlists, not HTML block pages. */
+    private suspend fun verifiedHls(url:String,referer:String):Boolean {
+        if(!allowedMedia(url))return false
+        return page(url,referer)?.let(AkwamParser::isHlsManifest)==true
+    }
+
     private fun subtitleTracks(html:String,url:String):List<SubtitleFile> {
         val doc=Jsoup.parse(html,url)
         return doc.select("track[src],a[href$=.srt],a[href$=.vtt],a[href$=.ass]")
@@ -90,8 +103,17 @@ class AkwamResolver(private val base:String){
         val subSet=mutableSetOf<String>()
         var works=0
         suspend fun publishFile(link:String,name:String,quality:Int,referer:String){
-            if(!verifiedMp4(link,referer)||!emitted.add(link))return
-            callback(newExtractorLink("Akwam",name,link,ExtractorLinkType.VIDEO){
+            if(!allowedMedia(link))return
+            val path=URI(link).path.lowercase()
+            val type=when {
+                path.endsWith(".m3u8") && verifiedHls(link,referer) ->
+                    ExtractorLinkType.M3U8
+                (path.endsWith(".mp4") || path.endsWith(".mkv")) &&
+                    verifiedVideo(link,referer) -> ExtractorLinkType.VIDEO
+                else -> null
+            } ?: return
+            if(!emitted.add(link))return
+            callback(newExtractorLink("Akwam",name,link,type){
                 this.referer=referer
                 this.quality=quality
             })
@@ -108,7 +130,7 @@ class AkwamResolver(private val base:String){
                         if(subSet.add(it.url))subtitleCallback(it)
                     }
                     AkwamParser.downloads(raw,download).take(8).forEach{file->
-                        publishFile(file,"Akwam Download • "+(if(q>0)q.toString()+"p" else "MP4"),
+                        publishFile(file,"Akwam Download • "+(if(q>0)q.toString()+"p" else "Direct"),
                             q,download)
                     }
                 }
@@ -122,8 +144,8 @@ class AkwamResolver(private val base:String){
                 for(source in embedded.take(12)){
                     if(!allowedMedia(source))continue
                     val p=URI(source).path.lowercase()
-                    if(p.endsWith(".mp4")){
-                        publishFile(source,"Akwam Watch • "+(if(q>0)q.toString()+"p" else "MP4"),
+                    if(p.endsWith(".mp4")||p.endsWith(".mkv")||p.endsWith(".m3u8")){
+                        publishFile(source,"Akwam Watch • "+(if(q>0)q.toString()+"p" else "Direct"),
                             q,watchUrl)
                     } else {
                         // Only registered CloudStream extractors can supply real
@@ -145,7 +167,7 @@ class AkwamResolver(private val base:String){
             }
         }
         if(works==0)throw ErrorLoadingException(
-            "أكوام: لم يتم التحقق من ملف فيديو صالح من روابط هذا العنوان. " +
+            "أكوام: لم يتم التحقق من رابط فيديو صالح من روابط هذا العنوان. " +
             "ظهور زر المشاهدة أو التحميل لا يثبت عمل السيرفر.")
         return true
     }

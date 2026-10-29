@@ -6,10 +6,14 @@ const assert = require('node:assert/strict');
 const { chromium } = require('playwright');
 const resolver = fs.readFileSync('CineLite/src/main/kotlin/com/cinelite/CineLiteResolver.kt','utf8');
 const browserCode = fs.readFileSync('CineLite/src/main/kotlin/com/cinelite/CineLiteMultiSourceBrowser.kt','utf8');
-assert.ok(resolver.includes('CineLiteMultiSourceBrowser(context).capture(source.url, contentUrl)'),
+assert.ok(resolver.includes('CineLiteMultiSourceBrowser(context).capture('),
   'The multi-source WebView must be wired into the CloudStream loadLinks resolver');
-assert.ok(resolver.includes('stream.sourceName'),
+assert.ok(resolver.includes('pending.trySend(request)'),
+  'Signed links must be captured during the active WebView session');
+assert.ok(resolver.includes('request.sourceName'),
   'Real source names must reach CloudStream links');
+assert.ok(resolver.includes('verifyObserved(request)'),
+  'An intercepted HLS request must pass media-content verification');
 const prefix = 'val js = """(function(){';
 const start = browserCode.indexOf(prefix);
 const end = browserCode.indexOf('})()"""',start);

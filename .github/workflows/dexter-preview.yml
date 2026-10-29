@@ -24,6 +24,11 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0
+      - name: Use upstream CloudStream Gradle plugin coordinate
+        run: |
+          # Isolated to Dexter CI; does not change the Akwam/CineLite branches.
+          sed -i 's/com.github.recloudstream:gradle:master-SNAPSHOT/com.github.recloudstream:gradle:-SNAPSHOT/' build.gradle.kts
+          grep 'com.github.recloudstream:gradle:' build.gradle.kts
       - name: Compile and run unit tests
         run: |
           set -e

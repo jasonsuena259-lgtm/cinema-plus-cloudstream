@@ -92,7 +92,7 @@ object AkwamParser {
                 entry.value.first,entry.value.second)
         }
     }
-    fun downloads(html:String,base:String):List<String>=
+    fun downloads(html:String,base:String):List<String> =
         document(html,base).select("a[href]").mapNotNull{a->
             val url=base.toHttpUrlOrNull()?.resolve(a.attr("href"))?:return@mapNotNull null
             val p=url.encodedPath.lowercase()

@@ -1,6 +1,6 @@
-version = 14
+version = 15
 cloudstream {
-    description = "CineLite v14 — compact Android WebView cards, native KodaStream integration and real anime episodes"
+    description = "CineLite v15 — Android WebView hydration fixes, real card/search diagnostics and anime episodes"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

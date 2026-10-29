@@ -319,6 +319,152 @@ class CineLiteBrowser(private val context: Context) {
      * Uses the actual CineLite search result and interactive season chooser.
      * Only episodes rendered in the site's own season cards are returned.
      */
+    /**
+     * CineLite Anime uses AniList-backed carousel items and an episode grid,
+     * NOT the movie/TV search card or Season dropdown. Only episodes whose
+     * clickable buttons were actually rendered in the matching Anime modal
+     * are returned; catalogue counts and upcoming titles are not playable.
+     */
+    @SuppressLint("SetJavaScriptEnabled")
+    suspend fun animeEpisodes(id: Int, title: String): List<LiteEpisode> =
+        suspendCancellableCoroutine { cont ->
+            if (id <= 0 || title.isBlank()) {
+                cont.resume(emptyList()); return@suspendCancellableCoroutine
+            }
+            val handler = Handler(Looper.getMainLooper())
+            var view: WebView? = null
+            var done = false
+            var clickAttempts = 0
+            var episodeAttempts = 0
+            val episodes = linkedMapOf<Int, LiteEpisode>()
+            fun finish() {
+                handler.post {
+                    if (done) return@post
+                    done = true
+                    handler.removeCallbacksAndMessages(null)
+                    view?.stopLoading()
+                    view?.destroy()
+                    view = null
+                    if (cont.isActive) cont.resume(
+                        CineLiteParser.orderedEpisodes(episodes.values.toList())
+                    )
+                }
+            }
+            cont.invokeOnCancellation { finish() }
+
+            lateinit var readEpisodes: () -> Unit
+            readEpisodes = read@{
+                if (done || !cont.isActive) return@read
+                val script = """(function(){
+                    const buttons=[...document.querySelectorAll('button,[role=button]')]
+                        .filter(e=>!e.disabled&&e.getClientRects().length>0);
+                    const found=new Map();
+                    for(const button of buttons){
+                        const text=(button.textContent||'').trim().replace(/\s+/g,' ');
+                        const m=/^Episode\s*(\d+)(?:\b|~)/i.exec(text) ||
+                            /^Play\s*Ep(?:isode)?\s*(\d+)\b/i.exec(text);
+                        if(!m)continue;
+                        const number=Number(m[1]);
+                        if(!Number.isInteger(number)||number<1||number>10000)continue;
+                        found.set(number,{number:number,title:'Episode '+number});
+                    }
+                    return JSON.stringify([...found.values()]);
+                })()"""
+                view?.evaluateJavascript(script) { raw ->
+                    if (done) return@evaluateJavascript
+                    val parsed = runCatching {
+                        mapper.readTree(mapper.readTree(raw).asText())
+                    }.getOrNull()
+                    parsed?.forEach { item ->
+                        val number = item.path("number").asInt(-1)
+                        val url = CineLiteParser.watchAnimeEpisode(id, number)
+                        if (url != null) episodes[number] = LiteEpisode(
+                            item.path("title").asText("Episode $number"),
+                            url, 1, number
+                        )
+                    }
+                    if (episodes.isNotEmpty() || episodeAttempts >= 5) finish()
+                    else {
+                        episodeAttempts++
+                        handler.postDelayed({ readEpisodes() }, 700)
+                    }
+                }
+            }
+
+            lateinit var openCard: () -> Unit
+            openCard = open@{
+                if (done || !cont.isActive) return@open
+                val safeTitle = mapper.writeValueAsString(title)
+                val script = """(function(){
+                    const id=$id;
+                    const requested=$safeTitle;
+                    const norm=x=>String(x||'').trim().toLowerCase().replace(/\s+/g,' ');
+                    for(const slider of document.querySelectorAll('.slider-track')){
+                        const key=Object.keys(slider).find(x=>x.startsWith('__reactFiber'));
+                        let fiber=key?slider[key]:null,items=null;
+                        for(let depth=0;fiber&&depth<15;depth++,fiber=fiber.return){
+                            if(Array.isArray(fiber.memoizedProps?.items)){
+                                items=fiber.memoizedProps.items;break;
+                            }
+                        }
+                        const item=items?.find(x=>x?.id===id&&x?.media_type==='anime');
+                        if(!item)continue;
+                        const names=[item.title,item.name,item.displayTitle,item.titleEnglish,
+                            item.titleRomaji,item.titleUserPreferred,requested]
+                            .map(norm).filter(Boolean);
+                        for(const card of slider.children){
+                            const h=card.querySelector('h3,h4');
+                            if(h&&names.includes(norm(h.textContent))){
+                                const target=card.matches('[class*=cursor-pointer]')?
+                                    card:card.closest('[class*=cursor-pointer]');
+                                if(target){target.click();return true;}
+                            }
+                        }
+                    }
+                    // Independently annotated Anime cards are also valid if
+                    // their ID came from a real React item, never from a title guess.
+                    const annotated=document.querySelector(
+                        '[data-cinelite-id="$id"][data-cinelite-type="anime"]');
+                    if(annotated){annotated.click();return true;}
+                    return false;
+                })()"""
+                view?.evaluateJavascript(script) { result ->
+                    if (done) return@evaluateJavascript
+                    if (result == "true") handler.postDelayed({ readEpisodes() }, 1250)
+                    else if (clickAttempts >= 5) finish()
+                    else {
+                        clickAttempts++
+                        handler.postDelayed({ openCard() }, 750)
+                    }
+                }
+            }
+
+            handler.post {
+                if (!cont.isActive) return@post
+                try {
+                    view = WebView(context).apply {
+                        settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        settings.allowFileAccess = false
+                        settings.allowContentAccess = false
+                        webViewClient = object : WebViewClient() {
+                            override fun onReceivedSslError(
+                                v: WebView?, h: SslErrorHandler?, e: android.net.http.SslError?
+                            ) { h?.cancel(); finish() }
+                            override fun onPageFinished(v: WebView?, page: String?) {
+                                if (page?.let { CineLiteParser.siteUrl(it) } == null) {
+                                    finish(); return
+                                }
+                                handler.postDelayed({ openCard() }, 1600)
+                            }
+                        }
+                        loadUrl(CineLiteParser.BASE + "/anime")
+                    }
+                    handler.postDelayed({ finish() }, 15500)
+                } catch (_: Exception) { finish() }
+            }
+        }
+
     @SuppressLint("SetJavaScriptEnabled")
     suspend fun seriesEpisodes(id: Int, title: String): List<LiteEpisode> =
         suspendCancellableCoroutine { cont ->

@@ -115,7 +115,10 @@ class CineLiteMultiSourceBrowser(private val context: Context) {
                                 if (isSubtitle(link)) {
                                     subs.putIfAbsent(link, LiteObservedSubtitle(subtitleTitle(link), link))
                                 }
-                                if (CineLiteParser.mediaKind(link) != null && streams.size < 16) {
+                                // Capture master and child playlists for different site agents.
+                                // Capping at 16 could exhaust capacity on Clove
+                                // before Viper's signed HLS master was requested.
+                                if (CineLiteParser.mediaKind(link) != null && streams.size < 64) {
                                     val headers = request.requestHeaders.toMutableMap()
                                     if (headers.keys.none { it.equals("User-Agent", true) }) {
                                         headers["User-Agent"] = browserAgent

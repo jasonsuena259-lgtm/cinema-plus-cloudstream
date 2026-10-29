@@ -87,4 +87,40 @@ class CineLiteParserTest {
         assertTrue(list.any { it.direct && it.url.contains("m3u8") })
         assertTrue(CineLiteParser.sources("<div>No playable embed</div>", CineLiteParser.BASE).isEmpty())
     }
+
+    @Test fun homeSectionsUseOnlyCardsInsideTheirRealHeading() {
+        val html = """
+            <section><h2>Top Rated Masterpieces</h2>
+              <div data-cinelite-id="1560520" data-cinelite-type="movie">
+                <h3>One Movie</h3><img src="https://image.tmdb.org/t/p/w500/test.jpg">
+              </div>
+            </section>
+            <section><h2>Trending Anime</h2>
+              <div data-cinelite-id="195539" data-cinelite-type="tv">
+                <h3>Anime Show</h3><img src="https://image.tmdb.org/t/p/w500/anime.jpg">
+              </div>
+            </section>
+        """.trimIndent()
+        val sections = CineLiteParser.sections(html)
+        assertEquals(listOf("Top Rated Masterpieces", "Trending Anime"), sections.map { it.first })
+        assertEquals(listOf("One Movie"), sections[0].second.map { it.title })
+        assertEquals(listOf("Anime Show"), sections[1].second.map { it.title })
+        assertTrue(CineLiteParser.sections("<section><h2>Empty</h2></section>").isEmpty())
+    }
+
+    @Test fun episodesAreSortedNumericallyAndAnimeUsesObservedWatchRoute() {
+        val eps = listOf(
+            LiteEpisode("Episode 10", "https://embed.cinelite.xyz/195539/1/10", 1, 10),
+            LiteEpisode("Episode 2", "https://embed.cinelite.xyz/195539/1/2", 1, 2),
+            LiteEpisode("Episode 1", "https://embed.cinelite.xyz/195539/2/1", 2, 1),
+            LiteEpisode("Duplicate Episode 2", "https://embed.cinelite.xyz/195539/1/2", 1, 2)
+        )
+        val sorted = CineLiteParser.orderedEpisodes(eps)
+        assertEquals(listOf(2, 10, 1), sorted.map { it.episode })
+        assertEquals(listOf(1, 1, 2), sorted.map { it.season })
+        assertEquals("https://cinelite.xyz/watch/anime/195539/1",
+            CineLiteParser.watchAnimeEpisode(195539, 1))
+        assertEquals("https://cinelite.xyz/watch/1560520", CineLiteParser.watchMovie(1560520))
+        assertNull(CineLiteParser.watchAnimeEpisode(195539, 0))
+    }
 }

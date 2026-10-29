@@ -252,7 +252,7 @@ object CineLiteParser {
     /** Only subtitle tracks actually declared by the loaded page/playlist are emitted. */
     fun subtitleTracks(html: String, base: String = BASE): List<Pair<String, String>> =
         doc(html, base).select(
-            "track[src][kind=subtitles],track[src][kind=captions],a[href$=.srt],a[href$=.vtt],a[href$=.ass]"
+            "track[src][kind=subtitles],track[src][kind=captions],a[href*='.srt'],a[href*='.vtt'],a[href*='.ass'],a[href*='.ssa'],a[href*='ext=']"
         ).mapNotNull { e ->
             val url = absolute(e.attr("src").ifBlank { e.attr("href") }, base)
                 ?.takeIf { isSubtitleFile(it) } ?: return@mapNotNull null
@@ -270,8 +270,7 @@ object CineLiteParser {
             val url = absolute(uri, base) ?: return@mapNotNull null
             // HLS subtitle playlists remain native ExoPlayer tracks; emit only
             // directly playable WebVTT/SRT/ASS subtitle files as separate choices.
-            val ext = url.substringBefore('?').substringAfterLast('.', "").lowercase()
-            if (ext !in setOf("vtt", "srt", "ass", "ssa")) return@mapNotNull null
+            if (!isSubtitleFile(url)) return@mapNotNull null
             val name = Regex("NAME=\"([^\"]+)\"").find(line)?.groupValues?.get(1)
                 ?: Regex("LANGUAGE=\"([^\"]+)\"").find(line)?.groupValues?.get(1)
                 ?: "Unknown"

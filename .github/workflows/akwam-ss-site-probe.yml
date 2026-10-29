@@ -64,6 +64,24 @@ jobs:
                         if "." in urllib.parse.urlparse(el.get("src","")).path else None),
                     "host":urllib.parse.urlparse(el.get("src","")).hostname} for el in soup.select("video source")[:6]]
                 }))
+              if name in ("watch","download"):
+                media_links=([
+                  el.get("src") for el in soup.select("video source[src]")
+                ] if name=="watch" else [
+                  a.get("href") for a in soup.select("a[href*='downet.net']")
+                ])
+                outcomes=[]
+                for raw in list(dict.fromkeys(filter(None,media_links)))[:3]:
+                  try:
+                    link=urllib.parse.urljoin(r.url,raw)
+                    with s.get(link,headers={"Range":"bytes=0-2047"},stream=True,timeout=10) as mp4:
+                      fragment=next(mp4.iter_content(chunk_size=32),b"")
+                      outcomes.append({"http":mp4.status_code,
+                        "type":mp4.headers.get("Content-Type","").split(";")[0][:45],
+                        "isMp4":len(fragment)>8 and fragment[4:8] in (b"ftyp",b"styp",b"moof")})
+                  except Exception as ex:
+                    outcomes.append({"error":type(ex).__name__})
+                print("AKWAM_MP4_RANGE_TEST",json.dumps({"area":name,"results":outcomes}))
               has_episodes=bool(soup.select("a[href*='/episode/']"))
               # Avoid recording signed player links or download tokens in logs.
               print("AKWAM_SITE_REPORT",json.dumps({

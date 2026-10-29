@@ -1,9 +1,9 @@
 [
   {
-    "fileHash": "sha256-d00c80d6e4a7c5aa8e2ff4961999a2647227b9859d1fdecebe59d75b528c3da0",
+    "fileHash": "sha256-5febbf494673c7c8832f6fd47bb281511b218104378f9a64dc513a90669eaf8e",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 72224,
+    "fileSize": 72223,
     "status": 3,
     "language": "en",
     "authors": [
@@ -14,10 +14,10 @@
       "TvSeries",
       "Anime"
     ],
-    "version": 8,
+    "version": 9,
     "internalName": "CineLite",
-    "description": "EXPERIMENTAL v8: attempts to discover and validate all real servers from movie/TV/anime player menus; v4 extractor preserved as fallback.",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v8.cs3",
+    "description": "EXPERIMENTAL v9: inspect actual source options, verify media and retain previous single-server fallback; availability depends on site/session.",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/cinelite-preview/CineLite-v9.cs3",
     "name": "CineLite (experimental)"
   }
 ]

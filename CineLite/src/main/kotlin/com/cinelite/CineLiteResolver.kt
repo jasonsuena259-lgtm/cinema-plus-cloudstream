@@ -9,6 +9,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
+import java.io.ByteArrayOutputStream
 
 /**
  * A source is published only after its bytes match real HLS or MP4 content.
@@ -31,6 +32,10 @@ class CineLiteResolver(private val context: Context) {
             if (key in emitted || !validate(link)) return false
             emitted += key
             callback(link)
+            // If a valid HLS master playlist exposes *direct text* subtitle tracks,
+            // publish those as extra choices; nested HLS subtitle streams stay in the
+            // HLS manifest for the player itself.
+            subtitleQueue += sidecarSubtitles(link)
             return true
         }
         suspend fun emitCaptured(request: LiteMediaRequest, label: String, referer: String) {
@@ -91,6 +96,37 @@ class CineLiteResolver(private val context: Context) {
         subtitleQueue.distinctBy { it.url }.forEach(subtitles)
         return true
     }
+
+    private suspend fun sidecarSubtitles(link: ExtractorLink): List<SubtitleFile> =
+        withContext(Dispatchers.IO) {
+            if (link.type != ExtractorLinkType.M3U8) return@withContext emptyList()
+            try {
+                val request = Request.Builder().url(link.url)
+                    .header("Range", "bytes=0-65535")
+                link.headers.forEach { (name, value) -> request.header(name, value) }
+                if (link.referer.isNotBlank()) request.header("Referer", link.referer)
+                app.baseClient.newBuilder().callTimeout(10, TimeUnit.SECONDS).build()
+                    .newCall(request.build()).execute().use { response ->
+                        if (!response.isSuccessful) return@withContext emptyList()
+                        val stream = response.body?.byteStream() ?: return@withContext emptyList()
+                        val out = ByteArrayOutputStream()
+                        val buffer = ByteArray(4096)
+                        while (out.size() < 65536) {
+                            val count = stream.read(buffer, 0, minOf(buffer.size, 65536 - out.size()))
+                            if (count <= 0) break
+                            out.write(buffer, 0, count)
+                        }
+                        val playlist = out.toString("UTF-8")
+                        if (!playlist.trimStart().startsWith("#EXTM3U")) return@withContext emptyList()
+                        CineLiteParser.hlsSubtitleTracks(playlist, link.url)
+                            .map { (lang, url) -> SubtitleFile(lang, url) }
+                    }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
 
     companion object {
         suspend fun validate(link: ExtractorLink): Boolean = withContext(Dispatchers.IO) {

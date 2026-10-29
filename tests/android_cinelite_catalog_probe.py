@@ -43,7 +43,7 @@ def exact_result_card(title):
             continue
         if "EditText" in a.get("class","") or a.get("focused")=="true":
             continue
-        match=re.search(r"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]",a.get("bounds",""))
+        match=re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",a.get("bounds",""))
         if match:
             x1,y1,x2,y2=map(int,match.groups())
             return (x1+x2)//2,(y1+y2)//2

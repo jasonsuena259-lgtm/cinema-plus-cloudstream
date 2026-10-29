@@ -1,0 +1,22 @@
+[
+  {
+    "fileHash": "sha256-c9adf722a888322bb11fd7d4b04db655195a32577bea0051b823436bd1899ccf",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 55580,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "version": 1,
+    "internalName": "AkwCam",
+    "description": "AkwCam — إضافة مستقلة",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/AkwCam-v1.cs3",
+    "name": "AkwCam | أكوام"
+  }
+]

@@ -51,10 +51,10 @@ jobs:
           with zipfile.ZipFile(package) as archive:
               manifest=json.loads(archive.read('manifest.json'))
               assert manifest['pluginClassName']=='com.cinelite.CineLitePlugin', manifest
-              assert manifest['version']==16, manifest
+              assert manifest['version']==17, manifest
           dest=base/'dist/cinelite-preview'
           dest.mkdir(parents=True,exist_ok=True)
-          artifact=dest/'CineLite-v16.cs3'
+          artifact=dest/'CineLite-v17.cs3'
           shutil.copyfile(package,artifact)
           data=artifact.read_bytes()
           prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/cinelite-preview/'
@@ -65,19 +65,19 @@ jobs:
               'fileSize':len(data),
               'status':3,'language':'en','authors':['Cinema Plus community'],
               'tvTypes':['Movie','TvSeries','Anime'],
-              'version':16,'internalName':'CineLite',
-              'description':'EXPERIMENTAL v16: Android 15 real cards confirmed, AniList anime search, episode checks; playback and all source agents unverified.',
+              'version':17,'internalName':'CineLite',
+              'description':'EXPERIMENTAL v17: real CineLite source-menu capture, anime search and native episodes; individual servers and subtitles remain under verification.',
               'url':prefix+artifact.name, 'name':'CineLite (experimental)'
           }
           (dest/'plugins.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
           # An independent versioned manifest avoids stale CloudStream
           # repository caches that continued to advertise v8 to the user.
-          (dest/'plugins-v16.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
-          (dest/'repo-v16.json').write_text(json.dumps({
-              'name':'CineLite v16 - Real Anime Search',
-              'description':'CineLite 16: search actual Anime carousel and verify native episodes.',
+          (dest/'plugins-v17.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
+          (dest/'repo-v17.json').write_text(json.dumps({
+              'name':'CineLite v17 - Real Source Picker',
+              'description':'CineLite 17: collect first-party source selections plus verified anime catalogue.',
               'manifestVersion':1,
-              'pluginLists':[prefix+'plugins-v16.json']},indent=2)+'\n')
+              'pluginLists':[prefix+'plugins-v17.json']},indent=2)+'\n')
           (dest/'repo.json').write_text(json.dumps({
               'name':'CineLite Experimental',
               'description':'CineLite test build; playback not verified',

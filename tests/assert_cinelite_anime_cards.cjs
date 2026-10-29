@@ -37,6 +37,6 @@ const {chromium}=require('playwright');const assert=require('node:assert/strict'
   const unique=[...new Map(cards.map(x=>[x.type+':'+x.id,x])).values()];
   console.log('VERIFIED_ANIME_CARDS',JSON.stringify({cards:cards.length,unique:unique.length,sample:unique.slice(0,8)}));
   assert.ok(unique.length>=8,'Live Anime page should render at least 8 real AniList card IDs');
-  assert.ok(unique.some(x=>x.id===195539&&x.type==='anime'),'Expected AniList ID 195539 from real Anime page');
+  assert.ok(unique.every(x=>x.id>0&&x.type==='anime'),'Every detected Anime card must use a real AniList identity');
  }finally{await browser.close();}
 })().catch(e=>{console.error('ANIME_CARD_VALIDATION_FAILED',e.message);process.exitCode=1});

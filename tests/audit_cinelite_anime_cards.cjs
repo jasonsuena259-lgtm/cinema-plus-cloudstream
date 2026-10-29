@@ -60,6 +60,20 @@ const {chromium}=require("playwright");
          return inspected;
        });
        console.log('ANIME_FIBER_STRUCTURE '+JSON.stringify(internals));
+       const sliderItems=await page.evaluate(()=>{
+         const slider=document.querySelector('.slider-track');
+         if(!slider)return null;
+         const k=Object.keys(slider).find(k=>k.startsWith('__reactFiber'));
+         let f=k?slider[k]:null,items=null;
+         for(let i=0;i<12&&f;i++,f=f.return)
+           if(Array.isArray(f.memoizedProps?.items)){items=f.memoizedProps.items;break}
+         return {length:items?.length||0,first:items?.slice(0,7).map(v=>({
+           id:v.id,fields:Object.keys(v).slice(0,25),type:v.type,media_type:v.media_type,
+           title:typeof v.title==='string'?v.title:v.title?.english||v.title?.romaji||v.name,
+           banner:v.bannerImage||v.banner?.slice?.(0,100),format:v.format
+         }))};
+       });
+       console.log('ANIME_ITEMS_SHAPE '+JSON.stringify(sliderItems));
      }
     }
    }catch(e){console.log("ANIME_RENDER_ERROR "+JSON.stringify({path,error:e.message.slice(0,130)}))}

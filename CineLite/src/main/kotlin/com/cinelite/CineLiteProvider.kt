@@ -133,6 +133,15 @@ class CineLiteProvider(private val context: Context) : MainAPI() {
             )
         }
         val url = CineLiteParser.siteUrl(data) ?: return false
+        // Known first-party watch routes can be sent to their observed embed
+        // immediately. Rendering the outer React site just to find its iframe
+        // added 2-4 seconds to every playback attempt.
+        CineLiteParser.embeddedPlayerForWatchUrl(url)?.let { embed ->
+            return CineLiteResolver(context).resolve(
+                listOf(LiteSource("CineLite", embed, false)),
+                url, subtitleCallback, callback
+            )
+        }
         val rendered = html(url)
         val discovered = CineLiteParser.sources(rendered, url)
         // The verified CineLite watch pages embed first-party players; if the

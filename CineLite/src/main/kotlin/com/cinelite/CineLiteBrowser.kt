@@ -53,9 +53,27 @@ class CineLiteBrowser(private val context: Context) {
                             if (page?.let { CineLiteParser.siteUrl(it) } == null) {
                                 finish(null); return
                             }
-                            Handler(Looper.getMainLooper()).postDelayed({
+                            handler.postDelayed({
                                 view?.evaluateJavascript(
-                                    "(function(){return document.documentElement.outerHTML})()"
+                                    """(function(){
+                                        for(const h of document.querySelectorAll('h3')){
+                                            const key=Object.keys(h).find(k=>k.startsWith('__reactFiber'));
+                                            let f=key?h[key]:null;
+                                            for(let i=0;f&&i<10;i++,f=f.return){
+                                                const item=f.memoizedProps&&f.memoizedProps.item;
+                                                if(item&&Number.isInteger(item.id)&&item.id>0&&
+                                                   (item.media_type==='movie'||item.media_type==='tv')){
+                                                    const card=h.closest('div.cursor-pointer');
+                                                    if(card){
+                                                        card.setAttribute('data-cinelite-id',String(item.id));
+                                                        card.setAttribute('data-cinelite-type',item.media_type);
+                                                    }
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        return document.documentElement.outerHTML;
+                                    })()"""
                                 ) { raw ->
                                     val html = runCatching { mapper.readTree(raw).asText() }.getOrNull()
                                     finish(html?.takeIf { it.isNotBlank() })

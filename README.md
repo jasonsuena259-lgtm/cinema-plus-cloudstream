@@ -79,3 +79,7 @@ https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/mai
 ```
 
 نسخة تجريبية مبنية؛ عينات فيديو موثقة من 12 مصدرًا، مع قيود Vidspeed والمستضيفين الآخرين في التقرير. تشغيل Android غير مثبت.
+
+### CimaNow VIP — نسخة اختبار الدخول والتوافق
+
+[التثبيت والقيود](CimaNowVIP/README.md). ليست نسخة مثبتة للتصفح أو المشاهدة داخل Android؛ الدخول يتم على جهاز المستخدم فقط.

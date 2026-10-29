@@ -100,5 +100,25 @@
     "description": "MySeed — إضافة مستقلة",
     "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/MySeed-v2.cs3",
     "name": "MySeed | ماي سيد"
+  },
+  {
+    "fileHash": "sha256-add8eb3b4aa66b800bfe010e50c477c14b0178f89d0304b792d4b7eea21a996e",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 49519,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "version": 1,
+    "internalName": "CimaNowVIP",
+    "description": "CimaNow VIP — نسخة اختبار؛ الدخول والتصفح على Android غير مثبتين",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/dist/CimaNowVIP-v1.cs3",
+    "name": "CimaNow VIP | سيما ناو"
   }
 ]

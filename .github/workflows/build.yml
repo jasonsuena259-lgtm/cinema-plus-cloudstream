@@ -21,7 +21,7 @@ jobs:
       - name: Check Android-compatible regex syntax with ICU
         run: python3 tests/check_icu_regex.py
       - name: Build and test
-        run: ./gradlew CinemaPlus:testDebugUnitTest Akwam:testDebugUnitTest CinemaPlus:make Akwam:make TukTukCinema:testDebugUnitTest TukTukCinema:make CineWave:testDebugUnitTest CineWave:make MySeed:testDebugUnitTest MySeed:make makePluginsJson
+        run: ./gradlew CinemaPlus:testDebugUnitTest Akwam:testDebugUnitTest CinemaPlus:make Akwam:make TukTukCinema:testDebugUnitTest TukTukCinema:make CineWave:testDebugUnitTest CineWave:make MySeed:testDebugUnitTest MySeed:make CimaNowVIP:testDebugUnitTest CimaNowVIP:make makePluginsJson
       - name: Prepare independent repository metadata
         env:
           PUBLISH_BRANCH: builds

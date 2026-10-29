@@ -4,6 +4,16 @@ Pull request: https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream/pull
 Branch: `feature/cinelite-provider`
 Status: **Build and real-card smoke tests pass; playback still blocked/unverified. Draft, not ready to merge as a verified player.**
 
+## 2026-10-29 — Android downloader evidence and v4 changes
+
+- A user-provided Android download-manager screenshot shows that a CineLite Batman watch page exposes an approximately 3.6 GB segmented media item and several external `.srt` subtitle URLs. This demonstrates discoverability in a browser/download manager, **not successful CloudStream playback**.
+- The observed signed media endpoints use two legitimate formats: a `.m3u8` suffix and a `/proxy/hls?…&ext=.m3u8` route. Tokens are temporary and must **never** be hardcoded, logged, included in tests or committed.
+- Corrected media classification so an HLS proxy with `ext=.m3u8` is passed to CloudStream with `ExtractorLinkType.M3U8`, rather than incorrectly treated as MP4.
+- WebView collects actual SRT/VTT/ASS subtitle anchors/requests, if present in the loaded player's DOM/network. It forwards them only with validated media. External subtitle retrieval is not guaranteed.
+- First-party movie/anime watch pages can fall back to their **observed embed path** when the asynchronous iframe has not yet appeared in the snapshot.
+- Added fabricated-token *unit fixtures* covering `ext=.m3u8`, ordinary `.m3u8`, `.mp4`, and both observed watch-route forms. The real user's URLs/tokens are not present in source code.
+- v4 Gradle build, preview publication, and **actual playback on the user's Android device** must be evaluated separately. Never report media/translation availability until those checks succeed.
+
 ## Verified with independent live Playwright tests in GitHub Actions
 
 - `https://cinelite.xyz/` loaded successfully. A new strict Chromium smoke test extracted **182 unique React-identified cards** on the homepage: **133 movies, 49 TV shows, all 182 with poster URLs** (2026-10-29, run `40887332069`). The old exploratory probe also found 371 image elements, which should not be confused with 371 unique cards.

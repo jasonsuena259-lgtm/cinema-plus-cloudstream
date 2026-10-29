@@ -51,10 +51,10 @@ jobs:
           with zipfile.ZipFile(package) as archive:
               manifest=json.loads(archive.read('manifest.json'))
               assert manifest['pluginClassName']=='com.cinelite.CineLitePlugin', manifest
-              assert manifest['version']==12, manifest
+              assert manifest['version']==13, manifest
           dest=base/'dist/cinelite-preview'
           dest.mkdir(parents=True,exist_ok=True)
-          artifact=dest/'CineLite-v12.cs3'
+          artifact=dest/'CineLite-v13.cs3'
           shutil.copyfile(package,artifact)
           data=artifact.read_bytes()
           prefix='https://raw.githubusercontent.com/'+os.environ['GITHUB_REPOSITORY']+'/cinelite-preview/'
@@ -65,19 +65,19 @@ jobs:
               'fileSize':len(data),
               'status':3,'language':'en','authors':['Cinema Plus community'],
               'tvTypes':['Movie','TvSeries','Anime'],
-              'version':12,'internalName':'CineLite',
-              'description':'EXPERIMENTAL v12: Arabic-first native subtitle capture and less intrusive signed HLS playback; alternative servers remain site-dependent.',
+              'version':13,'internalName':'CineLite',
+              'description':'EXPERIMENTAL v13: KodaStream-compatible subtitle language names, anime episode grid with search fallback, fast first-party embed resolution. Extra servers still unverified.',
               'url':prefix+artifact.name, 'name':'CineLite (experimental)'
           }
           (dest/'plugins.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
           # An independent versioned manifest avoids stale CloudStream
           # repository caches that continued to advertise v8 to the user.
-          (dest/'plugins-v12.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
-          (dest/'repo-v12.json').write_text(json.dumps({
-              'name':'CineLite v12 - Arabic-first player',
-              'description':'CineLite 12: Arabic-first captions and faster playback',
+          (dest/'plugins-v13.json').write_text(json.dumps([plugin],ensure_ascii=False,indent=2)+'\n')
+          (dest/'repo-v13.json').write_text(json.dumps({
+              'name':'CineLite v13 - KodaStream compatibility',
+              'description':'CineLite 13: native anime episodes, Arabic metadata and fast HLS',
               'manifestVersion':1,
-              'pluginLists':[prefix+'plugins-v12.json']},indent=2)+'\n')
+              'pluginLists':[prefix+'plugins-v13.json']},indent=2)+'\n')
           (dest/'repo.json').write_text(json.dumps({
               'name':'CineLite Experimental',
               'description':'CineLite test build; playback not verified',

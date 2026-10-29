@@ -10,7 +10,7 @@ const { chromium } = require('playwright');
     await page.waitForTimeout(3300);
     const search=await page.evaluate(()=>{
       const titles=[...document.querySelectorAll('h3')].map(e=>e.textContent.trim()).filter(Boolean);
-      const h=[...document.querySelectorAll('h3')].find(e=>/vision\s*quest/i.test(e.textContent));
+      const h=[...document.querySelectorAll('h3')].find(e=>/^vision\s*quest$/i.test(e.textContent.trim()));
       const k=h&&Object.keys(h).find(x=>x.startsWith('__reactFiber'));
       let f=k?h[k]:null,item=null;
       for(let i=0;i<14&&f;i++,f=f.return){
@@ -21,7 +21,7 @@ const { chromium } = require('playwright');
         cards:titles.length};
     });
     console.log('VISIONQUEST_SEARCH',JSON.stringify(search));
-    const card=page.locator('h3').filter({hasText:/Vision\s*Quest/i}).first();
+    const card=page.locator('h3').filter({hasText:/^Vision\s*Quest$/i}).first();
     if (await card.count()) {
       await card.click({timeout:10000});
       await page.waitForTimeout(2200);

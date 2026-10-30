@@ -43,6 +43,13 @@ for label,path in paths:
    print("ARAB_SELECT",label,selector,len(matches))
    for e in matches[:5]:
     print("ARAB_NODE",label,selector,json.dumps({"node":info(e),"parent":info(e.parent),"grand":info(e.parent.parent if e.parent else None),"image":info(e.select_one("img"))},ensure_ascii=False))
+  if label=="home":
+   cats={}
+   for a in soup.select("a[href*='/category/']"):
+    label_text=a.get_text(" ",strip=True)
+    href=a.get("href","")
+    if label_text and href:cats[label_text]=clean(href)
+   print("ARAB_CATEGORIES",json.dumps(cats,ensure_ascii=False))
   if label in ("home","recent","movies","series","category","search"):
    for e in soup.select(".item__contents, .series__box")[:2]:
     print("ARAB_CARD_DETAIL",label,json.dumps({"anchors":[info(a) for a in e.select("a[href]")[:5]],"headings":[info(a) for a in e.select("h2,h3,h4,.post__info,.title___")[:6]]},ensure_ascii=False))

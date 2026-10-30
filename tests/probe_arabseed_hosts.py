@@ -125,3 +125,26 @@ for section,item in samples[:14]:
   result_count.update(hosts)
  print("TITLE_PROBE",section,urllib.parse.urlsplit(target).path[-73:],"watch",listings.get("watch"),"download",listings.get("download"))
 print("TITLE_HOST_TOTALS",sorted(result_count.items()))
+
+# Confirm server links are distinct per title, not repeating the same placeholders.
+import hashlib
+ids_by_title={}
+for section,item in samples[:14]:
+ s,final,html=get(item)
+ if s!=200:continue
+ d=BeautifulSoup(html,"html.parser")
+ if "/series/" in urllib.parse.urlsplit(final).path:
+  els=d.select(".episodes__section ul.episodes__list a[href]")
+  if not els:continue
+  item=urllib.parse.urljoin(base,els[0].get("href",""))
+ hosts={}
+ for kind,selector,attr in (("watch",".arabsed-watch-server[data-src]","data-src"),("download",".arabsed-download-card[href],.arabsed-download-hero-link[href]","href")):
+  status,final2,body=get(item.rstrip("/")+"/"+kind+"/")
+  doc=BeautifulSoup(body,"html.parser")
+  urls=[urllib.parse.urljoin(final2 or base,e.get(attr,"")) for e in doc.select(selector)]
+  # Compare hashes rather than printing media or token URLs.
+  hosts[kind]=sorted(hashlib.sha256(u.encode()).hexdigest()[:12] for u in urls)
+ ids_by_title[urllib.parse.urlsplit(item).path]=hosts
+print("TITLE_SOURCE_UNIQUENESS",len(ids_by_title),
+ "unique_watch_sets",len(set(tuple(v["watch"]) for v in ids_by_title.values())),
+ "unique_download_sets",len(set(tuple(v["download"]) for v in ids_by_title.values())))

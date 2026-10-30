@@ -43,6 +43,13 @@ for label,path in paths:
    print("ARAB_SELECT",label,selector,len(matches))
    for e in matches[:5]:
     print("ARAB_NODE",label,selector,json.dumps({"node":info(e),"parent":info(e.parent),"grand":info(e.parent.parent if e.parent else None),"image":info(e.select_one("img"))},ensure_ascii=False))
+  if label in ("home","recent","movies","series","category","search"):
+   for e in soup.select(".item__contents, .series__box")[:2]:
+    print("ARAB_CARD_DETAIL",label,json.dumps({"anchors":[info(a) for a in e.select("a[href]")[:5]],"headings":[info(a) for a in e.select("h2,h3,h4,.post__info,.title___")[:6]]},ensure_ascii=False))
+  if label in ("episode","season"):
+   for key in (".epi__num",".episodes__ul",".season__list",".seasons__list",".seasons__container",".episodes__container",".watch__and__download","h1",".post__image",".single__poster"):
+    for e in soup.select(key)[:2]:
+     print("ARAB_EP_DETAIL",label,key,json.dumps({"node":info(e),"parent":info(e.parent),"ancestors":[info(a) for a in list(e.parents)[:4]]},ensure_ascii=False))
   if label=="watch":
    for e in soup.find_all(["button","li","a","iframe"]):
     cls=" ".join(e.get("class",[])).lower()

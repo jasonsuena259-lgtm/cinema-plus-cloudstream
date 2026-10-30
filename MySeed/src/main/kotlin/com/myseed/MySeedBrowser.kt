@@ -43,7 +43,7 @@ class MySeedBrowser(private val context:Context) {
                         }
                         override fun onPageFinished(v:WebView?,u:String?){v?.evaluateJavascript("(()=>{let n=0;const t=setInterval(()=>{document.querySelectorAll('video').forEach(v=>v.play().catch(()=>{}));if(++n>=10)clearInterval(t)},1000)})();",null)}
                     }
-                    loadUrl(url,mapOf("Referer" to MySeedParser.BASE+"/"))
+                    loadUrl(url,mapOf("Referer" to referer))
                 }
                 handler.postDelayed({finish(null)},15000)
             }catch(_:Exception){finish(null)}

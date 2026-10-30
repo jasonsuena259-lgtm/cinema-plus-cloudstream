@@ -44,6 +44,15 @@ for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('
     data = dict(name=entry['name'], description=entry['description'], manifestVersion=1, pluginLists=[f'{base}/{plugins}'])
     write(out / f'repo-{slug}-v{version}.json', data)
     write(out / f'repo-{slug}.json', data)
+    if module == 'MySeed':
+        # Existing CloudStream repositories can keep their old URLs while
+        # receiving the newest independent provider artifact.
+        for old_version in (1, 2):
+            write(out / f'plugins-myseed-v{old_version}.json', [entry])
+            write(out / f'repo-myseed-v{old_version}.json',
+                dict(name=entry['name'], description=entry['description'],
+                    manifestVersion=1, pluginLists=[f'{base}/plugins-myseed-v{old_version}.json']))
+
 write(out / 'plugins.json', entries)
 if branch == 'main':
     # Existing installations receive the standalone CinemaPlus update.

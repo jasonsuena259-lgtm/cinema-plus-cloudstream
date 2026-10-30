@@ -60,7 +60,18 @@ class ArabSeedResolver(private val context:Context?=null){
         suspend fun add(raw:String){
             val u=page.url.toHttpUrlOrNull()?.resolve(raw) ?: return
             val type=if(u.encodedPath.endsWith(".m3u8",true))ExtractorLinkType.M3U8 else if(u.encodedPath.endsWith(".mp4",true))ExtractorLinkType.VIDEO else return
-            result+=newExtractorLink("ArabSeed",source.name,u.toString(),type){this.referer=origin;headers=ArabSeedRepository.headers}
+            result+=newExtractorLink("ArabSeed",source.name,u.toString(),type){this.referer=page.url;headers=ArabSeedRepository.headers}
+        }
+        // HTML5 players sometimes expose direct media/subtitle elements.
+        for(node in page.document.select("video[src], video source[src], source[type*=video][src]")) {
+            add(node.absUrl("src"))
+        }
+        for(track in page.document.select("track[src][kind=subtitles], track[src][kind=captions]")) {
+            val url=track.absUrl("src")
+            if(url.startsWith("https://") || url.startsWith("http://")) {
+                val label=track.attr("srclang").ifBlank{track.attr("label")}.ifBlank{"Subtitle"}
+                subtitles.add(SubtitleFile(label,url))
+            }
         }
         for(script in page.document.select("script:not([src])")){
             val raw=script.data()

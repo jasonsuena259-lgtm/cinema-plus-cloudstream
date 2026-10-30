@@ -7,7 +7,7 @@ import android.webkit.*
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
-data class MySeedRequest(val url:String,val headers:Map<String,String>)
+data class MySeedRequest(val url:String,val headers:Map<String,String>,val isHls:Boolean)
 class MySeedBrowser(private val context:Context) {
     @SuppressLint("SetJavaScriptEnabled")
     suspend fun media(url:String):MySeedRequest?=suspendCancellableCoroutine { continuation ->

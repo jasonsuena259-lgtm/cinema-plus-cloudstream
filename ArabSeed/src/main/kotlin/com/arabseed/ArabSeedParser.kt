@@ -26,9 +26,7 @@ internal object ArabSeedParser {
         "/category/مسلسلات-اجنبية/" to "مسلسلات أجنبية",
         "/category/مسلسلات-عربية/" to "مسلسلات عربية",
         "/category/مسلسلات-اسيوية/" to "مسلسلات آسيوية",
-        "/category/مسلسلات-تركية/" to "مسلسلات تركية",
         "/category/مسلسلات-انمي/" to "مسلسلات أنمي",
-        "/category/مسلسلات-تركية-مترجمة/" to "مسلسلات تركية مترجمة",
         "/category/مسلسلات-هندية/" to "مسلسلات هندية"
     )
     private val archives = setOf("main","recently","movies","series","category","search","watch","download","page")

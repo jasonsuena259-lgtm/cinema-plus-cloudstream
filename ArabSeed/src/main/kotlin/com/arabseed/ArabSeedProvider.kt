@@ -64,7 +64,7 @@ class ArabSeedProvider(private val context:Context?=null):MainAPI() {
         val anime=title.contains("انمي")||title.contains("أنمي")
         val yearNumber=Regex("""(?:19|20)\d{2}""").find(title)?.value?.toIntOrNull()
         val isSeries=safe.toHttpUrlOrNull()?.encodedPath?.startsWith("/series/")==true ||
-            title.contains("الحلقة") || title.startsWith("مسلسل") || anime
+            title.contains("الحلقة") || title.startsWith("مسلسل") || (anime && title.contains("الموسم"))
 
         if(!isSeries) return newMovieLoadResponse(title,safe,TvType.Movie,safe) {
             posterUrl=picture

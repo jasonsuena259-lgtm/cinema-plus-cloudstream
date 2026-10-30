@@ -148,3 +148,29 @@ for section,item in samples[:14]:
 print("TITLE_SOURCE_UNIQUENESS",len(ids_by_title),
  "unique_watch_sets",len(set(tuple(v["watch"]) for v in ids_by_title.values())),
  "unique_download_sets",len(set(tuple(v["download"]) for v in ids_by_title.values())))
+
+# Sample one legacy episode with more hosts to test the public HTML from
+# 1vid, Vidmoly, Voe, Byse, Vidspeed and HLSWish (without video downloads).
+status,search_url,markup=get(base+"/?s=Bleach")
+soup=BeautifulSoup(markup,"html.parser")
+episodes=[]
+for a in soup.select(".item__contents a.movie__block[href]"):
+ target=urllib.parse.urljoin(base,a.get("href",""))
+ if "bleach" in urllib.parse.unquote(target).lower() and target not in episodes:episodes.append(target)
+for ep in episodes[:2]:
+ status,u,html=get(ep.rstrip("/")+"/watch/")
+ doc=BeautifulSoup(html,"html.parser")
+ groups=collections.defaultdict(list)
+ for a in doc.select("button.arabsed-watch-server[data-src]"):
+  href=a.get("data-src","")
+  host=urllib.parse.urlsplit(href).hostname or "?"
+  if host not in ("arabsed.cam","localhost","127.0.0.1"):groups[host].append(href)
+ print("OTHER_HOSTS",len(groups),sorted((k,len(v)) for k,v in groups.items()))
+ for host,links in sorted(groups.items()):
+  if host in ("doodstream.com","mixdrop.ps","cybervynx.com"):continue
+  st,dest,html=get(links[0],u)
+  flags={"video":bool(re.search(r"<video|sources\s*:|\.m3u8|\.mp4",html,re.I)),
+    "packed":bool(re.search(r"eval\(function\(p,a,c,k,e",html)),
+    "json":bool(re.search(r"application/json|__NEXT_DATA__",html,re.I)),
+    "iframe":bool(re.search(r"<iframe",html,re.I))}
+  print("OTHER_HOST_PROBE",host,"status",st,"redirect",urllib.parse.urlsplit(dest).hostname,"size",len(html),"flags",json.dumps(flags))

@@ -10,33 +10,26 @@ data class ArabSeedSource(val name:String,val url:String)
 
 internal object ArabSeedParser {
     const val BASE = "https://arabsed.cam"
+    // Focus the CloudStream homepage on useful collections, not every tiny
+    // WordPress tag. The site still exposes niche categories in its own menu.
     val sections = listOf(
-        "/recently/" to "مضاف حديثًا",
-        "/movies/" to "الأفلام",
-        "/series/" to "المسلسلات",
-        "/category/افلام-اجنبية/" to "أفلام أجنبية",
-        "/category/افلام-اجنبية-2025/" to "أفلام أجنبية 2025",
+        "/recently/" to "المضاف حديثًا",
+        "/movies/" to "أحدث الأفلام",
+        "/series/" to "جميع المسلسلات",
         "/category/افلام-اجنبية-2026/" to "أفلام أجنبية 2026",
-        "/category/افلام-اسيوي/" to "أفلام آسيوية",
-        "/category/افلام-تركية/" to "أفلام تركية",
+        "/category/افلام-اجنبية-2025/" to "أفلام أجنبية 2025",
+        "/category/افلام-اجنبية/" to "أفلام أجنبية",
         "/category/افلام-عربي/" to "أفلام عربية",
-        "/category/مسلسلات-اجنبية/" to "مسلسلات أجنبية",
+        "/category/افلام-اسيوي/" to "أفلام آسيوية",
         "/category/افلام-هندية/" to "أفلام هندية",
-        "/category/افلام-كرتون/" to "أفلام كرتون",
         "/category/افلام-انمي/" to "أفلام أنمي",
-        "/category/افلام-اجنبي/" to "أفلام أجنبي",
+        "/category/مسلسلات-اجنبية/" to "مسلسلات أجنبية",
+        "/category/مسلسلات-عربية/" to "مسلسلات عربية",
         "/category/مسلسلات-اسيوية/" to "مسلسلات آسيوية",
         "/category/مسلسلات-تركية/" to "مسلسلات تركية",
-        "/category/مسلسلات-تركية-مترجمة/" to "مسلسلات تركية مترجمة",
-        "/category/مسلسلات-تركية-مدبلجة/" to "مسلسلات تركية مدبلجة",
-        "/category/مسلسلات-عربية/" to "مسلسلات عربية",
-        "/category/مسلسلات-هندية/" to "مسلسلات هندية",
-        "/category/مسلسلات-كرتون/" to "مسلسلات كرتون",
-        "/category/مسلسلات-اجنبي/" to "مسلسلات أجنبي",
         "/category/مسلسلات-انمي/" to "مسلسلات أنمي",
-        "/category/مسلسلات-اهواك/" to "مسلسلات أهواك",
-        "/category/برامج-تلفزيونية-tv-shows/" to "برامج تلفزيونية",
-        "/category/غير-مصنف/" to "غير مصنف"
+        "/category/مسلسلات-تركية-مترجمة/" to "مسلسلات تركية مترجمة",
+        "/category/مسلسلات-هندية/" to "مسلسلات هندية"
     )
     private val archives = setOf("main","recently","movies","series","category","search","watch","download","page")
     fun siteUrl(raw:String):String? {

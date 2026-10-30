@@ -104,7 +104,7 @@ internal object ArabSeedParser {
             "الثامن" in t -> 8
             "التاسع" in t -> 9
             "العاشر" in t -> 10
-            else -> Regex("""(?i)(?:الموسم|season|s)\s*[:#-]?\s*(\d{1,2})""").find(t)
+            else -> Regex("""(?i)(?:الموسم|season)\s*[:#-]?\s*(\d{1,2})""").find(t)
                 ?.groupValues?.get(1)?.toIntOrNull() ?: 1
         }
     }

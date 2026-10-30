@@ -10,33 +10,24 @@ data class ArabSeedSource(val name:String,val url:String)
 
 internal object ArabSeedParser {
     const val BASE = "https://arabsed.cam"
+    // Focus the CloudStream homepage on useful collections, not every tiny
+    // WordPress tag. The site still exposes niche categories in its own menu.
     val sections = listOf(
-        "/recently/" to "مضاف حديثًا",
-        "/movies/" to "الأفلام",
-        "/series/" to "المسلسلات",
-        "/category/افلام-اجنبية/" to "أفلام أجنبية",
-        "/category/افلام-اجنبية-2025/" to "أفلام أجنبية 2025",
+        "/recently/" to "المضاف حديثًا",
+        "/movies/" to "أحدث الأفلام",
+        "/series/" to "جميع المسلسلات",
         "/category/افلام-اجنبية-2026/" to "أفلام أجنبية 2026",
-        "/category/افلام-اسيوي/" to "أفلام آسيوية",
-        "/category/افلام-تركية/" to "أفلام تركية",
+        "/category/افلام-اجنبية-2025/" to "أفلام أجنبية 2025",
+        "/category/افلام-اجنبية/" to "أفلام أجنبية",
         "/category/افلام-عربي/" to "أفلام عربية",
-        "/category/مسلسلات-اجنبية/" to "مسلسلات أجنبية",
+        "/category/افلام-اسيوي/" to "أفلام آسيوية",
         "/category/افلام-هندية/" to "أفلام هندية",
-        "/category/افلام-كرتون/" to "أفلام كرتون",
         "/category/افلام-انمي/" to "أفلام أنمي",
-        "/category/افلام-اجنبي/" to "أفلام أجنبي",
-        "/category/مسلسلات-اسيوية/" to "مسلسلات آسيوية",
-        "/category/مسلسلات-تركية/" to "مسلسلات تركية",
-        "/category/مسلسلات-تركية-مترجمة/" to "مسلسلات تركية مترجمة",
-        "/category/مسلسلات-تركية-مدبلجة/" to "مسلسلات تركية مدبلجة",
+        "/category/مسلسلات-اجنبية/" to "مسلسلات أجنبية",
         "/category/مسلسلات-عربية/" to "مسلسلات عربية",
-        "/category/مسلسلات-هندية/" to "مسلسلات هندية",
-        "/category/مسلسلات-كرتون/" to "مسلسلات كرتون",
-        "/category/مسلسلات-اجنبي/" to "مسلسلات أجنبي",
+        "/category/مسلسلات-اسيوية/" to "مسلسلات آسيوية",
         "/category/مسلسلات-انمي/" to "مسلسلات أنمي",
-        "/category/مسلسلات-اهواك/" to "مسلسلات أهواك",
-        "/category/برامج-تلفزيونية-tv-shows/" to "برامج تلفزيونية",
-        "/category/غير-مصنف/" to "غير مصنف"
+        "/category/مسلسلات-هندية/" to "مسلسلات هندية"
     )
     private val archives = setOf("main","recently","movies","series","category","search","watch","download","page")
     fun siteUrl(raw:String):String? {
@@ -82,9 +73,11 @@ internal object ArabSeedParser {
             val pic=element.selectFirst(".post__image img, .image__poster img, img")
             val raw=pic?.attr("data-src")?.ifBlank{pic.attr("src")}.orEmpty()
             val poster=raw.takeIf{it.isNotBlank()}?.let{image(doc,it)}
+            val isAnime=title.contains("انمي")||title.contains("أنمي")
             val series=url.toHttpUrlOrNull()?.encodedPath?.startsWith("/series/")==true ||
-                title.contains("مسلسل") || title.contains("انمي") || title.contains("أنمي") || title.contains("الحلقة")
-            ArabSeedItem(title,url,poster,series,title.contains("انمي")||title.contains("أنمي"))
+                title.startsWith("مسلسل") || title.contains("الحلقة") ||
+                (isAnime && title.contains("الموسم"))
+            ArabSeedItem(title,url,poster,series,isAnime)
         }.distinctBy{it.url}
 
     fun next(doc:Document,page:Int)=doc.select(".page-numbers a[href], a.page-numbers[href]")
@@ -99,7 +92,8 @@ internal object ArabSeedParser {
 
     fun seasonNumber(text:String):Int {
         val t=text.lowercase().replace("أ","ا").replace("إ","ا")
-        return number(t) ?: when {
+        // Year digits in a title (e.g. 2026) must never become season 2026.
+        return when {
             "الاول" in t -> 1
             "الثاني" in t -> 2
             "الثالث" in t -> 3
@@ -110,7 +104,8 @@ internal object ArabSeedParser {
             "الثامن" in t -> 8
             "التاسع" in t -> 9
             "العاشر" in t -> 10
-            else -> 1
+            else -> Regex("""(?i)(?:الموسم|season)\s*[:#-]?\s*(\d{1,2})""").find(t)
+                ?.groupValues?.get(1)?.toIntOrNull() ?: 1
         }
     }
     fun seasonLinks(doc:Document):List<Pair<Int,String>> =

@@ -34,8 +34,8 @@ internal class CimaNowSettings(context: Context) {
             }
             val host = uri.host ?: return null
             val port = uri.port.takeIf { it in 1..65535 } ?: return null
-            // Unresolved sockets permit SOCKS to resolve remote hosts over the proxy.
-            return Proxy(type, InetSocketAddress.createUnresolved(host, port))
+            // Resolve the proxy endpoint locally; SOCKS can still resolve target hosts remotely.
+            return Proxy(type, InetSocketAddress(host, port))
         }
     }
     var customDomain: String?

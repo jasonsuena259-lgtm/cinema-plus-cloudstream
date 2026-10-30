@@ -122,6 +122,26 @@
     "name": "CimaNow VIP | سيما ناو"
   },
   {
+    "fileHash": "sha256-a525b1ab101f19be4700a8de21a93ad9149c70ae8db417a59d5040ed75b31d4e",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 42051,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Movie",
+      "TvSeries"
+    ],
+    "version": 1,
+    "internalName": "CimaNow",
+    "description": "CimaNow عادي — دومين وبروكسي اختياري؛ تشغيل الموقع غير مؤكد",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/CimaNow-v1.cs3",
+    "name": "CimaNow | سيما ناو (العادي)"
+  },
+  {
     "fileHash": "sha256-c9adf722a888322bb11fd7d4b04db655195a32577bea0051b823436bd1899ccf",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",

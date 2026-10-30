@@ -1,0 +1,8 @@
+{
+  "name": "CimaNow | سيما ناو (العادي)",
+  "description": "CimaNow عادي — دومين وبروكسي اختياري؛ تشغيل الموقع غير مؤكد",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/plugins-cimanow-v1.json"
+  ]
+}

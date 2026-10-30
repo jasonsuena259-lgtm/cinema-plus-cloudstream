@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Structural probe of public ArabSeed pages. Never log full third-party URLs or cookies."""
 from urllib.request import Request, urlopen
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, quote
 from bs4 import BeautifulSoup
 from collections import Counter
 import json
@@ -23,21 +23,21 @@ def info(e):
          "id":e.get("id","")[:80]}
 for label,path in paths:
  try:
-  req=Request(base+path,headers={"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/125 Safari/537.36"})
+  req=Request(base+quote(path,safe="/?=&%"),headers={"User-Agent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/125 Safari/537.36"})
   with urlopen(req,timeout=18) as r: html=r.read(1400000).decode("utf-8","replace");status=r.status
   soup=BeautifulSoup(html,"html.parser")
   print("ARAB_PAGE",label,status,len(html),"h1",[(x.get_text(" ",strip=True))[:90] for x in soup.select("h1")[:2]])
   classes=Counter(" ".join(x.get("class",[])) for x in soup.find_all(["article","section","div","li"]) if x.get("class"))
   print("ARAB_CLASSES",label,json.dumps(classes.most_common(28),ensure_ascii=False))
-  sel={"home":["a[href*=category]","article","form"],
-       "recent":["article","a[href*='/page/']","a[href*='مسلسل-']"],
-       "movies":["article","a[href*='فيلم-']"],
-       "series":["article","a[href*='/series/']"],
-       "category":["article","a[href*='مسلسل-']"],
+  sel={"home":[".item__contents",".series__box","a[href*=category]","form"],
+       "recent":[".item__contents","a[href*='/page/']"],
+       "movies":[".item__contents"],
+       "series":[".series__box","a[href*='/series/']"],
+       "category":[".item__contents",".series__box"],
        "episode":["a[href*='/series/']","a[href*='/watch/']","a[href*='/download/']","a[href*='الحلقة']"],
        "season":["a[href*='الحلقة']","a[href*='/series/']"],
        "watch":["button","iframe","[data-src]","[data-embed]","a[href]"],
-       "download":["a[href]"],"search":["article","a[href*='مسلسل-']"]}[label]
+       "download":["a[href]"],"search":[".item__contents"]}[label]
   for selector in sel:
    matches=soup.select(selector)
    print("ARAB_SELECT",label,selector,len(matches))

@@ -106,7 +106,8 @@ internal object ArabSeedParser {
             "الثامن" in t -> 8
             "التاسع" in t -> 9
             "العاشر" in t -> 10
-            else -> 1
+            else -> Regex("""(?:الموسم|season|s)\s*[:#-]?\s*(\d{1,2})""", RegexOption.IGNORE_CASE).find(t)
+                ?.groupValues?.get(1)?.toIntOrNull() ?: 1
         }
     }
     fun seasonLinks(doc:Document):List<Pair<Int,String>> =

@@ -75,9 +75,11 @@ internal object ArabSeedParser {
             val pic=element.selectFirst(".post__image img, .image__poster img, img")
             val raw=pic?.attr("data-src")?.ifBlank{pic.attr("src")}.orEmpty()
             val poster=raw.takeIf{it.isNotBlank()}?.let{image(doc,it)}
+            val isAnime=title.contains("انمي")||title.contains("أنمي")
             val series=url.toHttpUrlOrNull()?.encodedPath?.startsWith("/series/")==true ||
-                title.contains("مسلسل") || title.contains("انمي") || title.contains("أنمي") || title.contains("الحلقة")
-            ArabSeedItem(title,url,poster,series,title.contains("انمي")||title.contains("أنمي"))
+                title.startsWith("مسلسل") || title.contains("الحلقة") ||
+                (isAnime && title.contains("الموسم"))
+            ArabSeedItem(title,url,poster,series,isAnime)
         }.distinctBy{it.url}
 
     fun next(doc:Document,page:Int)=doc.select(".page-numbers a[href], a.page-numbers[href]")

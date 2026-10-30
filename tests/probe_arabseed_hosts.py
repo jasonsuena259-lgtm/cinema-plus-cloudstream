@@ -46,3 +46,36 @@ for path in paths:
     "challenge":r"cf-chl|cloudflare|captcha|access denied"
    }.items()}
    print("MIRROR_HOST",name,host,"pathKind",parsed.path[:7],"attempt",urllib.parse.urlparse(attempt).path[:7],"status",s,"redirectHost",final_host,"length",len(body),"signals",json.dumps(flags))
+
+# Inspect two more public result pages; no signed video URLs are logged.
+for query in ["The Final Problem","Bleach"]:
+ search=base+"/?s="+urllib.parse.quote_plus(query)
+ status,search_url,body=get(search)
+ soup=BeautifulSoup(body,"html.parser")
+ cards=soup.select(".item__contents a.movie__block[href], .item__contents a[href]")
+ seen=set()
+ for a in cards:
+  href=urllib.parse.urljoin(base,a.get("href",""))
+  if href in seen:continue
+  seen.add(href)
+  if len(seen)>3:break
+  status,link,html=get(href)
+  watch=link.rstrip("/")+"/watch/"
+  code,page_url,watch_html=get(watch)
+  d=BeautifulSoup(watch_html,"html.parser")
+  nodes=d.select(".arabsed-watch-server[data-src]")
+  hosts=collections.Counter((urllib.parse.urlparse(n.get("data-src","")).hostname or "-") for n in nodes)
+  print("MIRROR_DISCOVERY",query,urllib.parse.urlparse(href).path[:80],code,sorted(hosts.items()))
+# Dood metadata health probe: never print token, media prefix or final signed URL.
+from urllib.parse import urlparse,urljoin
+status,doc_url,html=get(base+urllib.parse.quote(paths[0],safe="/"))
+s=BeautifulSoup(html,"html.parser")
+dood=s.select_one("button.arabsed-watch-server[data-src*='dood']")
+if dood:
+ status,final,body=get(dood["data-src"],doc_url)
+ m=re.search(r"/pass_md5/[a-zA-Z0-9_/?=&%-]+",body)
+ print("DOOD_EMBED_PROBE",status,"redirect",urlparse(final).hostname,"md5_present",bool(m))
+ if m:
+  api=urljoin(final,m.group())
+  status,final_response,content=get(api,final)
+  print("DOOD_MD5_PROBE",status,"bytes",len(content),"is_https_prefix",content.strip().startswith("https://"),"contains_query",("?" in content))

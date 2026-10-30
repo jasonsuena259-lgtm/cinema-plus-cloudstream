@@ -75,8 +75,9 @@ internal object MySeedCamParser {
                 if (!path.startsWith("/series/") && slug(link) == null) return@mapNotNull null
                 val title = a.selectFirst(".tt-card-body h3, h3")?.text()?.trim()
                     ?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-                val poster = a.selectFirst(".tt-thumb img[src], img[data-src], img[src]")?.let {
-                    val img = it.attr("data-src").ifBlank { it.attr("src") }
+                val imageNode = a.selectFirst(".tt-thumb img[src], img[data-src], img[src]")
+                val poster = if (imageNode == null) null else {
+                    val img = imageNode.attr("data-src").ifBlank { imageNode.attr("src") }
                     doc.location().toHttpUrlOrNull()?.resolve(img)?.toString()
                 }
                 val category = a.selectFirst(".tt-card-foot span, .tt-badge.tt-genre")?.text().orEmpty()
@@ -172,9 +173,12 @@ internal object MySeedCamParser {
         return raw?.let { doc.location().toHttpUrlOrNull()?.resolve(it)?.toString() }
     }
 
-    fun story(doc: Document): String? = doc.selectFirst(
-        ".myseed-single-hero-story, .myseed-single-story, meta[name=description]"
-    )?.let { if (it.tagName() == "meta") it.attr("content") else it.text() }?.takeIf { it.isNotBlank() }
+    fun story(doc: Document): String? {
+        val element = doc.selectFirst(".myseed-single-hero-story, .myseed-single-story, meta[name=description]")
+        val value = if (element == null) null
+            else if (element.tagName() == "meta") element.attr("content") else element.text()
+        return value?.takeIf { it.isNotBlank() }
+    }
 
     fun tags(doc: Document): List<String> = doc.select(
         ".myseed-single-genres a, .myseed-single-info a[href*=/category/], .tt-series-info a[href*=/category/]"

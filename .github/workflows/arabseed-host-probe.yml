@@ -1,7 +1,5 @@
 name: Probe ArabSeed remaining mirror hosts
 on:
-  push:
-    branches: [fix/arabseed-v4-remaining-hosts]
   workflow_dispatch:
 permissions:
   contents: read

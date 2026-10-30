@@ -20,6 +20,15 @@ class ArabSeedV3Test {
         assertTrue(ArabSeedLinkValidator.plausibleMedia(ExtractorLinkType.VIDEO,206,"application/octet-stream",mp4))
     }
 
+    @Test fun doodAndMixdropPlayerMarkupIsParsedWithoutExecutingScripts() {
+        assertEquals("/pass_md5/aBc123xyz",ArabSeedHostPlayer.doodPath(
+            "<script>const p='/pass_md5/aBc123xyz';</script>"))
+        assertEquals("//cdn.example.test/movie",ArabSeedHostPlayer.mixdropUrl(
+            "MDCore.wurl = \"//cdn.example.test/movie\";"))
+        assertNull(ArabSeedHostPlayer.doodPath("<html>Unavailable</html>"))
+        assertNull(ArabSeedHostPlayer.mixdropUrl("<script>window.location='/watch/page';</script>"))
+    }
+
     @Test fun experimentalFallbackNeverExposesHostEmbedOrRandomPage() {
         val source="https://doodstream.com/e/abc"
         assertFalse(ArabSeedMediaCandidate.canTry(source,source,ExtractorLinkType.VIDEO))

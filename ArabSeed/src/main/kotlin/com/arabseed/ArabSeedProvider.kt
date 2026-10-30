@@ -29,7 +29,13 @@ class ArabSeedProvider(private val context:Context?=null):MainAPI() {
         val url=ArabSeedParser.pageUrl(request.data,page)
             ?: throw ErrorLoadingException("ArabSeed: القسم غير صالح")
         val document=repository.page(url)
-        return newHomePageResponse(request.name,ArabSeedParser.cards(document).map(::result),hasNext=ArabSeedParser.next(document,page))
+        val cards=ArabSeedParser.cards(document)
+        val filtered=when {
+            request.data=="/movies/" || request.data.startsWith("/category/افلام-") -> cards.filter{!it.series}
+            request.data=="/series/" || request.data.startsWith("/category/مسلسلات-") -> cards.filter{it.series}
+            else -> cards
+        }
+        return newHomePageResponse(request.name,filtered.map(::result),hasNext=ArabSeedParser.next(document,page))
     }
 
     override suspend fun search(query:String):List<SearchResponse> = search(query,1).items

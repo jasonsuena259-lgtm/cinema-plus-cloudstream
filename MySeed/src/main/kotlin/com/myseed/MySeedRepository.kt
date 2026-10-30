@@ -6,7 +6,7 @@ import kotlinx.coroutines.delay
 class MySeedRepository {
     companion object {val headers=mapOf("user-agent" to "Mozilla/5.0")}
     suspend fun page(url:String):org.jsoup.nodes.Document {
-        val valid=MySeedParser.siteUrl(url) ?: throw ErrorLoadingException("ماي سيد: رابط غير صالح")
+        val valid=MySeedCamParser.siteUrl(url) ?: MySeedParser.siteUrl(url) ?: throw ErrorLoadingException("ماي سيد: رابط غير صالح")
         var reason="تعذر الاتصال"
         repeat(2){attempt->
             try{

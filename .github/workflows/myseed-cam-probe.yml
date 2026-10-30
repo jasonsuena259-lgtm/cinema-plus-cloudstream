@@ -1,0 +1,16 @@
+name: Probe MySeed Cam public HTML
+on:
+  push:
+    branches:
+      - fix/myseed-cam-v3
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Public MySeed markup inspection
+        run: python3 tests/probe_myseed_cam.py

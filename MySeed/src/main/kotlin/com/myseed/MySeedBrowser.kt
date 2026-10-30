@@ -7,10 +7,10 @@ import android.webkit.*
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
-data class MySeedRequest(val url:String,val headers:Map<String,String>)
+data class MySeedRequest(val url:String,val headers:Map<String,String>,val isHls:Boolean)
 class MySeedBrowser(private val context:Context) {
     @SuppressLint("SetJavaScriptEnabled")
-    suspend fun media(url:String):MySeedRequest?=suspendCancellableCoroutine { continuation ->
+    suspend fun media(url:String, referer:String = MySeedCamParser.BASE + "/"):MySeedRequest?=suspendCancellableCoroutine { continuation ->
         val handler=Handler(Looper.getMainLooper())
         var view:WebView?=null;var done=false;var agent=""
         fun finish(result:MySeedRequest?){handler.post{
@@ -32,17 +32,18 @@ class MySeedBrowser(private val context:Context) {
                         override fun shouldInterceptRequest(v:WebView,r:WebResourceRequest):WebResourceResponse?{
                             val u=r.url.toString()
                             if(u.contains("challenges.cloudflare.com") || u.contains("/recaptcha/") || u.contains("hcaptcha.com")){finish(null);return WebResourceResponse("text/plain","UTF-8",null)}
-                            if(Regex("""(?i)\.m3u8(?:\?|$)""").containsMatchIn(u)){
+                            val hls = MySeedMediaUrl.isHls(u)
+                            if(hls || MySeedMediaUrl.isMp4(u)){
                                 val headers=r.requestHeaders.toMutableMap()
                                 if(headers.keys.none{it.equals("user-agent",true)})headers["User-Agent"]=agent
                                 CookieManager.getInstance().getCookie(u)?.takeIf{it.isNotBlank()}?.let{headers["Cookie"]=it}
-                                finish(MySeedRequest(u,headers))
+                                finish(MySeedRequest(u,headers,hls))
                             }
                             return null
                         }
                         override fun onPageFinished(v:WebView?,u:String?){v?.evaluateJavascript("(()=>{let n=0;const t=setInterval(()=>{document.querySelectorAll('video').forEach(v=>v.play().catch(()=>{}));if(++n>=10)clearInterval(t)},1000)})();",null)}
                     }
-                    loadUrl(url,mapOf("Referer" to MySeedParser.BASE+"/"))
+                    loadUrl(url,mapOf("Referer" to referer))
                 }
                 handler.postDelayed({finish(null)},15000)
             }catch(_:Exception){finish(null)}

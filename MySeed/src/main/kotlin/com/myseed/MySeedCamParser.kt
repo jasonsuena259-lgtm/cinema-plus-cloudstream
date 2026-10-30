@@ -37,7 +37,8 @@ internal object MySeedCamParser {
         "/category/مسلسلات-جديدة" to "مسلسلات جديدة",
         "/category/مسلسلات-عربية" to "مسلسلات عربية",
         "/category/مسلسلات-هندي" to "مسلسلات هندية",
-        "/category/برامج-تلفزيونية" to "برامج تلفزيونية"
+        "/category/برامج-تلفزيونية" to "برامج تلفزيونية",
+        "/category/برامج-تلفزيونية-tv-shows" to "برامج تلفزيونية - TV Shows"
     )
     private val excludedSlugs = setOf(
         "films", "seriestv", "episodestv", "search", "category",

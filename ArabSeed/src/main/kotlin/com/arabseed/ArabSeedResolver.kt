@@ -19,20 +19,26 @@ class ArabSeedResolver(private val context:Context?=null){
         // probe. Previously a 403, anti-bot page, or Dood /d/ landing page
         // aborted this source without ever trying a compatible extractor.
         val candidates=ArabSeedHostCandidates.variants(source.url)
+        val dood=source.url.contains("dood",true) || source.url.contains("dsvplay",true)
+            || source.url.contains("ds2play",true)
+        // Dood's signed public media links expire rapidly. The independent
+        // handler must go FIRST; otherwise two timed-out CloudStream handlers
+        // can consume the source deadline before /pass_md5 finishes.
+        if(dood)withTimeoutOrNull(13500) {
+            result.addAll(ArabSeedHostPlayer.extract(source,referer))
+        }
+        if(result.isNotEmpty())return result.distinctBy{it.url to it.headers}
         for(candidate in candidates) {
             try {
-                withTimeoutOrNull(4500) {
+                withTimeoutOrNull(5500) {
                     loadExtractor(candidate,referer,{subtitles.add(it)},{result.add(it)})
                 }
             } catch(e:CancellationException){throw e}
               catch(_:Exception){}
               catch(_:LinkageError){}
-            // Try every public URL form: a broken /d/ extractor should not
-            // suppress a valid /e/ embed from the same host.
         }
-        // Built-in host APIs differ between CloudStream forks. Try the plugin's
-        // public Dood/MixDrop parser as a second independent path.
-        withTimeoutOrNull(8500) {
+        // Keep the v3 Mixdrop route, which was confirmed playable on Android.
+        if(!dood)withTimeoutOrNull(9500) {
             result.addAll(ArabSeedHostPlayer.extract(source,referer))
         }
         if(result.isNotEmpty())return result.distinctBy{it.url to it.headers}
@@ -54,7 +60,18 @@ class ArabSeedResolver(private val context:Context?=null){
         suspend fun add(raw:String){
             val u=page.url.toHttpUrlOrNull()?.resolve(raw) ?: return
             val type=if(u.encodedPath.endsWith(".m3u8",true))ExtractorLinkType.M3U8 else if(u.encodedPath.endsWith(".mp4",true))ExtractorLinkType.VIDEO else return
-            result+=newExtractorLink("ArabSeed",source.name,u.toString(),type){this.referer=origin;headers=ArabSeedRepository.headers}
+            result+=newExtractorLink("ArabSeed",source.name,u.toString(),type){this.referer=page.url;headers=ArabSeedRepository.headers}
+        }
+        // HTML5 players sometimes expose direct media/subtitle elements.
+        for(node in page.document.select("video[src], video source[src], source[type*=video][src]")) {
+            add(node.absUrl("src"))
+        }
+        for(track in page.document.select("track[src][kind=subtitles], track[src][kind=captions]")) {
+            val url=track.absUrl("src")
+            if(url.startsWith("https://") || url.startsWith("http://")) {
+                val label=track.attr("srclang").ifBlank{track.attr("label")}.ifBlank{"Subtitle"}
+                subtitles.add(SubtitleFile(label,url))
+            }
         }
         for(script in page.document.select("script:not([src])")){
             val raw=script.data()
@@ -84,13 +101,13 @@ class ArabSeedResolver(private val context:Context?=null){
     }
     suspend fun resolve(sources:List<ArabSeedSource>,referer:String,subtitle:(SubtitleFile)->Unit,callback:(ExtractorLink)->Unit):Boolean{
         if(sources.isEmpty())throw ErrorLoadingException("عرب سيد: لم تظهر سيرفرات في صفحة المشاهدة")
-        val lock=Mutex();val browsers=Semaphore(2)
+        val lock=Mutex();val browsers=Semaphore(3)
         val sent=mutableSetOf<String>();val sentSubs=mutableSetOf<String>()
         suspend fun emit(link:ExtractorLink) = lock.withLock {
             val key=listOf(link.name,link.url,link.referer,link.headers.toSortedMap().toString()).joinToString("\n")
             if(sent.add(key))callback(link)
         }
-        SourceDispatcher.run(sources, totalMillis = 62000, sourceMillis = 24000, concurrency = 12) { source ->
+        SourceDispatcher.run(sources, totalMillis = 85000, sourceMillis = 40000, concurrency = 10) { source ->
             val subs=mutableListOf<SubtitleFile>()
             val links=try{native(source,referer,subs)}catch(e:CancellationException){throw e}catch(_:Exception){emptyList()}catch(_:LinkageError){emptyList()}
             val valid=mutableListOf<ExtractorLink>()
@@ -98,7 +115,7 @@ class ArabSeedResolver(private val context:Context?=null){
             // segment test dropped legitimate signed HLS and 1080 MP4 links.
             for(link in links)if(ArabSeedLinkValidator.validate(link)){valid+=link;emit(link)}
             val browserLinks=mutableListOf<ExtractorLink>()
-            if(valid.isEmpty()&&context!=null)withTimeoutOrNull(12000) {
+            if(valid.isEmpty()&&context!=null)withTimeoutOrNull(17000) {
                 browsers.withPermit {
                     val embed=ArabSeedHostCandidates.variants(source.url).last()
                     val request=ArabSeedBrowser(context).media(embed,referer)

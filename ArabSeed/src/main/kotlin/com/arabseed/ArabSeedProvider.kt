@@ -112,9 +112,16 @@ class ArabSeedProvider(private val context:Context?=null):MainAPI() {
         subtitleCallback:(SubtitleFile)->Unit,callback:(ExtractorLink)->Unit):Boolean {
         val watch=ArabSeedParser.watchUrl(data)
             ?: throw ErrorLoadingException("ArabSeed: رابط المشاهدة غير صالح")
-        val watchList=ArabSeedParser.watchSources(repository.page(watch))
+        // An unavailable watch page must not hide working download hosts.
+        // Both are independent sources for the same film/episode.
+        val watchList=try {
+            ArabSeedParser.watchSources(repository.page(watch))
+        }catch(e:kotlinx.coroutines.CancellationException){throw e}
+         catch(_:Exception){emptyList()}
         val downloadList=ArabSeedParser.downloadUrl(data)?.let{u->
-            try{ArabSeedParser.downloadSources(repository.page(u))}catch(_:Exception){emptyList()}
+            try{ArabSeedParser.downloadSources(repository.page(u))}
+            catch(e:kotlinx.coroutines.CancellationException){throw e}
+            catch(_:Exception){emptyList()}
         }.orEmpty()
         val sources=(watchList+downloadList).distinctBy{it.url}
         if(sources.isEmpty())throw ErrorLoadingException("ArabSeed: لم نجد روابط سيرفرات حقيقية")

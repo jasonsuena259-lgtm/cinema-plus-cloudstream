@@ -19,6 +19,10 @@ internal object ArabSeedHostCandidates {
                     "/e/" + path.substringAfterLast('/')
             (host=="mixdrop.ps" || host=="mixdrop.top" || host=="mixdrop.co" || host=="mixdrop.to") &&
                 path.startsWith("/f/") -> "/e/" + path.substringAfterLast('/')
+            // The live ArabSeed download cards use /d/ while watch buttons
+            // use /e/ for the same Cybervynx identifier.
+            host=="cybervynx.com" && path.startsWith("/d/") ->
+                "/e/" + path.substringAfterLast('/')
             else -> null
         }
         if(alternate!=null)result+=u.newBuilder().encodedPath(alternate).build().toString()

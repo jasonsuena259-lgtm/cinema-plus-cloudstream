@@ -37,7 +37,7 @@ class MySeedBrowser(private val context:Context) {
                                 val headers=r.requestHeaders.toMutableMap()
                                 if(headers.keys.none{it.equals("user-agent",true)})headers["User-Agent"]=agent
                                 CookieManager.getInstance().getCookie(u)?.takeIf{it.isNotBlank()}?.let{headers["Cookie"]=it}
-                                finish(MySeedRequest(u,headers))
+                                finish(MySeedRequest(u,headers,hls))
                             }
                             return null
                         }

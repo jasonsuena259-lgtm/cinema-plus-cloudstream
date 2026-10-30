@@ -7,6 +7,8 @@ paths=["/مسلسل-ingobernable-الموسم-الاول-الحلقة-10-متر�
 ua="Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/125 Safari/537.36"
 def get(url,ref=None):
  try:
+  p=urllib.parse.urlsplit(url)
+  url=urllib.parse.urlunsplit((p.scheme,p.netloc,urllib.parse.quote(p.path,safe="/%:@"),urllib.parse.quote(p.query,safe="=&%:+/?@"),""))
   request=urllib.request.Request(url,headers={"User-Agent":ua,"Referer":ref or base+"/","Accept":"text/html,*/*"})
   with urllib.request.urlopen(request,timeout=9) as response:
    return response.status,response.geturl(),response.read(300000).decode("utf8","replace")
@@ -79,3 +81,47 @@ if dood:
   api=urljoin(final,m.group())
   status,final_response,content=get(api,final)
   print("DOOD_MD5_PROBE",status,"bytes",len(content),"is_https_prefix",content.strip().startswith("https://"),"contains_query",("?" in content))
+
+# Cross-title probe. Includes movie pages, season pages, show episode pages.
+# Only public server metadata is read, not signed links or full video content.
+samples=[]
+for index,route in enumerate(("/movies/","/series/","/recently/")):
+ s,listing,markup=get(base+route)
+ doc=BeautifulSoup(markup,"html.parser")
+ cards=doc.select(".item__contents a.movie__block[href],.series__box a[href]")
+ found=[]
+ for a in cards:
+  href=urllib.parse.urljoin(base,a.get("href",""))
+  if urllib.parse.urlsplit(href).hostname!="arabsed.cam" or href in found:continue
+  found.append(href)
+  if len(found)>=5:break
+ for href in found:
+  if href in [x[1] for x in samples]:continue
+  samples.append((route,href))
+print("TITLE_PROBE_SELECTED",len(samples),[(x[0],urllib.parse.urlsplit(x[1]).path[-60:]) for x in samples])
+result_count=collections.Counter()
+for section,item in samples[:14]:
+ s,final,html=get(item)
+ if s!=200:continue
+ doc=BeautifulSoup(html,"html.parser")
+ # Season pages link to episode pages; inspect one episode.
+ if "/series/" in urllib.parse.urlsplit(final).path:
+  episodes=doc.select(".episodes__section ul.episodes__list a[href]")
+  if not episodes:episodes=doc.select("a[href*='الحلقة']")
+  if not episodes:continue
+  item=urllib.parse.urljoin(base,episodes[0].get("href",""))
+ target=item.rstrip("/")
+ listings={}
+ for typ in ["watch","download"]:
+  st,target_url,payload=get(target+"/"+typ+"/")
+  d=BeautifulSoup(payload,"html.parser")
+  if typ=="watch":
+   arr=d.select("button.arabsed-watch-server[data-src]")
+   hosts=collections.Counter(urllib.parse.urlsplit(el.get("data-src","")).hostname or "?" for el in arr)
+  else:
+   arr=d.select(".arabsed-download-card[href], .arabsed-download-hero-link[href]")
+   hosts=collections.Counter(urllib.parse.urlsplit(el.get("href","")).hostname or "?" for el in arr)
+  listings[typ]=sorted(hosts.items())
+  result_count.update(hosts)
+ print("TITLE_PROBE",section,urllib.parse.urlsplit(target).path[-73:],"watch",listings.get("watch"),"download",listings.get("download"))
+print("TITLE_HOST_TOTALS",sorted(result_count.items()))

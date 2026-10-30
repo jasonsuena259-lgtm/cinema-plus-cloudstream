@@ -1,0 +1,15 @@
+name: Probe ArabSeed public pages
+on:
+  push:
+    branches: [feature/arabseed-cam]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install beautifulsoup4
+      - run: python3 tests/probe_arabseed_cam.py

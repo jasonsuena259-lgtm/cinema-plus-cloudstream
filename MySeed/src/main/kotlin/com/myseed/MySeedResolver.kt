@@ -74,7 +74,7 @@ class MySeedResolver(private val context:Context?=null){
             if(valid.isEmpty()&&context!=null)browsers.withPermit {
                 val request=MySeedBrowser(context).media(source.url,referer)
                 if(request!=null){
-                    val link=newExtractorLink("MySeed",source.name,request.url,ExtractorLinkType.M3U8){
+                    val link=newExtractorLink("MySeed",source.name,request.url,if(request.isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO){
                         this.referer=request.headers.entries.firstOrNull{it.key.equals("referer",true)}?.value ?: source.url
                         headers=request.headers.filterKeys{!it.equals("referer",true)&&!it.equals("range",true)}
                     }

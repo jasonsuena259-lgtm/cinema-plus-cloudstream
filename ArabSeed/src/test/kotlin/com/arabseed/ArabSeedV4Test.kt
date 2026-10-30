@@ -33,4 +33,19 @@ class ArabSeedV4Test {
         """,url)
         assertEquals(3,ArabSeedParser.downloadSources(doc).size)
     }
+
+    @Test fun unquotedAndEscapedPlayerUrlsAreRecognized() {
+        val base="https://1vid.xyz/e/example"
+        val raw="""var src=https://cdn.example/movies/ep.m3u8?token=abc;"""
+        assertTrue(ArabSeedParser.media(raw,base).any{it.contains("ep.m3u8")})
+        val js="""var file = "https:\/\/cdn.example\/film.mp4?token=abc";"""
+        assertEquals(listOf("https://cdn.example/film.mp4?token=abc"),ArabSeedParser.media(js,base))
+        assertEquals(emptyList<String>(),ArabSeedParser.media("""<html><img src="/poster.jpg"></html>""",base))
+    }
+
+    @Test fun unicodeEscapedJsonUrlsAreRestored() {
+        val base="https://vidmoly.org/e/example"
+        val js="""{"file":"https:\u002F\u002Fcdn.example\u002Fmaster.m3u8?token=abc"}"""
+        assertEquals(listOf("https://cdn.example/master.m3u8?token=abc"),ArabSeedParser.media(js,base))
+    }
 }

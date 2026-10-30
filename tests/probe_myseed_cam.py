@@ -35,5 +35,6 @@ for u in URLS:
   req=Request(u,headers={'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/125.0 Safari/537.36','Accept-Language':'ar,en;q=0.8'})
   with urlopen(req,timeout=17) as resp: raw=resp.read(1000000).decode('utf-8','replace');status=resp.status
   parser=P();parser.feed(raw)
-  print('MYSEED_PROBE',json.dumps({'url':u,'status':status,'length':len(raw),'title':re.findall(r'<title[^>]*>(.*?)</title>',raw,re.I|re.S)[:1], 'elements':parser.els[:65], 'script_signals':{x:len(re.findall(x,raw,re.I)) for x in ['iframe','data-embed','data-url','data-link','server','player','base64','atob\\(','api/','m3u8','watch/','series/','class="[^"]*(?:movie|poster|card)[^"]*']},ensure_ascii=False))
+  signals={x:len(re.findall(x,raw,re.I)) for x in ('iframe','data-embed','data-url','data-link','server','player','base64','m3u8','watch/','series/')}
+  print('MYSEED_PROBE',json.dumps({'url':u,'status':status,'length':len(raw),'title':re.findall(r'<title[^>]*>(.*?)</title>',raw,re.I|re.S)[:1], 'elements':parser.els[:65], 'script_signals':signals},ensure_ascii=False))
  except Exception as e: print('MYSEED_PROBE_ERROR',u,type(e).__name__,str(e)[:150])

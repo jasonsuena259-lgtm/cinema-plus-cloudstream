@@ -27,7 +27,13 @@ class ArabSeedResolver(private val context:Context?=null){
             } catch(e:CancellationException){throw e}
               catch(_:Exception){}
               catch(_:LinkageError){}
-            if(result.isNotEmpty())break
+            // Try every public URL form: a broken /d/ extractor should not
+            // suppress a valid /e/ embed from the same host.
+        }
+        // Built-in host APIs differ between CloudStream forks. Try the plugin's
+        // public Dood/MixDrop parser as a second independent path.
+        withTimeoutOrNull(8500) {
+            result.addAll(ArabSeedHostPlayer.extract(source,referer))
         }
         if(result.isNotEmpty())return result.distinctBy{it.url to it.headers}
         var page=try {
@@ -84,27 +90,53 @@ class ArabSeedResolver(private val context:Context?=null){
             val key=listOf(link.name,link.url,link.referer,link.headers.toSortedMap().toString()).joinToString("\n")
             if(sent.add(key))callback(link)
         }
-        SourceDispatcher.run(sources, totalMillis = 58000, sourceMillis = 23000, concurrency = 12) { source ->
+        SourceDispatcher.run(sources, totalMillis = 62000, sourceMillis = 24000, concurrency = 12) { source ->
             val subs=mutableListOf<SubtitleFile>()
             val links=try{native(source,referer,subs)}catch(e:CancellationException){throw e}catch(_:Exception){emptyList()}catch(_:LinkageError){emptyList()}
             val valid=mutableListOf<ExtractorLink>()
+            // Keep extractors separate from HTTP health. The strict v1/v2
+            // segment test dropped legitimate signed HLS and 1080 MP4 links.
             for(link in links)if(ArabSeedLinkValidator.validate(link)){valid+=link;emit(link)}
-            if(valid.isEmpty()&&context!=null)browsers.withPermit {
-                val request=ArabSeedBrowser(context).media(ArabSeedHostCandidates.variants(source.url).last(),referer)
-                if(request!=null){
-                    val link=newExtractorLink("ArabSeed",source.name,request.url,if(request.isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO){
-                        this.referer=request.headers.entries.firstOrNull{it.key.equals("referer",true)}?.value ?: source.url
-                        headers=request.headers.filterKeys{!it.equals("referer",true)&&!it.equals("range",true)}
+            val browserLinks=mutableListOf<ExtractorLink>()
+            if(valid.isEmpty()&&context!=null)withTimeoutOrNull(12000) {
+                browsers.withPermit {
+                    val embed=ArabSeedHostCandidates.variants(source.url).last()
+                    val request=ArabSeedBrowser(context).media(embed,referer)
+                    if(request!=null){
+                        val link=newExtractorLink("ArabSeed",source.name,request.url,
+                            if(request.isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO){
+                            this.referer=request.headers.entries.firstOrNull{it.key.equals("referer",true)}?.value ?: embed
+                            headers=request.headers.filterKeys{!it.equals("referer",true)&&!it.equals("range",true)}
+                        }
+                        browserLinks+=link
+                        if(ArabSeedLinkValidator.validate(link)){valid+=link;emit(link)}
                     }
-                    if(ArabSeedLinkValidator.validate(link)){valid+=link;emit(link)}
                 }
             }
+            // A recognized extractor may return a playable stream even when
+            // its CDN rejects range probes. Surface ONLY an already extracted
+            // media URL, explicitly marked as unverified; never publish embeds
+            // or fabricate a "1080p" label from the site's download page.
+            if(valid.isEmpty()){
+                (links+browserLinks).filter{ArabSeedMediaCandidate.canTry(it.url,source.url,it.type)}
+                    .distinctBy{it.url}.take(2).forEach{link->
+                        val fallback=newExtractorLink("ArabSeed",source.name+" (تجريبي)",link.url,link.type){
+                            this.referer=link.referer
+                            this.headers=link.headers
+                            this.quality=link.quality
+                        }
+                        emit(fallback)
+                    }
+            }
             if(valid.isNotEmpty())lock.withLock {subs.forEach{if(sentSubs.add(it.url))subtitle(it)}}
-            // Publish the usable master first; quality enumeration never delays other servers.
+            // 1080p appears only if the HLS master actually advertises a 1080
+            // rendition; do not downgrade or relabel any host as 1080.
             for(link in valid)if(link.type==ExtractorLinkType.M3U8){
-                M3u8Helper.generateM3u8(link.name,link.url,link.referer,headers=link.headers).forEach{variant->
-                    if(variant.url!=link.url&&ArabSeedLinkValidator.validate(variant))emit(variant)
-                }
+                try {
+                    M3u8Helper.generateM3u8(link.name,link.url,link.referer,headers=link.headers).forEach{variant->
+                        if(variant.url!=link.url&&ArabSeedLinkValidator.validate(variant))emit(variant)
+                    }
+                }catch(e:CancellationException){throw e}catch(_:Exception){}
             }
         }
         if(sent.isEmpty())throw ErrorLoadingException("عرب سيد: لم يُتحقق من فيديو صالح من ${sources.size} سيرفر؛ قد يكون المصدر محجوبًا أو منتهيًا")

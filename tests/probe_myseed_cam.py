@@ -38,11 +38,11 @@ for u in URLS:
   signals={x:len(re.findall(x,raw,re.I)) for x in ('iframe','data-embed','data-url','data-link','server','player','base64','m3u8','watch/','series/')}
   print('MYSEED_PROBE',json.dumps({'url':u,'status':status,'length':len(raw),'title':re.findall(r'<title[^>]*>(.*?)</title>',raw,re.I|re.S)[:1], 'elements':parser.els[:65], 'script_signals':signals},ensure_ascii=False))
 
-  for pattern in ('tt-card-link','tt-watch-server','tt-download','myseed-episode','myseed-season','season-episode','tt-pagination','<form','<article','tt-card','<h1'):
+  for pattern in ('<a class="tt-card-link"','<button class="tt-watch-server','tt-download-list','tt-download-row','tt-pagination','<form','<article class="tt-card','<div class="tt-card','<section class="tt-series','<a class="tt-episode','myseed-single-episodes','<h1'):
    match=re.search(re.escape(pattern),raw,re.I)
    if match:
     excerpt=raw[max(0,match.start()-270):min(len(raw),match.start()+680)]
     excerpt=re.sub(r'https?://[^"\\s<>]+',lambda m:'[URL_HOST:'+str(urlsplit(m.group()).hostname)+']',excerpt)
-    excerpt=re.sub(r'\\s+',' ',excerpt)
+    excerpt=' '.join(excerpt.split())
     print('MYSEED_STRUCTURE',u,pattern,excerpt[:800])
  except Exception as e: print('MYSEED_PROBE_ERROR',u,type(e).__name__,str(e)[:150])

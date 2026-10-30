@@ -10,7 +10,7 @@ import kotlin.coroutines.resume
 data class MySeedRequest(val url:String,val headers:Map<String,String>,val isHls:Boolean)
 class MySeedBrowser(private val context:Context) {
     @SuppressLint("SetJavaScriptEnabled")
-    suspend fun media(url:String):MySeedRequest?=suspendCancellableCoroutine { continuation ->
+    suspend fun media(url:String, referer:String = MySeedCamParser.BASE + "/"):MySeedRequest?=suspendCancellableCoroutine { continuation ->
         val handler=Handler(Looper.getMainLooper())
         var view:WebView?=null;var done=false;var agent=""
         fun finish(result:MySeedRequest?){handler.post{

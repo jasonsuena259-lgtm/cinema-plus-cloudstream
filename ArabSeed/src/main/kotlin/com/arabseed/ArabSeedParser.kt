@@ -94,7 +94,8 @@ internal object ArabSeedParser {
 
     fun seasonNumber(text:String):Int {
         val t=text.lowercase().replace("أ","ا").replace("إ","ا")
-        return number(t) ?: when {
+        // Year digits in a title (e.g. 2026) must never become season 2026.
+        return when {
             "الاول" in t -> 1
             "الثاني" in t -> 2
             "الثالث" in t -> 3

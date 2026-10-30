@@ -32,7 +32,8 @@ class MySeedBrowser(private val context:Context) {
                         override fun shouldInterceptRequest(v:WebView,r:WebResourceRequest):WebResourceResponse?{
                             val u=r.url.toString()
                             if(u.contains("challenges.cloudflare.com") || u.contains("/recaptcha/") || u.contains("hcaptcha.com")){finish(null);return WebResourceResponse("text/plain","UTF-8",null)}
-                            if(Regex("""(?i)\.m3u8(?:\?|$)""").containsMatchIn(u)){
+                            val hls = MySeedMediaUrl.isHls(u)
+                            if(hls || MySeedMediaUrl.isMp4(u)){
                                 val headers=r.requestHeaders.toMutableMap()
                                 if(headers.keys.none{it.equals("user-agent",true)})headers["User-Agent"]=agent
                                 CookieManager.getInstance().getCookie(u)?.takeIf{it.isNotBlank()}?.let{headers["Cookie"]=it}

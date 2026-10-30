@@ -66,7 +66,7 @@ class MySeedResolver(private val context:Context?=null){
             val key=listOf(link.name,link.url,link.referer,link.headers.toSortedMap().toString()).joinToString("\n")
             if(sent.add(key))callback(link)
         }
-        SourceDispatcher.run(sources) { source ->
+        SourceDispatcher.run(sources, totalMillis = 42000, sourceMillis = 17000, concurrency = 12) { source ->
             val subs=mutableListOf<SubtitleFile>()
             val links=try{native(source,referer,subs)}catch(e:CancellationException){throw e}catch(_:Exception){emptyList()}catch(_:LinkageError){emptyList()}
             val valid=mutableListOf<ExtractorLink>()

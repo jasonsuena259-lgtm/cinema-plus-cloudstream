@@ -1,4 +1,4 @@
-version = 1
+version = 2
 cloudstream {
     description = "ArabSeed Cam — أفلام ومسلسلات وأنمي وسيرفرات مشاهدة وتحميل"
     authors = listOf("Cinema Plus community")

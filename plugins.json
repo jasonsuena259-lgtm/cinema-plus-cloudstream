@@ -102,10 +102,10 @@
     "name": "MySeed | ماي سيد"
   },
   {
-    "fileHash": "sha256-16659deb4569068273c0ac736f5c0cba41566959018207c3ef1e67afe5aeedd0",
+    "fileHash": "sha256-90443c4f4c57cf50ca1fa214166ac3f9674a6206975d68e2cd2de86cdd3ef4a5",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 60274,
+    "fileSize": 62276,
     "status": 3,
     "language": "ar",
     "authors": [
@@ -116,10 +116,10 @@
       "TvSeries",
       "Anime"
     ],
-    "version": 1,
+    "version": 2,
     "internalName": "ArabSeed",
     "description": "ArabSeed — إضافة مستقلة",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/ArabSeed-v1.cs3",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/ArabSeed-v2.cs3",
     "name": "ArabSeed | عرب سيد"
   },
   {

@@ -14,6 +14,7 @@ class MySeedProvider(private val context: Context? = null) : MainAPI() {
     override var name = "MySeed | ماي سيد"
     override var lang = "ar"
     override val hasMainPage = true
+    override val hasDownloadSupport = true
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries, TvType.Anime)
     override val mainPage = mainPageOf(*MySeedCamParser.sections.toTypedArray())
 

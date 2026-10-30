@@ -160,8 +160,19 @@ internal object ArabSeedParser {
             }.distinctBy{it.url}
 
     fun media(script:String,base:String):List<String> {
-        val s=script.replace("\\/","/")
-        return Regex("""["']((?:https?:)?//[^"'\s]+(?:\.m3u8|\.mp4)(?:\?[^"'\s]*)?)["']""")
-            .findAll(s).mapNotNull{base.toHttpUrlOrNull()?.resolve(it.groupValues[1])?.toString()}.distinct().toList()
+        // Many 1vid / Vidmoly / Vidspeed player scripts use escaped JSON or
+        // bare URL literals rather than the quoted strings we handled in v3.
+        val normalized=script.replace("\\/","/")
+            .replace("\\u002F","/").replace("\\u002f","/")
+            .replace("\\u003A",":").replace("\\u003a",":")
+            .replace("&amp;","&")
+        val urlPattern=Regex("""(?i)(?:https?:)?//[^\s<>"'\\]+(?:\.m3u8|\.mp4)(?:\?[^\s<>"'\\]*)?""")
+        val baseUrl=base.toHttpUrlOrNull() ?: return emptyList()
+        return urlPattern.findAll(normalized).mapNotNull{match ->
+            val raw=match.value.trimEnd(';',',',')',']')
+            val u=baseUrl.resolve(raw) ?: return@mapNotNull null
+            if(u.scheme !in listOf("https","http") || u.username.isNotEmpty() ||
+                u.password.isNotEmpty())null else u.toString()
+        }.distinct().toList()
     }
 }

@@ -15,7 +15,25 @@ class ArabSeedResolver(private val context:Context?=null){
     private val mapper=jacksonObjectMapper()
     suspend fun native(source:ArabSeedSource,referer:String,subtitles:MutableList<SubtitleFile>):List<ExtractorLink>{
         val result=mutableListOf<ExtractorLink>()
-        var page=app.get(source.url,headers=ArabSeedRepository.headers,referer=referer,timeout=8)
+        // Let CloudStream's host-specific extractors run BEFORE the generic HTTP
+        // probe. Previously a 403, anti-bot page, or Dood /d/ landing page
+        // aborted this source without ever trying a compatible extractor.
+        val candidates=ArabSeedHostCandidates.variants(source.url)
+        for(candidate in candidates) {
+            try {
+                withTimeoutOrNull(4500) {
+                    loadExtractor(candidate,referer,{subtitles.add(it)},{result.add(it)})
+                }
+            } catch(e:CancellationException){throw e}
+              catch(_:Exception){}
+              catch(_:LinkageError){}
+            if(result.isNotEmpty())break
+        }
+        if(result.isNotEmpty())return result.distinctBy{it.url to it.headers}
+        var page=try {
+            app.get(candidates.last(),headers=ArabSeedRepository.headers,referer=referer,timeout=8)
+        } catch(e:CancellationException){throw e}
+          catch(_:Exception){return emptyList()}
         if(page.code !in 200..299 || page.text.contains("cf-chl-") || page.text.contains("Sorry, you have been blocked"))return emptyList()
         // Follow only the public same-video redirect explicitly supplied by VOE's page.
         if(source.name.equals("Voe",true)){
@@ -66,13 +84,13 @@ class ArabSeedResolver(private val context:Context?=null){
             val key=listOf(link.name,link.url,link.referer,link.headers.toSortedMap().toString()).joinToString("\n")
             if(sent.add(key))callback(link)
         }
-        SourceDispatcher.run(sources, totalMillis = 42000, sourceMillis = 17000, concurrency = 12) { source ->
+        SourceDispatcher.run(sources, totalMillis = 58000, sourceMillis = 23000, concurrency = 12) { source ->
             val subs=mutableListOf<SubtitleFile>()
             val links=try{native(source,referer,subs)}catch(e:CancellationException){throw e}catch(_:Exception){emptyList()}catch(_:LinkageError){emptyList()}
             val valid=mutableListOf<ExtractorLink>()
             for(link in links)if(ArabSeedLinkValidator.validate(link)){valid+=link;emit(link)}
             if(valid.isEmpty()&&context!=null)browsers.withPermit {
-                val request=ArabSeedBrowser(context).media(source.url,referer)
+                val request=ArabSeedBrowser(context).media(ArabSeedHostCandidates.variants(source.url).last(),referer)
                 if(request!=null){
                     val link=newExtractorLink("ArabSeed",source.name,request.url,if(request.isHls) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO){
                         this.referer=request.headers.entries.firstOrNull{it.key.equals("referer",true)}?.value ?: source.url

@@ -30,6 +30,11 @@ class ArabSeedResolver(private val context:Context?=null){
             // Try every public URL form: a broken /d/ extractor should not
             // suppress a valid /e/ embed from the same host.
         }
+        // Built-in host APIs differ between CloudStream forks. Try the plugin's
+        // public Dood/MixDrop parser as a second independent path.
+        withTimeoutOrNull(8500) {
+            result.addAll(ArabSeedHostPlayer.extract(source,referer))
+        }
         if(result.isNotEmpty())return result.distinctBy{it.url to it.headers}
         var page=try {
             app.get(candidates.last(),headers=ArabSeedRepository.headers,referer=referer,timeout=8)

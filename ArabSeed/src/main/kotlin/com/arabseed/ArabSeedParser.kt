@@ -130,14 +130,18 @@ internal object ArabSeedParser {
         }.distinctBy{it.url}.sortedBy{it.number}
 
     fun poster(doc:Document):String? {
-        val raw=doc.selectFirst("meta[property=og:image]")?.attr("content")
+        val fallback:org.jsoup.nodes.Element?=doc.selectFirst(".single__contents img, .single__cover img")
+        val raw:String?=doc.selectFirst("meta[property=og:image]")?.attr("content")
             ?.takeIf{it.isNotBlank()}
-            ?: doc.selectFirst(".single__contents img, .single__cover img")?.let{it.attr("data-src").ifBlank{it.attr("src")}}
+            ?: fallback?.attr("data-src")?.ifBlank{fallback.attr("src")}
         return raw?.takeIf{it.isNotBlank()}?.let{image(doc,it)}
     }
-    fun plot(doc:Document):String?=doc.selectFirst(".info__side .story, .info__side .post__desc, meta[name=description]")?.let{
-        (if(it.tagName()=="meta")it.attr("content") else it.text()).trim()
-    }?.takeIf{it.isNotBlank()}
+    fun plot(doc:Document):String? {
+        val element:org.jsoup.nodes.Element?=doc.selectFirst(".info__side .story, .info__side .post__desc, meta[name=description]")
+        if(element==null)return null
+        val value:String=if(element.tagName()=="meta")element.attr("content") else element.text()
+        return value.trim().takeIf{it.isNotBlank()}
+    }
 
     private fun external(base:String,raw:String):String? {
         if(raw.isBlank())return null

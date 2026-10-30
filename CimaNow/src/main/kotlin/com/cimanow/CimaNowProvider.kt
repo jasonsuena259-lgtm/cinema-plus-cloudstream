@@ -11,7 +11,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.jsoup.nodes.Document
 
-class CimaNowProvider(private val transport: CimaNowTransport) : MainAPI() {
+internal class CimaNowProvider(private val transport: CimaNowTransport) : MainAPI() {
     override var mainUrl = CimaNowSettings.DEFAULT_BASE
     override var name = "CimaNow | سيما ناو (العادي)"
     override var lang = "ar"
@@ -141,10 +141,10 @@ class CimaNowProvider(private val transport: CimaNowTransport) : MainAPI() {
                                 val link = newExtractorLink(name, u.host, source,
                                     if (path.endsWith(".m3u8")) ExtractorLinkType.M3U8 else ExtractorLinkType.VIDEO
                                 ) { referer = watchDoc.location() }
-                                mutex.withLock { if (sent.add(link.url)) callback(link) }
+                                mutex.withLock { synchronized(sent) { if (sent.add(link.url)) callback(link) } }
                             } else {
                                 loadExtractor(source, watchDoc.location(), { sub ->
-                                    if (sentSubs.add(sub.url)) subtitleCallback(sub)
+                                    synchronized(sentSubs) { if (sentSubs.add(sub.url)) subtitleCallback(sub) }
                                 }, { link ->
                                     if (sent.add(link.url)) callback(link)
                                 })

@@ -1,8 +1,8 @@
 {
   "name": "MySeed | ماي سيد",
-  "description": "MySeed — إضافة مستقلة",
+  "description": "MySeed — compatible repository alias for latest published version",
   "manifestVersion": 1,
   "pluginLists": [
-    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/main/plugins-myseed-v1.json"
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/plugins-myseed-v2.json"
   ]
 }

@@ -1,6 +1,6 @@
-version = 2
+version = 3
 cloudstream {
-    description = "MySeed — ماي سيد، أفلام ومسلسلات"
+    description = "MySeed Cam v3 — أفلام ومسلسلات وأنمي مع السيرفرات"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries", "Anime")

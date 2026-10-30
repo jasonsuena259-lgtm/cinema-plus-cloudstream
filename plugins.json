@@ -81,10 +81,10 @@
     "name": "CineWave"
   },
   {
-    "fileHash": "sha256-ece911f71adb303c28e2af98640851fba7b25215dee0784f2c0972f6ca10b931",
+    "fileHash": "sha256-9a04b06a9270ecab3e029da1a073bdc60dcb156fa3ec45f01f2e6e61067f8a63",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 54213,
+    "fileSize": 62783,
     "status": 3,
     "language": "ar",
     "authors": [
@@ -95,10 +95,10 @@
       "TvSeries",
       "Anime"
     ],
-    "version": 2,
+    "version": 3,
     "internalName": "MySeed",
     "description": "MySeed — إضافة مستقلة",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/MySeed-v2.cs3",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/MySeed-v3.cs3",
     "name": "MySeed | ماي سيد"
   },
   {

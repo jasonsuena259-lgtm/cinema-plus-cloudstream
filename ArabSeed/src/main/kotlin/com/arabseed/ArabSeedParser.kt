@@ -20,7 +20,23 @@ internal object ArabSeedParser {
         "/category/افلام-اسيوي/" to "أفلام آسيوية",
         "/category/افلام-تركية/" to "أفلام تركية",
         "/category/افلام-عربي/" to "أفلام عربية",
-        "/category/مسلسلات-اجنبية/" to "مسلسلات أجنبية"
+        "/category/مسلسلات-اجنبية/" to "مسلسلات أجنبية",
+        "/category/افلام-هندية/" to "أفلام هندية",
+        "/category/افلام-كرتون/" to "أفلام كرتون",
+        "/category/افلام-انمي/" to "أفلام أنمي",
+        "/category/افلام-اجنبي/" to "أفلام أجنبي",
+        "/category/مسلسلات-اسيوية/" to "مسلسلات آسيوية",
+        "/category/مسلسلات-تركية/" to "مسلسلات تركية",
+        "/category/مسلسلات-تركية-مترجمة/" to "مسلسلات تركية مترجمة",
+        "/category/مسلسلات-تركية-مدبلجة/" to "مسلسلات تركية مدبلجة",
+        "/category/مسلسلات-عربية/" to "مسلسلات عربية",
+        "/category/مسلسلات-هندية/" to "مسلسلات هندية",
+        "/category/مسلسلات-كرتون/" to "مسلسلات كرتون",
+        "/category/مسلسلات-اجنبي/" to "مسلسلات أجنبي",
+        "/category/مسلسلات-انمي/" to "مسلسلات أنمي",
+        "/category/مسلسلات-اهواك/" to "مسلسلات أهواك",
+        "/category/برامج-تلفزيونية-tv-shows/" to "برامج تلفزيونية",
+        "/category/غير-مصنف/" to "غير مصنف"
     )
     private val archives = setOf("main","recently","movies","series","category","search","watch","download","page")
     fun siteUrl(raw:String):String? {

@@ -21,3 +21,6 @@ Independent provider for the movie and TV catalog shown at https://oha.to. It do
 
 ## CloudStream repository, after CI release
 https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/repo-ohavod-v1.json
+
+## v2 fix
+The v1 movie/series catalogs worked, but the server list was empty because the OHA VOD API returns `clientFetch` steps for Dood, VOE, Filemoon, Supervideo, etc. v2 performs the bounded multi-step client-fetch handshake, retaining CloudStream built-in host extractors as fallback and using the actual stream headers returned by OHA. Individual hosts can still fail if blocked or unresponsive.

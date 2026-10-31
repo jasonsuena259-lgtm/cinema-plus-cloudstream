@@ -191,7 +191,7 @@ class OhaVodProvider : MainAPI() {
             val seasonId = field(catalogInfo, "id") ?: continue
             if (!seasonId.startsWith("season_")) continue
             val seasonNumber = field(catalogInfo, "season")?.toIntOrNull()
-                ?: Regex("\\d+").find(seasonId)?.value?.toIntOrNull() ?: continue
+                ?: seasonId.substringAfterLast("_").toIntOrNull() ?: continue
             val inline = catalogInfo.path("items")
             val episodeRows = if (inline.isArray && inline.size() > 0) inline else try {
                 rows(meta("/tmdb/catalog/video/" + encode(seasonId) + ".json?language=en"))

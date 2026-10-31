@@ -14,14 +14,14 @@ def write(path, data):
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + '\n')
 
 entries = []
-for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin'), ('TukTukCinema', 'com.tuktuk.TukTukPlugin'), ('CineWave', 'com.cinewave.CineWavePlugin'), ('MySeed', 'com.myseed.MySeedPlugin'), ('ArabSeed', 'com.arabseed.ArabSeedPlugin'), ('CimaNowVIP', 'com.cimanowvip.CimaNowVIPPlugin'), ('CimaNow', 'com.cimanow.CimaNowPlugin'), ('AkwCam', 'com.akwcam.AkwCamPlugin')]:
+for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('Akwam', 'com.akwam.AkwamPlugin'), ('TukTukCinema', 'com.tuktuk.TukTukPlugin'), ('CineWave', 'com.cinewave.CineWavePlugin'), ('MySeed', 'com.myseed.MySeedPlugin'), ('ArabSeed', 'com.arabseed.ArabSeedPlugin'), ('CimaNowVIP', 'com.cimanowvip.CimaNowVIPPlugin'), ('CimaNow', 'com.cimanow.CimaNowPlugin'), ('AkwCam', 'com.akwcam.AkwCamPlugin'), ('OhaLive', 'com.ohalive.OhaLivePlugin')]:
     version = int(re.search(r'^version = (\d+)', (root / module / 'build.gradle.kts').read_text(), re.M).group(1))
     source = root / module / 'build' / f'{module}.cs3'
     with zipfile.ZipFile(source) as archive:
         manifest = json.loads(archive.read('manifest.json'))
         assert manifest['version'] == version and manifest['pluginClassName'] == entrypoint, manifest
         dex = archive.read('classes.dex')
-        providers = {'CinemaPlus': b'Lcom/cinemaplus/CinemaPlusProvider;', 'Akwam': b'Lcom/akwam/AkwamProvider;', 'TukTukCinema': b'Lcom/tuktuk/TukTukProvider;', 'CineWave': b'Lcom/cinewave/CineWaveProvider;', 'MySeed': b'Lcom/myseed/MySeedProvider;', 'ArabSeed': b'Lcom/arabseed/ArabSeedProvider;', 'CimaNowVIP': b'Lcom/cimanowvip/CimaNowVIPProvider;', 'CimaNow': b'Lcom/cimanow/CimaNowProvider;', 'AkwCam': b'Lcom/akwcam/AkwCamProvider;'}
+        providers = {'CinemaPlus': b'Lcom/cinemaplus/CinemaPlusProvider;', 'Akwam': b'Lcom/akwam/AkwamProvider;', 'TukTukCinema': b'Lcom/tuktuk/TukTukProvider;', 'CineWave': b'Lcom/cinewave/CineWaveProvider;', 'MySeed': b'Lcom/myseed/MySeedProvider;', 'ArabSeed': b'Lcom/arabseed/ArabSeedProvider;', 'CimaNowVIP': b'Lcom/cimanowvip/CimaNowVIPProvider;', 'CimaNow': b'Lcom/cimanow/CimaNowProvider;', 'AkwCam': b'Lcom/akwcam/AkwCamProvider;', 'OhaLive': b'Lcom/ohalive/OhaLiveProvider;'}
         assert all(value not in dex for key, value in providers.items() if key != module), 'Cross-provider classes in standalone plugin'
     filename = f'{module}-v{version}.cs3'
     target = root / 'dist' / filename
@@ -30,10 +30,10 @@ for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('
     raw = target.read_bytes()
     entry = dict(fileHash='sha256-' + hashlib.sha256(raw).hexdigest(), apiVersion=1,
         repositoryUrl=f'https://github.com/{repo}', fileSize=len(raw), status=3,
-        language=('en' if module == 'CineWave' else 'ar'), authors=['Cinema Plus community'], tvTypes=['Movie','TvSeries'] + (['Anime'] if module in ('TukTukCinema','MySeed','ArabSeed') else []),
-        version=version, internalName=module, description=('CineWave — تجريبي؛ تشغيل Android غير مُثبت' if module == 'CineWave' else ('CimaNow VIP — تجريبي؛ أقسام ومشاهدة تفاعلية عند الحاجة' if module == 'CimaNowVIP' else ('CimaNow عادي — دومين وبروكسي اختياري؛ تشغيل الموقع غير مؤكد' if module == 'CimaNow' else f'{module} — إضافة مستقلة'))),
+        language=('en' if module == 'CineWave' else 'ar'), authors=['Cinema Plus community'], tvTypes=(['Live'] if module == 'OhaLive' else ['Movie','TvSeries'] + (['Anime'] if module in ('TukTukCinema','MySeed','ArabSeed') else [])),
+        version=version, internalName=module, description=({'OhaLive': 'OHA Live — قنوات مباشرة، اتصال OHA تجريبي', 'CineWave': 'CineWave — تجريبي؛ تشغيل Android غير مُثبت', 'CimaNowVIP': 'CimaNow VIP — تجريبي؛ أقسام ومشاهدة تفاعلية عند الحاجة', 'CimaNow': 'CimaNow عادي — دومين وبروكسي اختياري؛ تشغيل الموقع غير مؤكد'}.get(module, f'{module} — إضافة مستقلة')),
         url=f'{base}/' + ('' if branch == 'builds' else 'dist/') + filename,
-        name={'CinemaPlus':'Cinema Plus', 'Akwam':'Akwam | أكوام', 'TukTukCinema':'TukTuk Cinema | توك توك سينما', 'CineWave':'CineWave', 'MySeed':'MySeed | ماي سيد', 'ArabSeed':'ArabSeed | عرب سيد', 'CimaNowVIP':'CimaNow VIP | سيما ناو', 'CimaNow':'CimaNow | سيما ناو (العادي)', 'AkwCam':'AkwCam | أكوام'}[module])
+        name={'CinemaPlus':'Cinema Plus', 'Akwam':'Akwam | أكوام', 'TukTukCinema':'TukTuk Cinema | توك توك سينما', 'CineWave':'CineWave', 'MySeed':'MySeed | ماي سيد', 'ArabSeed':'ArabSeed | عرب سيد', 'CimaNowVIP':'CimaNow VIP | سيما ناو', 'CimaNow':'CimaNow | سيما ناو (العادي)', 'AkwCam':'AkwCam | أكوام', 'OhaLive':'OHA Live | أوها'}[module])
     entries.append(entry)
     slug = module.lower()
     plugins = f'plugins-{slug}-v{version}.json'

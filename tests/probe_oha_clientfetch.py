@@ -119,3 +119,16 @@ try:
                   "probe_error", type(e).__name__)
 except Exception as exc:
     print("OHA clientFetch unavailable:", type(exc).__name__)
+
+# Confirm episodes use the same resolution flow, not just movie sources.
+try:
+    episodes = get_json(BASE + "/vod/source/series/tmdb:1396:1:1.json").get("sources", [])
+    voe = next((item["url"] for item in episodes if
+                "voe." in urllib.parse.urlsplit(item.get("url", "")).netloc), None)
+    print("OHA clientFetch series probe", bool(voe))
+    if voe:
+        try: probe(voe)
+        except Exception as exc:
+            print("series VOE probe_error", type(exc).__name__)
+except Exception as exc:
+    print("OHA clientFetch series unavailable:", type(exc).__name__)

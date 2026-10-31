@@ -1,6 +1,6 @@
-version = 1
+version = 2
 cloudstream {
-    description = "OHA Movies & Series — films, seasons and episode servers"
+    description = "OHA Movies & Series — films, seasons and OHA clientFetch server resolver"
     authors = listOf("Cinema Plus community")
     status = 3
     tvTypes = listOf("Movie", "TvSeries")

@@ -235,81 +235,157 @@ class OhaVodProvider : MainAPI() {
         }
     }
 
+    private fun resolvedType(url: String, format: String?): ExtractorLinkType? {
+        val f = format?.lowercase()?.trim()
+        return when {
+            f == "hls" || f == "m3u8" || f == "mpegurl" -> ExtractorLinkType.M3U8
+            f == "dash" || f == "mpd" -> ExtractorLinkType.DASH
+            f == "mp4" || f == "video" -> ExtractorLinkType.VIDEO
+            else -> videoType(url)
+        }
+    }
+
+    private fun quality(label: String): Int =
+        if (label.contains("4k", ignoreCase = true)) 2160
+        else Regex("(2160|1440|1080|720|480|360)", RegexOption.IGNORE_CASE)
+            .find(label)?.value?.toIntOrNull() ?: Qualities.Unknown.value
+
     override suspend fun loadLinks(
         data: String, isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val m = Regex("^(video|series):(\\d+)(?::(\\d+):(\\d+))?$").matchEntire(data)
-            ?: return false
+            ?: throw ErrorLoadingException("OHA: invalid movie/episode data")
         val type = m.groupValues[1]
         if (type == "series" && m.groupValues[3].isEmpty()) return false
         val mediaId = "tmdb:" + m.groupValues[2] + if (type == "series")
             ":" + m.groupValues[3] + ":" + m.groupValues[4] else ""
-        // OHA deployments have used both "movie" and "video" for movie sources.
-        val sourcePaths = if (type == "video")
-            listOf("/vod/source/movie/" + mediaId + ".json",
-                "/vod/source/video/" + mediaId + ".json")
-        else listOf("/vod/source/series/" + mediaId + ".json")
+        val paths = if (type == "video") listOf(
+            "/vod/source/movie/" + mediaId + ".json",
+            "/vod/source/video/" + mediaId + ".json"
+        ) else listOf("/vod/source/series/" + mediaId + ".json")
+
         var sources: JsonNode = mapper.createArrayNode()
-        var reached = false
-        for (path in sourcePaths) {
+        var loaded = false
+        for (path in paths) {
             try {
-                val candidate = rows(vod(path))
-                reached = true
-                if (candidate.isArray && candidate.size() > 0) {
-                    sources = candidate
+                val next = rows(vod(path))
+                loaded = true
+                if (next.isArray && next.size() > 0) {
+                    sources = next
                     break
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {}
+            } catch (e: CancellationException) { throw e }
+              catch (_: Exception) {}
         }
-        if (!reached) throw ErrorLoadingException("OHA: تعذر جلب مصادر الفيديو من الموقع")
-        var emitted = 0
-        val seen = mutableSetOf<String>()
-        for (s in sources.take(100)) {
-            val embed = field(s, "url") ?: continue
-            if (!embed.startsWith("http://") && !embed.startsWith("https://")) continue
-            val langs = s.path("languages").takeIf { it.isArray }
-                ?.mapNotNull { it.asText()?.takeIf { lang -> lang.isNotBlank() } }
-                ?: emptyList()
-            if (!seen.add(embed + "|" + langs.joinToString())) continue
-            val label = listOfNotNull(field(s, "name") ?: "OHA",
-                field(s, "quality"), langs.takeIf { it.isNotEmpty() }?.joinToString(", "))
-                .joinToString(" • ")
-            var stream = embed
-            var kind = videoType(stream)
-            if (kind == null) {
-                try {
-                    loadExtractor(embed, subtitleCallback, callback = { link ->
-                        callback(link)
-                        emitted++
+        if (!loaded) throw ErrorLoadingException(
+            "OHA: فشل الاتصال بواجهة مصادر المشاهدة"
+        )
+        if (sources.size() == 0) throw ErrorLoadingException(
+            "OHA: الموقع لم يرجع سيرفرات لهذا العمل"
+        )
+
+        // OHA gives many alternate country/quality versions of the same host.
+        // Prioritize host variety so one broken host cannot block every result.
+        val distinct = linkedMapOf<String, JsonNode>()
+        for (source in sources) {
+            val url = field(source, "url") ?: continue
+            if (!(url.startsWith("https://") || url.startsWith("http://"))) continue
+            distinct.putIfAbsent(url, source)
+        }
+        // Prefer distinct hosters before language/quality variants. A failing
+        // Dood mirror must not block a playable VOE or Filemoon stream.
+        fun host(url: String) = runCatching {
+            java.net.URI(url).host?.lowercase() ?: ""
+        }.getOrDefault("")
+        fun hostRank(host: String) = when {
+            "voe." in host -> 0
+            "vidsonic" in host -> 1
+            "filemoon" in host -> 2
+            "supervideo" in host -> 3
+            "veev" in host -> 4
+            "mixdrop" in host -> 5
+            "dood" in host -> 9
+            else -> 6
+        }
+        val hostGroups = distinct.values.groupBy { host(field(it, "url") ?: "") }
+            .entries.sortedWith(compareBy({ hostRank(it.key) }, { it.key }))
+        val candidates = mutableListOf<JsonNode>()
+        for (round in 0 until 8) {
+            for (group in hostGroups) {
+                group.value.getOrNull(round)?.let { candidates.add(it) }
+            }
+        }
+        val resolver = OhaVodResolver()
+        val deadline = System.nanoTime() + 65_000_000_000L
+        val usedMedia = mutableSetOf<String>()
+        var links = 0
+
+        for (source in candidates.take(30)) {
+            // CloudStream awaits loadLinks; cap the overall wait but keep
+            // already emitted working links.
+            if (System.nanoTime() > deadline) break
+            val embed = field(source, "url") ?: continue
+            val languages = source.path("languages").takeIf { it.isArray }
+                ?.map { it.asText() }?.filter { it.isNotBlank() }
+                ?: listOfNotNull(field(source, "language"))
+            val label = listOfNotNull(
+                field(source, "name") ?: "OHA",
+                field(source, "quality"),
+                languages.takeIf { it.isNotEmpty() }?.joinToString(", ")
+            ).joinToString(" • ")
+
+            val direct = videoType(embed)
+            if (direct != null) {
+                if (usedMedia.add(embed)) {
+                    callback(newExtractorLink(name, label, embed, type = direct) {
+                        referer = mainUrl
+                        quality = quality(label)
                     })
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {}
-                try {
-                    val resolved = vod("/vod/resolve?url=" + encode(embed))
-                    val url = field(resolved, "url")
-                    if (url != null && videoType(url) != null) {
-                        stream = url
-                        kind = videoType(url)
+                    links++
+                }
+                continue
+            }
+
+            // Most OHA embeds return {clientFetch: {...}} from /vod/resolve.
+            // Complete that state machine instead of discarding the server.
+            val resolved = try {
+                resolver.resolve(embed)
+            } catch (e: CancellationException) { throw e }
+              catch (_: Exception) { null }
+
+            if (resolved != null) {
+                val typeOfLink = resolvedType(resolved.url, resolved.format)
+                    ?: ExtractorLinkType.VIDEO
+                if (usedMedia.add(resolved.url)) {
+                    callback(newExtractorLink(name, label, resolved.url, type = typeOfLink) {
+                        referer = resolved.referer ?: embed
+                        headers = resolved.headers
+                        quality = quality(label)
+                    })
+                    links++
+                }
+                continue
+            }
+
+            // Fallback to CloudStream's own host extractors for Dood, VOE,
+            // Filemoon, Mixdrop, Vidsonic and other supported hosts.
+            try {
+                loadExtractor(embed, subtitleCallback) { extracted ->
+                    if (usedMedia.add(extracted.url)) {
+                        callback(extracted)
+                        links++
                     }
-                    // A clientFetch descriptor requires multiple client/server hops.
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {}
-            }
-            if (kind != null) {
-                callback(newExtractorLink(name, label, stream, type = kind) {
-                    referer = if (stream == embed) mainUrl else embed
-                    quality = Regex("(2160|1440|1080|720|480|360)", RegexOption.IGNORE_CASE)
-                        .find(label)?.value?.toIntOrNull() ?: Qualities.Unknown.value
-                })
-                emitted++
-            }
+                }
+            } catch (e: CancellationException) { throw e }
+              catch (_: Exception) {}
         }
-        return emitted > 0
+        if (links == 0) throw ErrorLoadingException(
+            "OHA: تم العثور على " + distinct.size +
+                " سيرفر، لكن تعذّر تحويل روابطها إلى فيديو قابل للتشغيل. " +
+                "تتطلب المستضيفات التحقق من اتصالها أو من خدمة clientFetch."
+        )
+        return links > 0
     }
 }

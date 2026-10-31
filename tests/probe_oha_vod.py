@@ -3,6 +3,7 @@
 import json
 import urllib.request
 import urllib.error
+import urllib.parse
 
 URLS = [
     ("OHA movies", "https://oha.to/tmdb/catalog/video/movie.json?sort=trending&language=en"),
@@ -42,6 +43,31 @@ for label, url in URLS:
             print(label, "status", status, "keys", sorted(obj)[:15],
                   "list_count", len(result) if isinstance(result, list) else "none",
                   "list_fields", sorted(result[0].keys())[:18] if isinstance(result, list) and result and isinstance(result[0], dict) else [])
+            if label == "OHA film sources movie" and isinstance(result, list):
+                seen_hosts = set()
+                for source in result:
+                    embed = source.get("url") if isinstance(source, dict) else None
+                    if not isinstance(embed, str) or not embed.startswith("https://"):
+                        continue
+                    host = urllib.parse.urlparse(embed).hostname or ""
+                    if not host or host in seen_hosts:
+                        continue
+                    seen_hosts.add(host)
+                    try:
+                        resolve_url = "https://oha.to/vod/resolve?url=" + urllib.parse.quote(embed, safe="")
+                        with urllib.request.urlopen(urllib.request.Request(resolve_url, headers={
+                            "Accept": "application/json", "User-Agent": "Mozilla/5.0",
+                            "Referer": "https://oha.to/"
+                        }), timeout=6) as rsp:
+                            info = json.loads(rsp.read(100000))
+                        if isinstance(info, dict):
+                            print("OHA resolver host", host, "keys", sorted(info)[:15],
+                                  "direct", isinstance(info.get("url"), str),
+                                  "clientFetch", isinstance(info.get("clientFetch"), dict))
+                    except Exception as ex:
+                        print("OHA resolver host", host, "error", type(ex).__name__)
+                    if len(seen_hosts) >= 4:
+                        break
         else:
             print(label, "status", status, "kind", type(obj).__name__,
                   "count", len(obj) if isinstance(obj, list) else 0)

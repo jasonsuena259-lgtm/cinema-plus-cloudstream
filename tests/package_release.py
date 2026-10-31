@@ -31,7 +31,7 @@ for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('
     entry = dict(fileHash='sha256-' + hashlib.sha256(raw).hexdigest(), apiVersion=1,
         repositoryUrl=f'https://github.com/{repo}', fileSize=len(raw), status=3,
         language=('en' if module == 'CineWave' else 'ar'), authors=['Cinema Plus community'], tvTypes=(['Live'] if module == 'OhaLive' else ['Movie','TvSeries'] + (['Anime'] if module in ('TukTukCinema','MySeed','ArabSeed') else [])),
-        version=version, internalName=module, description=('OHA Live — قنوات مباشرة، اتصال OHA تجريبي' if module == 'OhaLive' else ('CineWave — تجريبي؛ تشغيل Android غير مُثبت' if module == 'CineWave' else ('CimaNow VIP — تجريبي؛ أقسام ومشاهدة تفاعلية عند الحاجة' if module == 'CimaNowVIP' else ('CimaNow عادي — دومين وبروكسي اختياري؛ تشغيل الموقع غير مؤكد' if module == 'CimaNow' else f'{module} — إضافة مستقلة'))),
+        version=version, internalName=module, description=({'OhaLive': 'OHA Live — قنوات مباشرة، اتصال OHA تجريبي', 'CineWave': 'CineWave — تجريبي؛ تشغيل Android غير مُثبت', 'CimaNowVIP': 'CimaNow VIP — تجريبي؛ أقسام ومشاهدة تفاعلية عند الحاجة', 'CimaNow': 'CimaNow عادي — دومين وبروكسي اختياري؛ تشغيل الموقع غير مؤكد'}.get(module, f'{module} — إضافة مستقلة')),
         url=f'{base}/' + ('' if branch == 'builds' else 'dist/') + filename,
         name={'CinemaPlus':'Cinema Plus', 'Akwam':'Akwam | أكوام', 'TukTukCinema':'TukTuk Cinema | توك توك سينما', 'CineWave':'CineWave', 'MySeed':'MySeed | ماي سيد', 'ArabSeed':'ArabSeed | عرب سيد', 'CimaNowVIP':'CimaNow VIP | سيما ناو', 'CimaNow':'CimaNow | سيما ناو (العادي)', 'AkwCam':'AkwCam | أكوام', 'OhaLive':'OHA Live | أوها'}[module])
     entries.append(entry)

@@ -22,6 +22,8 @@ jobs:
         run: python3 tests/check_icu_regex.py
       - name: Inspect OHA VOD metadata and source API (non-blocking)
         run: python3 tests/probe_oha_vod.py
+      - name: Probe OHA VOD real clientFetch handshake (non-blocking)
+        run: python3 tests/probe_oha_clientfetch.py
       - name: Build and test
         run: ./gradlew CinemaPlus:testDebugUnitTest Akwam:testDebugUnitTest CinemaPlus:make Akwam:make TukTukCinema:testDebugUnitTest TukTukCinema:make CineWave:testDebugUnitTest CineWave:make MySeed:testDebugUnitTest MySeed:make ArabSeed:testDebugUnitTest ArabSeed:make CimaNowVIP:testDebugUnitTest CimaNowVIP:make CimaNow:testDebugUnitTest CimaNow:make AkwCam:testDebugUnitTest AkwCam:make OhaLive:make OhaVod:make makePluginsJson
       - name: Prepare independent repository metadata

@@ -22,7 +22,7 @@ internal class OhaVodResolver {
     private val mapper = jacksonObjectMapper()
     private val hosts = listOf("https://oha.to", "https://www.oha.to")
     private val agent = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/125.0 Mobile Safari/537.36"
-    private val maxHops = 10
+    private val maxHops = 6
     private val maxBytes = 1_000_000
 
     data class Resolved(val url: String, val format: String?,
@@ -42,7 +42,7 @@ internal class OhaVodResolver {
         val uri = try { URI(url) } catch (_: Exception) { return false }
         if (uri.scheme !in listOf("https", "http")) return false
         if (uri.rawUserInfo != null || uri.port !in -1..65535) return false
-        val h = uri.host?.lowercase() ?: return false
+        val h = uri.host?.lowercase()?.trim('[', ']') ?: return false
         if (h == "localhost" || h.endsWith(".localhost") || h.endsWith(".local") ||
             h.endsWith(".internal") || h == "0.0.0.0" || h == "::1" ||
             h.startsWith("fc:") || h.startsWith("fd:") || h.startsWith("fe80:")) return false

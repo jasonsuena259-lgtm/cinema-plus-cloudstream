@@ -202,10 +202,10 @@
     "name": "OHA Live | أوها"
   },
   {
-    "fileHash": "sha256-8d20a11395407a9c0a2194c18985d126a42fe9d9f72b25c19ce92f8bbbe09e01",
+    "fileHash": "sha256-c4bac84fb2a9fd4f38f2b18b149b474771a6db809cb0f7d047b84e3606dd4c37",
     "apiVersion": 1,
     "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
-    "fileSize": 27993,
+    "fileSize": 41804,
     "status": 3,
     "language": "ar",
     "authors": [
@@ -215,10 +215,10 @@
       "Movie",
       "TvSeries"
     ],
-    "version": 1,
+    "version": 2,
     "internalName": "OhaVod",
     "description": "OHA Movies & Series — أفلام ومسلسلات، السيرفرات تجريبية",
-    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/OhaVod-v1.cs3",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/OhaVod-v2.cs3",
     "name": "OHA Movies & Series | أوها"
   }
 ]

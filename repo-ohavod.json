@@ -3,6 +3,6 @@
   "description": "OHA Movies & Series — أفلام ومسلسلات، السيرفرات تجريبية",
   "manifestVersion": 1,
   "pluginLists": [
-    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/plugins-ohavod-v1.json"
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/plugins-ohavod-v2.json"
   ]
 }

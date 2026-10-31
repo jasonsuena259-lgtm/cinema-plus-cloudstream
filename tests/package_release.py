@@ -44,6 +44,12 @@ for module, entrypoint in [('CinemaPlus', 'com.cinemaplus.CinemaPlusPlugin'), ('
     data = dict(name=entry['name'], description=entry['description'], manifestVersion=1, pluginLists=[f'{base}/{plugins}'])
     write(out / f'repo-{slug}-v{version}.json', data)
     write(out / f'repo-{slug}.json', data)
+    if module == 'OhaVod':
+        # Existing v1 repository subscriptions receive v2 automatically.
+        write(out / 'plugins-ohavod-v1.json', [entry])
+        write(out / 'repo-ohavod-v1.json',
+            dict(name=entry['name'], description=entry['description'],
+                manifestVersion=1, pluginLists=[f'{base}/plugins-ohavod-v1.json']))
     if module == 'MySeed':
         # Existing CloudStream repositories can keep their old URLs while
         # receiving the newest independent provider artifact.

@@ -94,9 +94,11 @@ class OhaLiveProvider : MainAPI() {
     }
 
     private suspend fun pageAt(group: String, pageNumber: Int): Page {
+        // Do not silently repeat page 20 indefinitely when the catalog is large.
+        if (pageNumber !in 1..20) return Page(emptyList(), null)
         val seen = mutableSetOf<String>()
         var cursor: String? = null
-        for (index in 1..pageNumber.coerceIn(1, 20)) {
+        for (index in 1..pageNumber) {
             val result = page(group, cursor)
             if (index == pageNumber) return result
             cursor = result.next ?: return Page(emptyList(), null)
@@ -120,25 +122,50 @@ class OhaLiveProvider : MainAPI() {
 
     override suspend fun search(query: String): List<SearchResponse> {
         val needle = query.trim()
-        if (needle.isBlank()) return emptyList()
+        if (needle.isEmpty()) return emptyList()
         val results = linkedMapOf<String, Channel>()
-        for (group in groups) {
+
+        // The current OHA catalog supports server-side search: avoid 30
+        // sequential country requests when the query can be resolved directly.
+        try {
             var cursor: String? = null
             val seen = mutableSetOf<String>()
-            for (index in 1..2) {
-                val data = try {
-                    page(group, cursor)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    break
+            repeat(4) {
+                val params = "?search=" + encode(needle) +
+                    (cursor?.let { "&cursor=" + encode(it) } ?: "")
+                val data = json("/live/catalog/live/channels.json", params)
+                val items = data.path("items")
+                if (items.isArray) {
+                    items.mapNotNull { item ->
+                        val group = field(item, "group")
+                            ?: item.path("tags").firstOrNull()?.asText()
+                            ?: "International"
+                        channel(item, group)
+                    }.filter { it.name.contains(needle, ignoreCase = true) }
+                        .forEach { results[it.id] = it }
                 }
-                data.items.filter { it.name.contains(needle, ignoreCase = true) }
-                    .forEach { results[it.id] = it }
-                val next = data.next
-                if (next.isNullOrBlank() || !seen.add(next)) break
+                val next = field(data, "nextCursor")
+                if (next.isNullOrBlank() || !seen.add(next) || results.size >= 150)
+                    return results.values.take(150).map(::searchItem)
                 cursor = next
             }
+            if (results.isNotEmpty()) return results.values.take(150).map(::searchItem)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Fallback for mirrors that do not implement server-side search.
+        }
+
+        for (group in groups) {
+            val firstPage = try {
+                page(group, null)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                continue
+            }
+            firstPage.items.filter { it.name.contains(needle, ignoreCase = true) }
+                .forEach { results[it.id] = it }
         }
         return results.values.take(150).map(::searchItem)
     }

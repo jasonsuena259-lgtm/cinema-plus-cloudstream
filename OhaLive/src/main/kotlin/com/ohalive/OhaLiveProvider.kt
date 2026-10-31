@@ -76,11 +76,20 @@ class OhaLiveProvider : MainAPI() {
         if (field(item, "type") != "live") return null
         val id = field(item.path("ids"), "id") ?: field(item, "id") ?: return null
         val title = field(item, "name") ?: field(item, "title") ?: return null
-        val url = field(item, "url") ?: return null
-        val image = item.path("logo").takeIf { !it.isMissingNode && !it.isNull }
-            ?: item.path("artwork")
-        val logo = if (image.isTextual) image.asText() else field(image, "url")
-        return Channel(id, title, field(item, "group") ?: defaultGroup, url, logo)
+        val url = field(item, "url") ?: "$mainUrl/live/play/$id"
+        // Different OHA mirrors expose channel artwork using different schemas.
+        val logo = listOfNotNull(
+            field(item, "logo"),
+            field(item.path("logo"), "url"),
+            field(item, "artwork"),
+            field(item.path("artwork"), "url"),
+            field(item.path("images"), "poster"),
+            field(item.path("images"), "thumbnail")
+        ).firstOrNull()
+        val group = field(item, "group")
+            ?: item.path("tags").firstOrNull()?.asText()
+            ?: defaultGroup
+        return Channel(id, title, group, url, logo)
     }
 
     private suspend fun page(group: String, cursor: String?): Page {

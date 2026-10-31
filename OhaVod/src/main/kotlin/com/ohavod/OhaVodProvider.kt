@@ -304,7 +304,8 @@ class OhaVodProvider : MainAPI() {
             if (kind != null) {
                 callback(newExtractorLink(name, label, stream, type = kind) {
                     referer = if (stream == embed) mainUrl else embed
-                    quality = Qualities.Unknown.value
+                    quality = Regex("(2160|1440|1080|720|480|360)", RegexOption.IGNORE_CASE)
+                        .find(label)?.value?.toIntOrNull() ?: Qualities.Unknown.value
                 })
                 emitted++
             }

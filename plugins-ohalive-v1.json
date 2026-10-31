@@ -1,0 +1,21 @@
+[
+  {
+    "fileHash": "sha256-7e3eb69a8ea614f05729ce61a867a9a1e7ba4a092190764396bde93be350f775",
+    "apiVersion": 1,
+    "repositoryUrl": "https://github.com/jasonsuena259-lgtm/cinema-plus-cloudstream",
+    "fileSize": 20296,
+    "status": 3,
+    "language": "ar",
+    "authors": [
+      "Cinema Plus community"
+    ],
+    "tvTypes": [
+      "Live"
+    ],
+    "version": 1,
+    "internalName": "OhaLive",
+    "description": "OHA Live — قنوات مباشرة، اتصال OHA تجريبي",
+    "url": "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/OhaLive-v1.cs3",
+    "name": "OHA Live | أوها"
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "name": "OHA Live | أوها",
+  "description": "OHA Live — قنوات مباشرة، اتصال OHA تجريبي",
+  "manifestVersion": 1,
+  "pluginLists": [
+    "https://raw.githubusercontent.com/jasonsuena259-lgtm/cinema-plus-cloudstream/builds/plugins-ohalive-v1.json"
+  ]
+}

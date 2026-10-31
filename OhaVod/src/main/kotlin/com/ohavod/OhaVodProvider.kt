@@ -246,8 +246,26 @@ class OhaVodProvider : MainAPI() {
         if (type == "series" && m.groupValues[3].isEmpty()) return false
         val mediaId = "tmdb:" + m.groupValues[2] + if (type == "series")
             ":" + m.groupValues[3] + ":" + m.groupValues[4] else ""
-        val root = vod("/vod/source/" + type + "/" + mediaId + ".json")
-        val sources = rows(root)
+        // OHA deployments have used both "movie" and "video" for movie sources.
+        val sourcePaths = if (type == "video")
+            listOf("/vod/source/movie/" + mediaId + ".json",
+                "/vod/source/video/" + mediaId + ".json")
+        else listOf("/vod/source/series/" + mediaId + ".json")
+        var sources: JsonNode = mapper.createArrayNode()
+        var reached = false
+        for (path in sourcePaths) {
+            try {
+                val candidate = rows(vod(path))
+                reached = true
+                if (candidate.isArray && candidate.size() > 0) {
+                    sources = candidate
+                    break
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {}
+        }
+        if (!reached) throw ErrorLoadingException("OHA: تعذر جلب مصادر الفيديو من الموقع")
         var emitted = 0
         val seen = mutableSetOf<String>()
         for (s in sources.take(100)) {

@@ -11,7 +11,7 @@ URLS = [
     ("MHub series", "https://mhub.mx/tmdb/catalog/series/series.json?sort=trending&language=en"),
     ("MHub movie details", "https://mhub.mx/tmdb/item/video/tmdb:155.json?language=en"),
     ("MHub series details", "https://mhub.mx/tmdb/item/series/tmdb:1396.json?language=en"),
-    ("MHub season catalog", "https://mhub.mx/tmdb/catalog/video/season_1.json?language=en"),
+    ("MHub season catalog", "https://mhub.mx/tmdb/catalog/video/season_1396_1.json?language=en"),
     ("OHA film sources movie", "https://oha.to/vod/source/movie/tmdb:155.json"),
     ("OHA film sources", "https://oha.to/vod/source/video/tmdb:155.json"),
     ("OHA episode sources", "https://oha.to/vod/source/series/tmdb:1396:1:1.json"),

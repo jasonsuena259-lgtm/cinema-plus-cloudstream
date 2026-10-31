@@ -294,12 +294,38 @@ class OhaVodProvider : MainAPI() {
             if (!(url.startsWith("https://") || url.startsWith("http://"))) continue
             distinct.putIfAbsent(url, source)
         }
-        val candidates = distinct.values.take(30)
+        // Prefer distinct hosters before language/quality variants. A failing
+        // Dood mirror must not block a playable VOE or Filemoon stream.
+        fun host(url: String) = runCatching {
+            java.net.URI(url).host?.lowercase() ?: ""
+        }.getOrDefault("")
+        fun hostRank(host: String) = when {
+            "voe." in host -> 0
+            "vidsonic" in host -> 1
+            "filemoon" in host -> 2
+            "supervideo" in host -> 3
+            "veev" in host -> 4
+            "mixdrop" in host -> 5
+            "dood" in host -> 9
+            else -> 6
+        }
+        val hostGroups = distinct.values.groupBy { host(field(it, "url") ?: "") }
+            .entries.sortedWith(compareBy({ hostRank(it.key) }, { it.key }))
+        val candidates = mutableListOf<JsonNode>()
+        for (round in 0 until 8) {
+            for (group in hostGroups) {
+                group.value.getOrNull(round)?.let { candidates.add(it) }
+            }
+        }
         val resolver = OhaVodResolver()
+        val deadline = System.nanoTime() + 65_000_000_000L
         val usedMedia = mutableSetOf<String>()
         var links = 0
 
-        for (source in candidates) {
+        for (source in candidates.take(30)) {
+            // CloudStream awaits loadLinks; cap the overall wait but keep
+            // already emitted working links.
+            if (System.nanoTime() > deadline) break
             val embed = field(source, "url") ?: continue
             val languages = source.path("languages").takeIf { it.isArray }
                 ?.map { it.asText() }?.filter { it.isNotBlank() }

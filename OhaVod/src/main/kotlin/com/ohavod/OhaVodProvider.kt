@@ -31,7 +31,7 @@ class OhaVodProvider : MainAPI() {
     )
 
     private val mapper = jacksonObjectMapper()
-    private val metaHosts = listOf("https://oha.to", "https://www.oha.to", "https://mhub.mx")
+    private val metaHosts = listOf("https://mhub.mx", "https://oha.to", "https://www.oha.to")
     private val vodHosts = listOf("https://oha.to", "https://www.oha.to", "https://oha.cx", "https://oha.online")
     private val headers = mapOf(
         "Accept" to "application/json",
